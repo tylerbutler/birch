@@ -17,7 +17,11 @@ pub fn handler() -> Handler {
 
 /// Create a JSON handler that writes to stderr.
 pub fn handler_stderr() -> Handler {
-  handler.new(name: "json_stderr", write: platform.write_stderr, format: format_json)
+  handler.new(
+    name: "json_stderr",
+    write: platform.write_stderr,
+    format: format_json,
+  )
 }
 
 /// Format a log record as a JSON string.

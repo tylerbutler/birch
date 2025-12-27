@@ -39,7 +39,10 @@ pub fn level_ordering_transitive_test() {
 
 /// Property: gte is the inverse of lt
 pub fn level_gte_inverse_of_lt_test() {
-  use #(a, b) <- qcheck.given(qcheck.tuple2(level_generator(), level_generator()))
+  use #(a, b) <- qcheck.given(qcheck.tuple2(
+    level_generator(),
+    level_generator(),
+  ))
 
   // gte(a, b) should be equivalent to !lt(a, b)
   level.gte(a, b) == !level.lt(a, b)
@@ -57,7 +60,10 @@ pub fn level_string_roundtrip_test() {
 
 /// Property: to_int produces ordered values
 pub fn level_to_int_ordered_test() {
-  use #(a, b) <- qcheck.given(qcheck.tuple2(level_generator(), level_generator()))
+  use #(a, b) <- qcheck.given(qcheck.tuple2(
+    level_generator(),
+    level_generator(),
+  ))
 
   let a_int = level.to_int(a)
   let b_int = level.to_int(b)
@@ -105,7 +111,9 @@ pub fn record_metadata_append_test() {
 
 /// Property: Human-readable format always contains the message
 pub fn formatter_contains_message_test() {
-  use message <- qcheck.given(qcheck.string_non_empty(qcheck.char_alphanumeric()))
+  use message <- qcheck.given(
+    qcheck.string_non_empty(qcheck.char_alphanumeric()),
+  )
 
   let r =
     record.new_simple(

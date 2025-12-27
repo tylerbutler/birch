@@ -38,9 +38,12 @@ pub fn new(
   write write: fn(String) -> Nil,
   format format: formatter.Formatter,
 ) -> Handler {
-  Handler(name: name, min_level: Error(Nil), write: fn(record) {
-    write(format(record))
-  }, format: format)
+  Handler(
+    name: name,
+    min_level: Error(Nil),
+    write: fn(record) { write(format(record)) },
+    format: format,
+  )
 }
 
 /// Create a handler with a minimum level filter.
@@ -77,7 +80,10 @@ pub fn handle_all(handlers: List(Handler), record: LogRecord) -> Nil {
 /// Create a null handler that discards all logs.
 /// Useful for testing or explicitly disabling logging.
 pub fn null() -> Handler {
-  Handler(name: "null", min_level: Error(Nil), write: fn(_) { Nil }, format: fn(
-    _,
-  ) { "" })
+  Handler(
+    name: "null",
+    min_level: Error(Nil),
+    write: fn(_) { Nil },
+    format: fn(_) { "" },
+  )
 }
