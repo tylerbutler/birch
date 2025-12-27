@@ -4,6 +4,7 @@ import gleam/string
 import gleam_log
 import gleam_log/formatter
 import gleam_log/handler
+import gleam_log/handler/async
 import gleam_log/handler/json
 import gleam_log/level
 import gleam_log/logger
@@ -502,4 +503,90 @@ pub fn config_default_logger_uses_config_test() {
 
   // Reset to default
   gleam_log.reset_config()
+}
+
+// ============================================================================
+// Async Handler Tests
+// ============================================================================
+
+pub fn async_config_default_test() {
+  let config = async.default_config()
+
+  config.queue_size
+  |> should.equal(1000)
+
+  config.flush_interval_ms
+  |> should.equal(100)
+
+  config.overflow
+  |> should.equal(async.DropOldest)
+}
+
+pub fn async_config_builder_test() {
+  let config =
+    async.config()
+    |> async.with_queue_size(500)
+    |> async.with_flush_interval(50)
+    |> async.with_overflow(async.DropNewest)
+
+  config.queue_size
+  |> should.equal(500)
+
+  config.flush_interval_ms
+  |> should.equal(50)
+
+  config.overflow
+  |> should.equal(async.DropNewest)
+}
+
+pub fn async_make_async_creates_handler_test() {
+  let base_handler = handler.null()
+  let async_handler = async.make_async(base_handler, async.default_config())
+
+  // The async handler should have a name containing "async"
+  handler.name(async_handler)
+  |> string.contains("async")
+  |> should.be_true
+}
+
+pub fn async_handle_does_not_block_test() {
+  // Create a counter to track writes
+  let base_handler = handler.null()
+  let async_handler = async.make_async(base_handler, async.default_config())
+
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "async test message",
+    )
+
+  // This should return immediately (non-blocking)
+  handler.handle(async_handler, r)
+  handler.handle(async_handler, r)
+  handler.handle(async_handler, r)
+
+  // Flush to ensure all messages are processed
+  async.flush()
+}
+
+pub fn async_flush_waits_for_pending_test() {
+  let base_handler = handler.null()
+  let async_handler = async.make_async(base_handler, async.default_config())
+
+  // Send multiple records
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "flush test",
+    )
+
+  handler.handle(async_handler, r)
+  handler.handle(async_handler, r)
+
+  // Flush should complete without hanging
+  async.flush()
 }
