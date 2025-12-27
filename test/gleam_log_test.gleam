@@ -29,10 +29,10 @@ pub fn level_ordering_test() {
   level.compare(level.Info, level.Warn)
   |> should.equal(order.Lt)
 
-  level.compare(level.Warn, level.Error)
+  level.compare(level.Warn, level.Err)
   |> should.equal(order.Lt)
 
-  level.compare(level.Error, level.Fatal)
+  level.compare(level.Err, level.Fatal)
   |> should.equal(order.Lt)
 }
 
@@ -187,7 +187,7 @@ pub fn formatter_simple_test() {
   let r =
     record.new_simple(
       timestamp: "2024-12-26T10:30:45.123Z",
-      level: level.Error,
+      level: level.Err,
       logger_name: "test",
       message: "Something failed",
     )
@@ -244,7 +244,7 @@ pub fn logger_should_log_test() {
     logger.new("test")
     |> logger.with_level(level.Warn)
 
-  logger.should_log(lgr, level.Error)
+  logger.should_log(lgr, level.Err)
   |> should.be_true
 
   logger.should_log(lgr, level.Warn)
@@ -290,9 +290,9 @@ pub fn handler_null_test() {
 pub fn handler_with_min_level_test() {
   let h =
     handler.null()
-    |> handler.with_min_level(level.Error)
+    |> handler.with_min_level(level.Err)
 
-  handler.should_handle(h, level.Error)
+  handler.should_handle(h, level.Err)
   |> should.be_true
 
   handler.should_handle(h, level.Fatal)
@@ -376,7 +376,7 @@ pub fn main_api_level_from_string_test() {
   |> should.equal(Ok(level.Debug))
 
   gleam_log.level_from_string("error")
-  |> should.equal(Ok(level.Error))
+  |> should.equal(Ok(level.Err))
 }
 
 pub fn main_api_level_to_string_test() {

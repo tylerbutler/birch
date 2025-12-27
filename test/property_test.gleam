@@ -157,7 +157,7 @@ fn level_generator() -> qcheck.Generator(level.Level) {
     qcheck.return(level.Debug),
     qcheck.return(level.Info),
     qcheck.return(level.Warn),
-    qcheck.return(level.Error),
+    qcheck.return(level.Err),
     qcheck.return(level.Fatal),
   ])
 }

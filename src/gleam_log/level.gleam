@@ -15,14 +15,17 @@ import gleam/string
 /// - `Debug`: Debugging information useful during development
 /// - `Info`: Normal operational messages (default threshold)
 /// - `Warn`: Warning conditions that might need attention
-/// - `Error`: Error conditions that should be addressed
+/// - `Err`: Error conditions that should be addressed
 /// - `Fatal`: Critical errors that prevent the system from continuing
+///
+/// Note: `Err` is used instead of `Error` to avoid conflict with the
+/// `Result` type's `Error` constructor.
 pub type Level {
   Trace
   Debug
   Info
   Warn
-  Error
+  Err
   Fatal
 }
 
@@ -34,7 +37,7 @@ pub fn to_int(level: Level) -> Int {
     Debug -> 1
     Info -> 2
     Warn -> 3
-    Error -> 4
+    Err -> 4
     Fatal -> 5
   }
 }
@@ -47,7 +50,7 @@ pub fn from_string(s: String) -> Result(Level, Nil) {
     "debug" -> Ok(Debug)
     "info" -> Ok(Info)
     "warn" | "warning" -> Ok(Warn)
-    "error" -> Ok(Error)
+    "error" | "err" -> Ok(Err)
     "fatal" | "critical" -> Ok(Fatal)
     _ -> Error(Nil)
   }
@@ -60,7 +63,7 @@ pub fn to_string(level: Level) -> String {
     Debug -> "DEBUG"
     Info -> "INFO"
     Warn -> "WARN"
-    Error -> "ERROR"
+    Err -> "ERROR"
     Fatal -> "FATAL"
   }
 }
@@ -72,7 +75,7 @@ pub fn to_string_lowercase(level: Level) -> String {
     Debug -> "debug"
     Info -> "info"
     Warn -> "warn"
-    Error -> "error"
+    Err -> "error"
     Fatal -> "fatal"
   }
 }

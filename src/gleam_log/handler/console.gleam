@@ -110,7 +110,7 @@ fn level_color(lvl: level.Level) -> Color {
     level.Debug -> Blue
     level.Info -> Cyan
     level.Warn -> Yellow
-    level.Error -> Red
+    level.Err -> Red
     level.Fatal -> BrightRed
   }
 }

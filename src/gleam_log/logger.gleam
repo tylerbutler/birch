@@ -194,7 +194,7 @@ pub fn warn_lazy(
 
 /// Log an error message.
 pub fn error(logger: Logger, message: String, metadata: Metadata) -> Nil {
-  log(logger, level.Error, message, metadata)
+  log(logger, level.Err, message, metadata)
 }
 
 /// Log an error message with lazy evaluation.
@@ -203,7 +203,7 @@ pub fn error_lazy(
   message_fn: fn() -> String,
   metadata: Metadata,
 ) -> Nil {
-  log_lazy(logger, level.Error, message_fn, metadata)
+  log_lazy(logger, level.Err, message_fn, metadata)
 }
 
 /// Log a fatal message.
