@@ -21,8 +21,11 @@
 //// ## Configuration
 ////
 //// ```gleam
+//// import gleam_log as log
+//// import gleam_log/level
+////
 //// log.configure(log.Config(
-////   level: log.info_level,
+////   level: level.Info,
 ////   handlers: [handler.console()],
 //// ))
 //// ```
@@ -44,20 +47,6 @@ pub type LogHandler =
 
 pub type LogMetadata =
   Metadata
-
-// Re-export level constructors as lowercase constants
-// Use: log.trace_level, log.debug_level, etc.
-pub const trace_level = level.Trace
-
-pub const debug_level = level.Debug
-
-pub const info_level = level.Info
-
-pub const warn_level = level.Warn
-
-pub const error_level = level.Error
-
-pub const fatal_level = level.Fatal
 
 /// Global configuration for the default logger.
 pub type Config {

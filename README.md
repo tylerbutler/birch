@@ -93,9 +93,10 @@ Set the minimum level for a logger:
 
 ```gleam
 import gleam_log as log
+import gleam_log/level
 
 let logger = log.new("myapp")
-  |> log.with_level(log.Debug)  // Log Debug and above
+  |> log.with_level(level.Debug)  // Log Debug and above
 ```
 
 ## Handlers

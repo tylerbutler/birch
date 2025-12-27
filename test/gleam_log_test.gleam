@@ -365,7 +365,7 @@ pub fn main_api_with_context_test() {
 pub fn main_api_with_level_test() {
   let lgr =
     gleam_log.new("myapp")
-    |> gleam_log.with_level(gleam_log.debug_level)
+    |> gleam_log.with_level(level.Debug)
 
   logger.get_level(lgr)
   |> should.equal(level.Debug)
@@ -373,13 +373,13 @@ pub fn main_api_with_level_test() {
 
 pub fn main_api_level_from_string_test() {
   gleam_log.level_from_string("debug")
-  |> should.equal(Ok(gleam_log.debug_level))
+  |> should.equal(Ok(level.Debug))
 
   gleam_log.level_from_string("error")
-  |> should.equal(Ok(gleam_log.error_level))
+  |> should.equal(Ok(level.Error))
 }
 
 pub fn main_api_level_to_string_test() {
-  gleam_log.level_to_string(gleam_log.info_level)
+  gleam_log.level_to_string(level.Info)
   |> should.equal("INFO")
 }
