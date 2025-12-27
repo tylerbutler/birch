@@ -1,5 +1,8 @@
 // JavaScript FFI for gleam_log
 
+// Import Gleam's Result constructors from the prelude
+import { Ok, Error } from "./gleam.mjs";
+
 /**
  * Get current timestamp in ISO 8601 format with milliseconds.
  * @returns {string} Timestamp like "2024-12-26T10:30:45.123Z"
@@ -75,13 +78,13 @@ let globalConfig = undefined;
 
 /**
  * Get the global configuration.
- * @returns {{ type: "Ok", 0: any } | { type: "Error", 0: undefined }}
+ * @returns {Ok | Error} Gleam Result type
  */
 export function get_global_config() {
   if (globalConfig !== undefined) {
-    return { type: "Ok", 0: globalConfig };
+    return new Ok(globalConfig);
   }
-  return { type: "Error", 0: undefined };
+  return new Error(undefined);
 }
 
 /**
