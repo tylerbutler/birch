@@ -84,7 +84,7 @@ pub fn configure(options: List(ConfigOption)) -> Nil {
 pub fn get_config() -> GlobalConfig {
   case platform.get_global_config() {
     Ok(cfg) -> cfg
-    Error(Nil) -> config.default()
+    Error(Nil) -> default_config()
   }
 }
 
@@ -110,7 +110,11 @@ pub fn config_context(ctx: Metadata) -> ConfigOption {
 
 /// Default configuration: Info level, console handler, no context.
 pub fn default_config() -> GlobalConfig {
-  config.default()
+  config.GlobalConfig(
+    level: level.Info,
+    handlers: [console.handler()],
+    context: [],
+  )
 }
 
 // ============================================================================

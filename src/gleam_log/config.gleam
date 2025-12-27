@@ -5,7 +5,6 @@
 
 import gleam/list
 import gleam_log/handler.{type Handler}
-import gleam_log/handler/console
 import gleam_log/level.{type Level}
 import gleam_log/record.{type Metadata}
 
@@ -43,10 +42,10 @@ pub fn context(ctx: Metadata) -> ConfigOption {
   ContextOption(ctx)
 }
 
-/// Returns the default global configuration.
-/// Default: Info level, console handler, no context.
-pub fn default() -> GlobalConfig {
-  GlobalConfig(level: level.Info, handlers: [console.handler()], context: [])
+/// Returns the default global configuration with no handlers.
+/// Note: Use gleam_log.default_config() to get defaults with console handler.
+pub fn empty() -> GlobalConfig {
+  GlobalConfig(level: level.Info, handlers: [], context: [])
 }
 
 /// Apply a list of configuration options to a GlobalConfig.
