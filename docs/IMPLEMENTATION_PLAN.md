@@ -3,6 +3,8 @@
 **Last Updated:** December 2025
 **Based on:** PRD v1.0
 
+**See Also:** [GLIMT_PATTERNS.md](./GLIMT_PATTERNS.md) - Patterns from glimt library to consider adopting
+
 ---
 
 ## Current Status Summary
@@ -158,6 +160,8 @@ Allow changing the global log level at runtime without restarting the applicatio
 **Effort:** Large
 **Dependencies:** None (can be done in parallel with 2.1)
 
+> **Pattern Reference:** See [GLIMT_PATTERNS.md](./GLIMT_PATTERNS.md#1-actor-based-async-instances) for the Actor-based pattern from glimt using gleam_otp Subjects.
+
 #### Description
 
 Provide non-blocking log output to prevent I/O from blocking application logic. Critical for high-throughput applications.
@@ -167,6 +171,18 @@ Provide non-blocking log output to prevent I/O from blocking application logic. 
 - On Erlang: Log records sent to handler actor (gen_server/process)
 - On JavaScript: Batch writes with microtask/setTimeout scheduling
 - Configurable queue size with overflow behavior
+
+#### Design Decision: gleam_otp vs Custom FFI
+
+**Option A: Use gleam_otp Subject (glimt approach)**
+- Pros: Battle-tested OTP patterns, natural backpressure, clean API
+- Cons: Adds gleam_otp dependency, Erlang-only for full functionality
+
+**Option B: Custom FFI process**
+- Pros: No new dependencies, more control
+- Cons: Re-implementing OTP patterns, more code to maintain
+
+**Recommendation:** Use gleam_otp for Erlang target with graceful fallback for JavaScript.
 
 #### Implementation Steps
 
@@ -188,9 +204,9 @@ Provide non-blocking log output to prevent I/O from blocking application logic. 
    }
    ```
 
-2. **Implement Erlang async handler**
-   - Create gen_server-style process in FFI
-   - Queue messages and batch write
+2. **Implement Erlang async handler (using gleam_otp Subject)**
+   - Use `Subject(LogRecord)` for message passing
+   - Actor receives messages and batch writes
    - Handle overflow according to config
    - Provide `flush()` function for graceful shutdown
 
@@ -730,3 +746,68 @@ Always run before completing work:
 just format       # Format code
 just check        # Format check + tests on both targets
 ```
+
+---
+
+## Additional Enhancements (from glimt patterns)
+
+These are lower-priority enhancements inspired by patterns in the glimt library. See [GLIMT_PATTERNS.md](./GLIMT_PATTERNS.md) for detailed analysis.
+
+### E.1 JSON Serializer Builder Pattern
+
+**Priority:** P2
+**Effort:** Small
+**Dependencies:** None
+
+Add a builder pattern for customizing JSON output format:
+
+```gleam
+let custom_handler =
+  json.standard_builder()
+  |> json.add_custom(fn(_) { [#("service", json.string("my-app"))] })
+  |> json.build()
+  |> json.handler_with_formatter()
+```
+
+**Files:** `src/gleam_log/handler/json.gleam`
+
+### E.2 Error Result Convenience Functions
+
+**Priority:** P3
+**Effort:** Small
+**Dependencies:** None
+
+Add convenience functions for logging with Result errors:
+
+```gleam
+pub fn error_result(logger, message, result: Result(a, e), metadata) -> Nil
+pub fn fatal_result(logger, message, result: Result(a, e), metadata) -> Nil
+```
+
+**Files:** `src/gleam_log/logger.gleam`, `src/gleam_log.gleam`
+
+### E.3 Time Provider for Testing
+
+**Priority:** P3
+**Effort:** Small
+**Dependencies:** None
+
+Allow injecting custom timestamp function for deterministic tests:
+
+```gleam
+let test_logger =
+  logger.new("test")
+  |> logger.with_time_provider(fn() { "2024-01-01T00:00:00.000Z" })
+```
+
+**Files:** `src/gleam_log/logger.gleam`
+
+### E.4 Process/Caller ID Tracking
+
+**Priority:** P3
+**Effort:** Small
+**Dependencies:** None
+
+Optionally include caller process ID (Erlang) or thread ID (JS) in log records for debugging concurrent applications.
+
+**Files:** `src/gleam_log/record.gleam`, `src/gleam_log/internal/platform.gleam`, FFI files
