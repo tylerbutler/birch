@@ -87,3 +87,12 @@ pub fn null() -> Handler {
     format: fn(_) { "" },
   )
 }
+
+/// Create a handler with a raw write function that receives the full LogRecord.
+/// This is used by async handlers that need access to the full record.
+pub fn new_with_record_write(
+  name name: String,
+  write write: fn(LogRecord) -> Nil,
+) -> Handler {
+  Handler(name: name, min_level: Error(Nil), write: write, format: fn(_) { "" })
+}
