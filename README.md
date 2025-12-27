@@ -218,15 +218,46 @@ Consumers control logging by adding handlers to the logger.
 ## Development
 
 ```bash
-# Build
+# Build for default target (Erlang)
 gleam build
 
-# Test
+# Build for JavaScript
+gleam build --target javascript
+
+# Run tests on Erlang
 gleam test
+
+# Run tests on JavaScript
+gleam test --target javascript
+
+# Check formatting
+gleam format --check src test
+
+# Format code
+gleam format src test
 
 # Generate docs
 gleam docs build
 ```
+
+### Testing
+
+This project uses:
+- **gleeunit** - Standard test runner for Gleam
+- **qcheck** - Property-based testing for more thorough test coverage
+
+Unit tests are in `test/gleam_log_test.gleam` and property tests are in `test/property_test.gleam`.
+
+### CI/CD
+
+GitHub Actions runs on every push and PR:
+- Tests on both Erlang and JavaScript targets
+- Format checking
+- Documentation build
+
+### Code Coverage
+
+Note: Gleam currently has limited support for code coverage tools. Since Gleam compiles to Erlang source (rather than abstract format), integration with Erlang's `cover` tool is challenging. We rely on comprehensive unit and property tests instead.
 
 ## License
 

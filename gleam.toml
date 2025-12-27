@@ -3,6 +3,10 @@ version = "0.1.0"
 description = "A modern, production-ready logging library for Gleam"
 licences = ["MIT"]
 repository = { type = "github", user = "tylerbutler", repo = "gleam_log" }
+gleam = ">= 1.0.0"
+
+# Internal modules are not part of the public API
+internal_modules = ["gleam_log/internal", "gleam_log/internal/*"]
 
 [dependencies]
 gleam_stdlib = ">= 0.34.0 and < 2.0.0"
@@ -11,3 +15,4 @@ simplifile = ">= 2.0.0 and < 3.0.0"
 
 [dev-dependencies]
 gleeunit = ">= 1.0.0 and < 2.0.0"
+qcheck = ">= 1.0.0 and < 2.0.0"
