@@ -65,9 +65,9 @@ just test         # Run tests on both targets (alias: t)
 just test-erlang  # Run tests on Erlang only
 just test-js      # Run tests on JavaScript only
 just format       # Format source code (alias: f)
-just lint         # Check formatting (alias: format-check)
-just check        # Run lint + tests on both targets (alias: c)
-just check-quick  # Run lint + Erlang tests only
+just format-check # Check formatting
+just check        # Run format-check + tests on both targets (alias: c)
+just check-quick  # Run format-check + Erlang tests only
 just docs         # Generate documentation (alias: d)
 just deps         # Download dependencies
 just clean        # Remove build artifacts
@@ -187,7 +187,7 @@ Tests are organized by module:
 
 GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR to main using `just` tasks:
 - Tests on both Erlang and JavaScript targets (`just test-erlang`, `just test-js`)
-- Format checking (`just lint`)
+- Format checking (`just format-check`)
 - Documentation build (`just docs`)
 
 ## Conventions

@@ -38,12 +38,9 @@ test: test-erlang test-js
 format:
     gleam format src test
 
-# Check formatting (lint)
+# Check formatting
 format-check:
     gleam format --check src test
-
-# Alias for format-check
-lint: format-check
 
 # Generate documentation
 docs:

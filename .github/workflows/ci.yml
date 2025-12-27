@@ -37,7 +37,7 @@ jobs:
         run: just deps
 
       - name: Check formatting
-        run: just lint
+        run: just format-check
 
       - name: Build
         run: just ${{ matrix.target == 'javascript' && 'build-js' || 'build' }}
