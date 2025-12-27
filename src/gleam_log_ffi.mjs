@@ -64,3 +64,39 @@ export function is_stdout_tty() {
   // Browser - assume no TTY
   return false;
 }
+
+// ============================================================================
+// Global Configuration Storage
+// ============================================================================
+
+// Module-level storage for global config
+// JavaScript is single-threaded so no synchronization needed
+let globalConfig = undefined;
+
+/**
+ * Get the global configuration.
+ * @returns {{ type: "Ok", 0: any } | { type: "Error", 0: undefined }}
+ */
+export function get_global_config() {
+  if (globalConfig !== undefined) {
+    return { type: "Ok", 0: globalConfig };
+  }
+  return { type: "Error", 0: undefined };
+}
+
+/**
+ * Set the global configuration.
+ * @param {any} config - The configuration object to store
+ */
+export function set_global_config(config) {
+  globalConfig = config;
+  return undefined;
+}
+
+/**
+ * Clear the global configuration (reset to unset state).
+ */
+export function clear_global_config() {
+  globalConfig = undefined;
+  return undefined;
+}

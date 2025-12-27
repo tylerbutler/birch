@@ -1,5 +1,6 @@
 -module(gleam_log_ffi).
--export([timestamp_iso8601/0, write_stdout/1, write_stderr/1, is_stdout_tty/0]).
+-export([timestamp_iso8601/0, write_stdout/1, write_stderr/1, is_stdout_tty/0,
+         get_global_config/0, set_global_config/1, clear_global_config/0]).
 
 %% Get current timestamp in ISO 8601 format with milliseconds
 timestamp_iso8601() ->
@@ -34,4 +35,31 @@ is_stdout_tty() ->
                         _ -> true
                     end
             end
+    end.
+
+%% Global configuration storage using persistent_term.
+%% persistent_term is ideal for read-heavy, write-rarely data like logging config.
+%% It's also thread-safe for concurrent access.
+
+-define(GLOBAL_CONFIG_KEY, gleam_log_global_config).
+
+%% Get the global configuration. Returns {ok, Config} or {error, nil}.
+get_global_config() ->
+    try persistent_term:get(?GLOBAL_CONFIG_KEY) of
+        Config -> {ok, Config}
+    catch
+        error:badarg -> {error, nil}
+    end.
+
+%% Set the global configuration.
+set_global_config(Config) ->
+    persistent_term:put(?GLOBAL_CONFIG_KEY, Config),
+    nil.
+
+%% Clear the global configuration (reset to unset state).
+clear_global_config() ->
+    try persistent_term:erase(?GLOBAL_CONFIG_KEY) of
+        _ -> nil
+    catch
+        error:badarg -> nil
     end.

@@ -23,14 +23,16 @@
 //// ```gleam
 //// import gleam_log as log
 //// import gleam_log/level
+//// import gleam_log/handler/console
 ////
-//// log.configure(log.Config(
-////   level: level.Info,
-////   handlers: [handler.console()],
-//// ))
+//// log.configure([
+////   log.config_level(level.Debug),
+////   log.config_handlers([console.handler()]),
+//// ])
 //// ```
 
 import gleam/list
+import gleam_log/config.{type ConfigOption, type GlobalConfig}
 import gleam_log/handler.{type Handler}
 import gleam_log/handler/console
 import gleam_log/internal/platform
@@ -49,18 +51,66 @@ pub type LogMetadata =
   Metadata
 
 /// Global configuration for the default logger.
-pub type Config {
-  Config(
-    /// Minimum log level
-    level: Level,
-    /// Handlers to use
-    handlers: List(Handler),
-  )
+/// Re-exported from config module for convenience.
+pub type Config =
+  GlobalConfig
+
+// ============================================================================
+// Global Configuration API
+// ============================================================================
+
+/// Configure the global logging settings.
+///
+/// Example:
+/// ```gleam
+/// import gleam_log as log
+/// import gleam_log/level
+/// import gleam_log/handler/console
+///
+/// log.configure([
+///   log.config_level(level.Debug),
+///   log.config_handlers([console.handler()]),
+///   log.config_context([#("app", "myapp")]),
+/// ])
+/// ```
+pub fn configure(options: List(ConfigOption)) -> Nil {
+  let current = get_config()
+  let new_config = config.apply_options(current, options)
+  platform.set_global_config(new_config)
 }
 
-/// Default configuration: Info level, console handler.
-pub fn default_config() -> Config {
-  Config(level: level.Info, handlers: [console.handler()])
+/// Get the current global configuration.
+/// Returns the configured settings, or defaults if not configured.
+pub fn get_config() -> GlobalConfig {
+  case platform.get_global_config() {
+    Ok(cfg) -> cfg
+    Error(Nil) -> config.default()
+  }
+}
+
+/// Reset the global configuration to defaults.
+pub fn reset_config() -> Nil {
+  platform.clear_global_config()
+}
+
+/// Create a configuration option to set the global log level.
+pub fn config_level(lvl: Level) -> ConfigOption {
+  config.level(lvl)
+}
+
+/// Create a configuration option to set the global handlers.
+pub fn config_handlers(handlers: List(Handler)) -> ConfigOption {
+  config.handlers(handlers)
+}
+
+/// Create a configuration option to set the default context metadata.
+pub fn config_context(ctx: Metadata) -> ConfigOption {
+  config.context(ctx)
+}
+
+/// Default configuration: Info level, console handler, no context.
+pub fn default_config() -> GlobalConfig {
+  config.default()
 }
 
 // ============================================================================
@@ -68,20 +118,29 @@ pub fn default_config() -> Config {
 // ============================================================================
 
 /// The default logger used by module-level logging functions.
-/// This is a simple, pre-configured logger for quick usage.
+/// This logger reads its configuration from the global config.
 fn default_logger() -> Logger {
+  let cfg = get_config()
   logger.new("app")
+  |> logger.with_level(cfg.level)
+  |> logger.with_handlers(cfg.handlers)
+  |> logger.with_context(cfg.context)
 }
 
 /// Create a new named logger.
 ///
+/// The logger inherits the global configuration (level, handlers, context).
 /// Named loggers allow you to organize logs by component:
 /// ```gleam
 /// let db_logger = log.new("myapp.database")
 /// let http_logger = log.new("myapp.http")
 /// ```
 pub fn new(name: String) -> Logger {
+  let cfg = get_config()
   logger.new(name)
+  |> logger.with_level(cfg.level)
+  |> logger.with_handlers(cfg.handlers)
+  |> logger.with_context(cfg.context)
 }
 
 /// Create a silent logger (no handlers).
