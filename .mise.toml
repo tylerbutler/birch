@@ -5,7 +5,7 @@
 # This allows compatibility with setup-beam in CI
 
 [tools]
-erlang = "27.2"
+erlang = "27.2.1"
 gleam = "1.14.0"
 node = "22"  # For JavaScript target testing
 
