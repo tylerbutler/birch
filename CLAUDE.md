@@ -130,7 +130,7 @@ Implementations:
 
 ### Test Framework
 - **gleeunit** - Standard test runner
-- **qcheck** - Property-based testing (tests pending migration to 1.0+ API)
+- **qcheck** - Property-based testing
 
 ### Running Tests
 Tests must pass on both targets:
@@ -140,14 +140,19 @@ gleam test --target javascript    # JavaScript
 ```
 
 ### Test Structure
-Tests are organized by module in `test/gleam_log_test.gleam`:
-- Level tests
-- Record tests
-- Formatter tests
-- Logger tests
-- Handler tests
-- JSON handler tests
-- Main API tests
+Tests are organized by module:
+- `test/gleam_log_test.gleam` - Unit tests
+  - Level tests
+  - Record tests
+  - Formatter tests
+  - Logger tests
+  - Handler tests
+  - JSON handler tests
+  - Main API tests
+- `test/property_test.gleam` - Property-based tests using qcheck
+  - Level property tests (ordering, comparison, roundtrip)
+  - Record property tests (metadata operations)
+  - Formatter property tests (output invariants)
 
 ## Dependencies
 
@@ -214,10 +219,9 @@ Specified in `.tool-versions`:
 
 ## Known Limitations
 
-1. **Property tests disabled**: The `qcheck` library API changed in 1.0.0; property tests need migration
-2. **No code coverage**: Gleam compiles to Erlang source (not abstract format), making `cover` integration challenging
-3. **Scoped context on JS**: JavaScript lacks Erlang's process dictionary; scoped context requires explicit passing or AsyncLocalStorage (Node.js only)
-4. **File handler rotation**: Only size-based rotation is implemented; time-based rotation is a future feature (see PRD Phase 3)
+1. **No code coverage**: Gleam compiles to Erlang source (not abstract format), making `cover` integration challenging
+2. **Scoped context on JS**: JavaScript lacks Erlang's process dictionary; scoped context requires explicit passing or AsyncLocalStorage (Node.js only)
+3. **File handler rotation**: Only size-based rotation is implemented; time-based rotation is a future feature (see PRD Phase 3)
 
 ## References
 
