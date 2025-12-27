@@ -111,7 +111,10 @@ pub fn level_gt_lt_irreflexive_test() {
 
 /// Property: gte(a, b) is consistent with compare(a, b)
 pub fn level_gte_consistent_with_compare_test() {
-  use #(a, b) <- qcheck.given(qcheck.tuple2(level_generator(), level_generator()))
+  use #(a, b) <- qcheck.given(qcheck.tuple2(
+    level_generator(),
+    level_generator(),
+  ))
 
   let cmp = level.compare(a, b)
   let gte_result = level.gte(a, b)
@@ -124,7 +127,10 @@ pub fn level_gte_consistent_with_compare_test() {
 
 /// Property: gt(a, b) implies gte(a, b)
 pub fn level_gt_implies_gte_test() {
-  use #(a, b) <- qcheck.given(qcheck.tuple2(level_generator(), level_generator()))
+  use #(a, b) <- qcheck.given(qcheck.tuple2(
+    level_generator(),
+    level_generator(),
+  ))
 
   case level.gt(a, b) {
     True -> level.gte(a, b) |> should.be_true
@@ -134,7 +140,10 @@ pub fn level_gt_implies_gte_test() {
 
 /// Property: compare is antisymmetric
 pub fn level_compare_antisymmetric_test() {
-  use #(a, b) <- qcheck.given(qcheck.tuple2(level_generator(), level_generator()))
+  use #(a, b) <- qcheck.given(qcheck.tuple2(
+    level_generator(),
+    level_generator(),
+  ))
 
   let ab = level.compare(a, b)
   let ba = level.compare(b, a)
