@@ -1,6 +1,7 @@
 //// Property-based tests for gleam_log using qcheck.
 
 import gleam/list
+import gleam/order
 import gleam/string
 import gleam_log/formatter
 import gleam_log/level
@@ -68,8 +69,6 @@ pub fn level_to_int_ordered_test() {
     order.Gt -> a_int > b_int
   }
 }
-
-import gleam/order
 
 // ============================================================================
 // Record Property Tests

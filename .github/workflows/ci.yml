@@ -12,12 +12,6 @@ jobs:
     strategy:
       matrix:
         target: [erlang, javascript]
-        include:
-          - target: erlang
-            otp-version: "27"
-          - target: javascript
-            otp-version: "27"
-            node-version: "20"
 
     name: Test (${{ matrix.target }})
 
@@ -27,14 +21,14 @@ jobs:
       - name: Setup BEAM
         uses: erlef/setup-beam@v1
         with:
-          otp-version: ${{ matrix.otp-version }}
-          gleam-version: "1.6"
+          version-file: .tool-versions
+          version-type: strict
 
       - name: Setup Node.js
         if: matrix.target == 'javascript'
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: "22"
 
       - name: Download dependencies
         run: gleam deps download
@@ -57,8 +51,8 @@ jobs:
       - name: Setup BEAM
         uses: erlef/setup-beam@v1
         with:
-          otp-version: "27"
-          gleam-version: "1.6"
+          version-file: .tool-versions
+          version-type: strict
 
       - name: Download dependencies
         run: gleam deps download
