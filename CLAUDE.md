@@ -52,30 +52,47 @@ internal_modules = ["gleam_log/internal", "gleam_log/internal/*"]
 
 ## Development Commands
 
+This project uses [just](https://just.systems/) as a task runner. Run `just` to see all available commands.
+
+### Common Tasks
+
 ```bash
-# Build for default target (Erlang)
-gleam build
+just              # List all available commands
+just build        # Build for Erlang target (alias: b)
+just build-js     # Build for JavaScript target
+just build-all    # Build for both targets
+just test         # Run tests on both targets (alias: t)
+just test-erlang  # Run tests on Erlang only
+just test-js      # Run tests on JavaScript only
+just format       # Format source code (alias: f)
+just format-check # Check formatting
+just check        # Run format-check + tests on both targets (alias: c)
+just check-quick  # Run format-check + Erlang tests only
+just docs         # Generate documentation (alias: d)
+just deps         # Download dependencies
+just clean        # Remove build artifacts
+```
 
-# Build for JavaScript
-gleam build --target javascript
+### Watch Mode (requires watchexec)
 
-# Run tests on Erlang
-gleam test
+```bash
+just watch        # Watch and rebuild on changes
+just watch-test   # Watch and run tests on changes
+```
 
-# Run tests on JavaScript
-gleam test --target javascript
+### Direct Gleam Commands
 
-# Check formatting
-gleam format --check src test
+You can also use gleam commands directly:
 
-# Format code
-gleam format src test
-
-# Generate documentation
-gleam docs build
-
-# Download dependencies
-gleam deps download
+```bash
+gleam build                       # Build for Erlang
+gleam build --target javascript   # Build for JavaScript
+gleam test                        # Run tests on Erlang
+gleam test --target javascript    # Run tests on JavaScript
+gleam format src test             # Format code
+gleam format --check src test     # Check formatting
+gleam docs build                  # Generate documentation
+gleam deps download               # Download dependencies
 ```
 
 ## Architecture Patterns
@@ -135,8 +152,9 @@ Implementations:
 ### Running Tests
 Tests must pass on both targets:
 ```bash
-gleam test                        # Erlang
-gleam test --target javascript    # JavaScript
+just test          # Run on both targets
+just test-erlang   # Erlang only
+just test-js       # JavaScript only
 ```
 
 ### Test Structure
@@ -167,10 +185,10 @@ Tests are organized by module:
 
 ## CI/CD
 
-GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR to main:
-- Tests on both Erlang and JavaScript targets
-- Format checking (`gleam format --check`)
-- Documentation build
+GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR to main using `just` tasks:
+- Tests on both Erlang and JavaScript targets (`just test-erlang`, `just test-js`)
+- Format checking (`just format-check`)
+- Documentation build (`just docs`)
 
 ## Conventions
 
@@ -216,6 +234,7 @@ When changing platform-specific code:
 Specified in `.tool-versions`:
 - Erlang: 27.2.1
 - Gleam: 1.14.0
+- just: 1.38.0
 
 ## Known Limitations
 
