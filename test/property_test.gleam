@@ -17,8 +17,8 @@ import qcheck
 
 /// Generator for all possible log levels
 fn level_generator() -> qcheck.Generator(level.Level) {
-  qcheck.from_generators([
-    qcheck.return(Trace),
+  // from_generators takes first generator + list of remaining generators
+  qcheck.from_generators(qcheck.return(Trace), [
     qcheck.return(Debug),
     qcheck.return(Info),
     qcheck.return(Warn),
@@ -163,22 +163,22 @@ pub fn level_compare_antisymmetric_test() {
 fn metadata_generator() -> qcheck.Generator(record.Metadata) {
   let pair_gen =
     qcheck.tuple2(
-      qcheck.string_non_empty_from(qcheck.codepoint_alphanumeric()),
-      qcheck.string_from(qcheck.codepoint_printable_ascii()),
+      qcheck.non_empty_string_from(qcheck.alphanumeric_ascii_codepoint()),
+      qcheck.string_from(qcheck.printable_ascii_codepoint()),
     )
 
-  qcheck.list_generic(pair_gen, qcheck.int_uniform_inclusive(0, 5))
+  qcheck.generic_list(pair_gen, qcheck.bounded_int(0, 5))
 }
 
 /// Generator for log records
 fn log_record_generator() -> qcheck.Generator(record.LogRecord) {
-  use timestamp <- qcheck.map(qcheck.string_non_empty())
-  use lvl <- qcheck.bind(level_generator())
-  use logger_name <- qcheck.bind(
-    qcheck.string_non_empty_from(qcheck.codepoint_alphanumeric()),
+  use timestamp, lvl, logger_name, message, metadata <- qcheck.map5(
+    qcheck.non_empty_string(),
+    level_generator(),
+    qcheck.non_empty_string_from(qcheck.alphanumeric_ascii_codepoint()),
+    qcheck.string(),
+    metadata_generator(),
   )
-  use message <- qcheck.bind(qcheck.string())
-  use metadata <- qcheck.bind(metadata_generator())
 
   record.new(
     timestamp: timestamp,
@@ -192,9 +192,9 @@ fn log_record_generator() -> qcheck.Generator(record.LogRecord) {
 /// Property: get_metadata returns first matching key
 pub fn record_get_metadata_first_match_test() {
   use #(key, value1, value2) <- qcheck.given(qcheck.tuple3(
-    qcheck.string_non_empty_from(qcheck.codepoint_alphanumeric()),
-    qcheck.string_from(qcheck.codepoint_printable_ascii()),
-    qcheck.string_from(qcheck.codepoint_printable_ascii()),
+    qcheck.non_empty_string_from(qcheck.alphanumeric_ascii_codepoint()),
+    qcheck.string_from(qcheck.printable_ascii_codepoint()),
+    qcheck.string_from(qcheck.printable_ascii_codepoint()),
   ))
 
   let r =
@@ -223,8 +223,8 @@ pub fn record_get_metadata_missing_test() {
 /// Property: with_metadata prepends new metadata
 pub fn record_with_metadata_prepends_test() {
   use #(key, value) <- qcheck.given(qcheck.tuple2(
-    qcheck.string_non_empty_from(qcheck.codepoint_alphanumeric()),
-    qcheck.string_from(qcheck.codepoint_printable_ascii()),
+    qcheck.non_empty_string_from(qcheck.alphanumeric_ascii_codepoint()),
+    qcheck.string_from(qcheck.printable_ascii_codepoint()),
   ))
 
   let r =
@@ -242,11 +242,11 @@ pub fn record_with_metadata_prepends_test() {
 
 /// Property: new_simple creates record with empty metadata
 pub fn record_new_simple_empty_metadata_test() {
-  use #(timestamp, message) <- qcheck.given(qcheck.tuple2(
-    qcheck.string_non_empty(),
+  use #(timestamp, message, lvl) <- qcheck.given(qcheck.tuple3(
+    qcheck.non_empty_string(),
     qcheck.string(),
+    level_generator(),
   ))
-  use lvl <- qcheck.bind(level_generator())
 
   let r =
     record.new_simple(
