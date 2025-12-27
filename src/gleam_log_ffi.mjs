@@ -1,5 +1,8 @@
 // JavaScript FFI for gleam_log
 
+// Import Gleam's Result constructors from the prelude
+import { Ok, Error } from "./gleam.mjs";
+
 /**
  * Get current timestamp in ISO 8601 format with milliseconds.
  * @returns {string} Timestamp like "2024-12-26T10:30:45.123Z"
@@ -63,6 +66,42 @@ export function is_stdout_tty() {
   }
   // Browser - assume no TTY
   return false;
+}
+
+// ============================================================================
+// Global Configuration Storage
+// ============================================================================
+
+// Module-level storage for global config
+// JavaScript is single-threaded so no synchronization needed
+let globalConfig = undefined;
+
+/**
+ * Get the global configuration.
+ * @returns {Ok | Error} Gleam Result type
+ */
+export function get_global_config() {
+  if (globalConfig !== undefined) {
+    return new Ok(globalConfig);
+  }
+  return new Error(undefined);
+}
+
+/**
+ * Set the global configuration.
+ * @param {any} config - The configuration object to store
+ */
+export function set_global_config(config) {
+  globalConfig = config;
+  return undefined;
+}
+
+/**
+ * Clear the global configuration (reset to unset state).
+ */
+export function clear_global_config() {
+  globalConfig = undefined;
+  return undefined;
 }
 
 // ============================================================================

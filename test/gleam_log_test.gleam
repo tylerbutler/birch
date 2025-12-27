@@ -4,6 +4,7 @@ import gleam/string
 import gleam_log
 import gleam_log/formatter
 import gleam_log/handler
+import gleam_log/handler/async
 import gleam_log/handler/json
 import gleam_log/level
 import gleam_log/logger
@@ -385,10 +386,128 @@ pub fn main_api_level_to_string_test() {
 }
 
 // ============================================================================
-// Async Handler Tests
+// Global Configuration Tests
 // ============================================================================
 
-import gleam_log/handler/async
+pub fn config_default_test() {
+  // Get default config before any configuration
+  let config = gleam_log.get_config()
+
+  // Default level should be Info
+  config.level
+  |> should.equal(level.Info)
+
+  // Default should have one handler (console)
+  config.handlers
+  |> list.length
+  |> should.equal(1)
+}
+
+pub fn config_set_level_test() {
+  // Configure with Debug level
+  gleam_log.configure([gleam_log.config_level(level.Debug)])
+
+  let config = gleam_log.get_config()
+  config.level
+  |> should.equal(level.Debug)
+
+  // Reset to default for other tests
+  gleam_log.configure([gleam_log.config_level(level.Info)])
+}
+
+pub fn config_set_handlers_test() {
+  // Configure with custom handlers
+  let null_handler = handler.null()
+  gleam_log.configure([gleam_log.config_handlers([null_handler])])
+
+  let config = gleam_log.get_config()
+  config.handlers
+  |> list.length
+  |> should.equal(1)
+
+  // The handler should be the null handler
+  config.handlers
+  |> list.first
+  |> should.be_ok
+  |> handler.name
+  |> should.equal("null")
+
+  // Reset to default
+  gleam_log.reset_config()
+}
+
+pub fn config_set_context_test() {
+  // Configure with default context
+  gleam_log.configure([
+    gleam_log.config_context([#("app", "test"), #("env", "testing")]),
+  ])
+
+  let config = gleam_log.get_config()
+  config.context
+  |> should.equal([#("app", "test"), #("env", "testing")])
+
+  // Reset to default
+  gleam_log.reset_config()
+}
+
+pub fn config_multiple_options_test() {
+  // Configure with multiple options at once
+  let null_handler = handler.null()
+  gleam_log.configure([
+    gleam_log.config_level(level.Warn),
+    gleam_log.config_handlers([null_handler]),
+    gleam_log.config_context([#("service", "api")]),
+  ])
+
+  let config = gleam_log.get_config()
+  config.level
+  |> should.equal(level.Warn)
+  config.handlers
+  |> list.length
+  |> should.equal(1)
+  config.context
+  |> should.equal([#("service", "api")])
+
+  // Reset to default
+  gleam_log.reset_config()
+}
+
+pub fn config_reset_test() {
+  // Configure with custom settings
+  gleam_log.configure([gleam_log.config_level(level.Fatal)])
+
+  // Verify it was set
+  let config1 = gleam_log.get_config()
+  config1.level
+  |> should.equal(level.Fatal)
+
+  // Reset to default
+  gleam_log.reset_config()
+
+  // Verify it was reset
+  let config2 = gleam_log.get_config()
+  config2.level
+  |> should.equal(level.Info)
+}
+
+pub fn config_default_logger_uses_config_test() {
+  // Configure the global config with Debug level
+  gleam_log.configure([gleam_log.config_level(level.Debug)])
+
+  // Create a new default logger - it should inherit the global level
+  let lgr = gleam_log.new("test.config")
+
+  // The logger should use the global configuration's level
+  logger.get_level(lgr)
+  |> should.equal(level.Debug)
+
+  // Reset to default
+  gleam_log.reset_config()
+}
+
+// ============================================================================
+// Async Handler Tests
+// ============================================================================
 
 pub fn async_config_default_test() {
   let config = async.default_config()
