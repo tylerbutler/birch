@@ -113,3 +113,19 @@ pub fn set_scope_context(context: Metadata) -> Nil
 @external(erlang, "gleam_log_ffi", "is_scope_context_available")
 @external(javascript, "../../gleam_log_ffi.mjs", "is_scope_context_available")
 pub fn is_scope_context_available() -> Bool
+
+// ============================================================================
+// Sampling FFI
+// ============================================================================
+
+/// Generate a random float between 0.0 (inclusive) and 1.0 (exclusive).
+/// Used for probabilistic sampling.
+@external(erlang, "gleam_log_ffi", "random_float")
+@external(javascript, "../../gleam_log_ffi.mjs", "random_float")
+pub fn random_float() -> Float
+
+/// Get the current time in milliseconds since epoch.
+/// Used for token bucket rate limiting.
+@external(erlang, "gleam_log_ffi", "current_time_ms")
+@external(javascript, "../../gleam_log_ffi.mjs", "current_time_ms")
+pub fn current_time_ms() -> Int
