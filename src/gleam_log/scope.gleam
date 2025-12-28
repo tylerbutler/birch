@@ -26,8 +26,8 @@
 //// - **JavaScript (Node.js):** Uses AsyncLocalStorage for context propagation.
 ////   This works across async operations within the same logical execution chain.
 ////
-//// - **JavaScript (Other):** Falls back to returning empty context.
-////   Use `is_available()` to check if scoped context is supported.
+//// - **JavaScript (Other):** Falls back to stack-based context storage.
+////   Use `is_available()` to check if async context propagation is supported.
 
 import gleam/list
 import gleam_log/internal/platform
@@ -52,7 +52,9 @@ import gleam_log/record.{type Metadata}
 ///   log.info("done")  // Only request_id=123
 /// })
 /// ```
+@external(javascript, "../gleam_log_ffi.mjs", "run_with_scope")
 pub fn with_scope(context: Metadata, work: fn() -> a) -> a {
+  // Erlang implementation: use process dictionary
   // Get current scope context (may be empty or from outer scope)
   let current_context = platform.get_scope_context()
 

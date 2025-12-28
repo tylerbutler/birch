@@ -103,9 +103,16 @@ pub fn get_scope_context() -> Metadata
 
 /// Set the current scope context.
 /// Replaces the entire scope context with the given metadata.
+/// Note: On JavaScript with AsyncLocalStorage, this is only used for fallback.
 @external(erlang, "gleam_log_ffi", "set_scope_context")
 @external(javascript, "../../gleam_log_ffi.mjs", "set_scope_context")
 pub fn set_scope_context(context: Metadata) -> Nil
+
+/// Run a function with scoped context.
+/// On JavaScript, this uses AsyncLocalStorage.run() for proper scoping.
+/// On Erlang, this is implemented in Gleam using get/set.
+@external(javascript, "../../gleam_log_ffi.mjs", "run_with_scope")
+pub fn run_with_scope_js(context: Metadata, callback: fn() -> a) -> a
 
 /// Check if scoped context is available on the current platform.
 /// Returns True on Erlang (process dictionary) and Node.js (AsyncLocalStorage).

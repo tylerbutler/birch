@@ -325,7 +325,8 @@ let scopeContextState = {
   initialized: false,
   asyncLocalStorage: null,
   asyncLocalStorageAvailable: false,
-  fallbackContext: [],
+  // Stack-based fallback context for non-Node.js environments
+  fallbackContextStack: [],
 };
 
 /**
@@ -371,12 +372,13 @@ export function get_scope_context() {
     const store = scopeContextState.asyncLocalStorage.getStore();
     return store !== undefined ? store : [];
   }
-  // Fallback for non-Node.js environments
-  return scopeContextState.fallbackContext;
+  // Fallback: return top of stack or empty array
+  const stack = scopeContextState.fallbackContextStack;
+  return stack.length > 0 ? stack[stack.length - 1] : [];
 }
 
 /**
- * Set the scope context.
+ * Set the scope context (used internally for fallback only).
  * @param {Array} context - List of [key, value] tuples
  */
 export function set_scope_context(context) {
@@ -386,14 +388,51 @@ export function set_scope_context(context) {
     scopeContextState.asyncLocalStorageAvailable &&
     scopeContextState.asyncLocalStorage
   ) {
-    // For AsyncLocalStorage, we use enterWith for synchronous scope setting
-    // This sets the context for the current async execution chain
-    scopeContextState.asyncLocalStorage.enterWith(context);
-  } else {
-    // Fallback for non-Node.js environments
-    scopeContextState.fallbackContext = context;
+    // For AsyncLocalStorage, we need to use run() for proper scoping
+    // This function is only used for fallback now
+    // enterWith doesn't properly scope, so we avoid it
   }
+  // Fallback: replace the entire stack with just this context
+  // (This is used when restoring - we want to reset to previous state)
+  scopeContextState.fallbackContextStack = context.length > 0 ? [context] : [];
   return undefined;
+}
+
+/**
+ * Run a function with scoped context.
+ * This properly handles AsyncLocalStorage.run() for Node.js.
+ * @param {Array} context - Context to add to the scope
+ * @param {function} callback - Function to run with the context
+ * @returns {*} The result of the callback
+ */
+export function run_with_scope(context, callback) {
+  initScopeContext();
+
+  if (
+    scopeContextState.asyncLocalStorageAvailable &&
+    scopeContextState.asyncLocalStorage
+  ) {
+    // Get current context and merge
+    const currentContext = scopeContextState.asyncLocalStorage.getStore() || [];
+    const mergedContext = [...context, ...currentContext];
+
+    // Use run() for proper scoping - context is automatically restored after
+    return scopeContextState.asyncLocalStorage.run(mergedContext, callback);
+  }
+
+  // Fallback for non-Node.js environments: use stack-based approach
+  const stack = scopeContextState.fallbackContextStack;
+  const currentContext = stack.length > 0 ? stack[stack.length - 1] : [];
+  const mergedContext = [...context, ...currentContext];
+
+  // Push new context onto stack
+  stack.push(mergedContext);
+  try {
+    return callback();
+  } finally {
+    // Pop context from stack
+    stack.pop();
+  }
 }
 
 /**
