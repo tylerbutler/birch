@@ -1,7 +1,7 @@
 // JavaScript FFI for gleam_log
 
-// Import Gleam's Result constructors from the prelude
-import { Ok, Error } from "./gleam.mjs";
+// Import Gleam's Result constructors and List helpers from the prelude
+import { Ok, Error, toList } from "./gleam.mjs";
 
 /**
  * Get current timestamp in ISO 8601 format with milliseconds.
@@ -314,4 +314,185 @@ export function flush_async_writer(name) {
   if (writer && writer instanceof AsyncWriter) {
     writer.processQueueSync();
   }
+}
+
+// ============================================================================
+// Scoped Context Implementation
+// ============================================================================
+
+// Scope context state
+let scopeContextState = {
+  initialized: false,
+  asyncLocalStorage: null,
+  asyncLocalStorageAvailable: false,
+  // Stack-based fallback context for non-Node.js environments
+  fallbackContextStack: [],
+};
+
+/**
+ * Initialize the scope context system (lazy initialization).
+ * This is called on first use to set up AsyncLocalStorage if available.
+ */
+function initScopeContext() {
+  if (scopeContextState.initialized) {
+    return;
+  }
+  scopeContextState.initialized = true;
+
+  // Try to use AsyncLocalStorage in Node.js
+  try {
+    if (
+      typeof process !== "undefined" &&
+      process.versions &&
+      process.versions.node
+    ) {
+      // Node.js: use require for synchronous loading
+      // eslint-disable-next-line no-undef
+      const async_hooks = require("node:async_hooks");
+      scopeContextState.asyncLocalStorage = new async_hooks.AsyncLocalStorage();
+      scopeContextState.asyncLocalStorageAvailable = true;
+    }
+  } catch (e) {
+    // AsyncLocalStorage not available
+    scopeContextState.asyncLocalStorageAvailable = false;
+  }
+}
+
+/**
+ * Convert a Gleam list to a JavaScript array.
+ * Gleam lists are linked lists with head/tail structure.
+ * @param {*} gleamList - A Gleam list
+ * @returns {Array} JavaScript array
+ */
+function gleamListToArray(gleamList) {
+  const result = [];
+  let current = gleamList;
+  while (current && current.head !== undefined) {
+    result.push(current.head);
+    current = current.tail;
+  }
+  return result;
+}
+
+/**
+ * Get the current scope context.
+ * @returns {List} Gleam List of [key, value] tuples (Gleam Metadata format)
+ */
+export function get_scope_context() {
+  initScopeContext();
+
+  if (
+    scopeContextState.asyncLocalStorageAvailable &&
+    scopeContextState.asyncLocalStorage
+  ) {
+    const store = scopeContextState.asyncLocalStorage.getStore();
+    return store !== undefined ? store : toList([]);
+  }
+  // Fallback: return top of stack or empty list
+  const stack = scopeContextState.fallbackContextStack;
+  return stack.length > 0 ? stack[stack.length - 1] : toList([]);
+}
+
+/**
+ * Set the scope context (used internally for fallback only).
+ * @param {List} context - Gleam List of [key, value] tuples
+ */
+export function set_scope_context(context) {
+  initScopeContext();
+
+  if (
+    scopeContextState.asyncLocalStorageAvailable &&
+    scopeContextState.asyncLocalStorage
+  ) {
+    // For AsyncLocalStorage, we need to use run() for proper scoping
+    // This function is only used for fallback now
+    // enterWith doesn't properly scope, so we avoid it
+  }
+  // Fallback: replace the entire stack with just this context
+  // (This is used when restoring - we want to reset to previous state)
+  // Check if context is empty by checking if it has a head
+  const isEmpty = !context || context.head === undefined;
+  scopeContextState.fallbackContextStack = isEmpty ? [] : [context];
+  return undefined;
+}
+
+/**
+ * Merge two Gleam lists by converting to JS arrays and back.
+ * New context items are prepended (higher priority).
+ * @param {List} newContext - New context to add (Gleam list)
+ * @param {List} currentContext - Current context (Gleam list)
+ * @returns {List} Merged Gleam list
+ */
+function mergeGleamLists(newContext, currentContext) {
+  const newArray = gleamListToArray(newContext);
+  const currentArray = gleamListToArray(currentContext);
+  return toList([...newArray, ...currentArray]);
+}
+
+/**
+ * Run a function with scoped context.
+ * This properly handles AsyncLocalStorage.run() for Node.js.
+ * @param {List} context - Gleam List of context to add to the scope
+ * @param {function} callback - Function to run with the context
+ * @returns {*} The result of the callback
+ */
+export function run_with_scope(context, callback) {
+  initScopeContext();
+
+  if (
+    scopeContextState.asyncLocalStorageAvailable &&
+    scopeContextState.asyncLocalStorage
+  ) {
+    // Get current context and merge
+    const currentContext =
+      scopeContextState.asyncLocalStorage.getStore() || toList([]);
+    const mergedContext = mergeGleamLists(context, currentContext);
+
+    // Use run() for proper scoping - context is automatically restored after
+    return scopeContextState.asyncLocalStorage.run(mergedContext, callback);
+  }
+
+  // Fallback for non-Node.js environments: use stack-based approach
+  const stack = scopeContextState.fallbackContextStack;
+  const currentContext = stack.length > 0 ? stack[stack.length - 1] : toList([]);
+  const mergedContext = mergeGleamLists(context, currentContext);
+
+  // Push new context onto stack
+  stack.push(mergedContext);
+  try {
+    return callback();
+  } finally {
+    // Pop context from stack
+    stack.pop();
+  }
+}
+
+/**
+ * Check if scoped context is available.
+ * @returns {boolean} True on Node.js (AsyncLocalStorage), False otherwise
+ */
+export function is_scope_context_available() {
+  initScopeContext();
+  return scopeContextState.asyncLocalStorageAvailable;
+}
+
+// ============================================================================
+// Sampling FFI
+// ============================================================================
+
+/**
+ * Generate a random float between 0.0 (inclusive) and 1.0 (exclusive).
+ * @returns {number}
+ */
+export function random_float() {
+  // TODO: use a better random
+  return Math.random();
+}
+
+/**
+ * Get the current time in milliseconds since epoch.
+ * @returns {number}
+ */
+export function current_time_ms() {
+  return Date.now();
 }
