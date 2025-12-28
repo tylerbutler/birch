@@ -711,8 +711,7 @@ pub fn scope_with_scope_returns_work_result_test() {
 
 pub fn scope_with_scope_string_result_test() {
   // with_scope should work with any return type
-  let result =
-    gleam_log.with_scope([#("trace_id", "abc")], fn() { "hello" })
+  let result = gleam_log.with_scope([#("trace_id", "abc")], fn() { "hello" })
 
   result
   |> should.equal("hello")
@@ -850,7 +849,6 @@ pub fn scope_context_included_in_log_records_test() {
     ctx
     |> list.key_find("request_id")
     |> should.equal(Ok("test-123"))
-
     // The log functions will include this context
     // (actual verification would require a capturing handler)
   })
