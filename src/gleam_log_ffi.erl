@@ -2,6 +2,7 @@
 -export([timestamp_iso8601/0, write_stdout/1, write_stderr/1, is_stdout_tty/0,
          get_global_config/0, set_global_config/1, clear_global_config/0,
          start_async_writer/5, async_send/2, flush_async_writers/0, flush_async_writer/1,
+         get_scope_context/0, set_scope_context/1, is_scope_context_available/0,
          random_float/0, current_time_ms/0]).
 
 %% Get current timestamp in ISO 8601 format with milliseconds
@@ -208,6 +209,30 @@ get_writer(Name) ->
         {Name, Pid} -> {ok, Pid};
         false -> error
     end.
+
+%% ============================================================================
+%% Scoped Context Implementation
+%% ============================================================================
+
+%% Key for scope context in process dictionary
+-define(SCOPE_CONTEXT_KEY, gleam_log_scope_context).
+
+%% Get the current scope context from the process dictionary.
+%% Returns a list of {Key, Value} tuples (Gleam Metadata format).
+get_scope_context() ->
+    case erlang:get(?SCOPE_CONTEXT_KEY) of
+        undefined -> [];
+        Context -> Context
+    end.
+
+%% Set the scope context in the process dictionary.
+set_scope_context(Context) ->
+    erlang:put(?SCOPE_CONTEXT_KEY, Context),
+    nil.
+
+%% Scoped context is always available on Erlang (uses process dictionary).
+is_scope_context_available() ->
+    true.
 
 %% ============================================================================
 %% Sampling FFI

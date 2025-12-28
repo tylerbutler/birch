@@ -40,6 +40,7 @@ import gleam_log/level.{type Level}
 import gleam_log/logger.{type Logger}
 import gleam_log/record.{type Metadata}
 import gleam_log/sampling
+import gleam_log/scope
 
 // Re-export types for convenience
 pub type LogLevel =
@@ -390,6 +391,64 @@ pub fn info_lazy(message_fn: fn() -> String) -> Nil {
     False -> Nil
     True -> logger.info_lazy(default_logger(), message_fn, [])
   }
+}
+
+// ============================================================================
+// Scoped Context
+// ============================================================================
+
+/// Execute a function with the given context applied.
+///
+/// All logs made within the scope (directly or through nested calls)
+/// will include the scoped context metadata.
+///
+/// Scopes can be nested, with inner scopes adding to (and potentially
+/// shadowing) the outer scope's context.
+///
+/// ## Example
+///
+/// ```gleam
+/// import gleam_log as log
+///
+/// pub fn handle_request(request_id: String) {
+///   log.with_scope([#("request_id", request_id)], fn() {
+///     // All logs in this block include request_id
+///     log.info("processing request")
+///     do_work()
+///     log.info("request complete")
+///   })
+/// }
+/// ```
+///
+/// ## Platform Support
+///
+/// - **Erlang:** Uses the process dictionary. Each process has its own scope.
+/// - **JavaScript (Node.js):** Uses AsyncLocalStorage for async context propagation.
+/// - **JavaScript (Other):** Falls back to simple storage; may not propagate to async operations.
+pub fn with_scope(context: Metadata, work: fn() -> a) -> a {
+  scope.with_scope(context, work)
+}
+
+/// Get the current scope context.
+///
+/// Returns the metadata from all active scopes, with inner scope values
+/// taking precedence (appearing first in the list).
+///
+/// Returns an empty list if called outside of any scope.
+pub fn get_scope_context() -> Metadata {
+  scope.get_context()
+}
+
+/// Check if scoped context is available on the current platform.
+///
+/// - On Erlang: Always returns `True` (uses process dictionary)
+/// - On Node.js: Returns `True` (uses AsyncLocalStorage)
+/// - On other JavaScript runtimes: Returns `False`
+///
+/// When not available, `with_scope` still works but context may not
+/// propagate to nested async operations.
+pub fn is_scoped_context_available() -> Bool {
+  scope.is_available()
 }
 
 // ============================================================================

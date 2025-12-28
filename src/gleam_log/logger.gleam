@@ -8,7 +8,7 @@ import gleam_log/handler.{type Handler}
 import gleam_log/handler/console
 import gleam_log/internal/platform
 import gleam_log/level.{type Level}
-import gleam_log/record.{type LogRecord, type Metadata}
+import gleam_log/record.{type Metadata}
 
 /// A logger instance with configuration and context.
 pub opaque type Logger {
@@ -88,6 +88,11 @@ pub fn should_log(logger: Logger, log_level: Level) -> Bool {
 }
 
 /// Log a message at the specified level.
+///
+/// Metadata is merged with the following priority (first wins):
+/// 1. Call metadata (passed to this function)
+/// 2. Scope context (from with_scope)
+/// 3. Logger context (from with_context)
 pub fn log(
   logger: Logger,
   log_level: Level,
@@ -97,13 +102,17 @@ pub fn log(
   case should_log(logger, log_level) {
     False -> Nil
     True -> {
+      // Merge metadata: call > scope > logger (first in list = highest priority)
+      let scope_context = platform.get_scope_context()
+      let merged_metadata =
+        list.append(metadata, list.append(scope_context, logger.context))
       let record =
         record.new(
           timestamp: platform.timestamp_iso8601(),
           level: log_level,
           logger_name: logger.name,
           message: message,
-          metadata: list.append(metadata, logger.context),
+          metadata: merged_metadata,
         )
       handler.handle_all(logger.handlers, record)
     }
@@ -112,6 +121,11 @@ pub fn log(
 
 /// Log a message using lazy evaluation.
 /// The message function is only called if the level is enabled.
+///
+/// Metadata is merged with the following priority (first wins):
+/// 1. Call metadata (passed to this function)
+/// 2. Scope context (from with_scope)
+/// 3. Logger context (from with_context)
 pub fn log_lazy(
   logger: Logger,
   log_level: Level,
@@ -121,13 +135,17 @@ pub fn log_lazy(
   case should_log(logger, log_level) {
     False -> Nil
     True -> {
+      // Merge metadata: call > scope > logger (first in list = highest priority)
+      let scope_context = platform.get_scope_context()
+      let merged_metadata =
+        list.append(metadata, list.append(scope_context, logger.context))
       let record =
         record.new(
           timestamp: platform.timestamp_iso8601(),
           level: log_level,
           logger_name: logger.name,
           message: message_fn(),
-          metadata: list.append(metadata, logger.context),
+          metadata: merged_metadata,
         )
       handler.handle_all(logger.handlers, record)
     }
