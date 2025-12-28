@@ -590,3 +590,107 @@ pub fn async_flush_waits_for_pending_test() {
   // Flush should complete without hanging
   async.flush()
 }
+
+// ============================================================================
+// Runtime Level Change Tests
+// ============================================================================
+
+pub fn set_level_changes_global_level_test() {
+  // Reset to known state
+  gleam_log.reset_config()
+
+  // Default level should be Info
+  gleam_log.get_level()
+  |> should.equal(level.Info)
+
+  // Set to Debug level
+  gleam_log.set_level(level.Debug)
+
+  // Level should now be Debug
+  gleam_log.get_level()
+  |> should.equal(level.Debug)
+
+  // Reset for other tests
+  gleam_log.reset_config()
+}
+
+pub fn set_level_affects_new_loggers_test() {
+  // Reset to known state
+  gleam_log.reset_config()
+
+  // Set global level to Warn
+  gleam_log.set_level(level.Warn)
+
+  // New loggers should inherit the global level
+  let lgr = gleam_log.new("test.runtime_level")
+  logger.get_level(lgr)
+  |> should.equal(level.Warn)
+
+  // Reset for other tests
+  gleam_log.reset_config()
+}
+
+pub fn set_level_takes_effect_immediately_test() {
+  // Reset to known state
+  gleam_log.reset_config()
+
+  // Verify starting at Info
+  let config1 = gleam_log.get_config()
+  config1.level
+  |> should.equal(level.Info)
+
+  // Change to Trace
+  gleam_log.set_level(level.Trace)
+
+  // Should take effect immediately
+  let config2 = gleam_log.get_config()
+  config2.level
+  |> should.equal(level.Trace)
+
+  // Change again to Fatal
+  gleam_log.set_level(level.Fatal)
+
+  // Should take effect immediately
+  let config3 = gleam_log.get_config()
+  config3.level
+  |> should.equal(level.Fatal)
+
+  // Reset for other tests
+  gleam_log.reset_config()
+}
+
+pub fn set_level_preserves_other_config_test() {
+  // Reset to known state
+  gleam_log.reset_config()
+
+  // Configure with custom handlers and context
+  let null_handler = handler.null()
+  gleam_log.configure([
+    gleam_log.config_handlers([null_handler]),
+    gleam_log.config_context([#("app", "test")]),
+  ])
+
+  // Set level (should preserve other settings)
+  gleam_log.set_level(level.Debug)
+
+  let config = gleam_log.get_config()
+  config.level
+  |> should.equal(level.Debug)
+
+  // Handlers and context should be preserved
+  config.handlers
+  |> list.length
+  |> should.equal(1)
+
+  config.handlers
+  |> list.first
+  |> should.be_ok
+  |> handler.name
+  |> should.equal("null")
+
+  config.context
+  |> should.equal([#("app", "test")])
+
+  // Reset for other tests
+  gleam_log.reset_config()
+}

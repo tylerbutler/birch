@@ -64,3 +64,17 @@ fn apply_option(config: GlobalConfig, option: ConfigOption) -> GlobalConfig {
     ContextOption(ctx) -> GlobalConfig(..config, context: ctx)
   }
 }
+
+// ============================================================================
+// Runtime Level Changes
+// ============================================================================
+
+/// Update only the log level in a GlobalConfig, preserving other settings.
+pub fn with_level(config: GlobalConfig, lvl: Level) -> GlobalConfig {
+  GlobalConfig(..config, level: lvl)
+}
+
+/// Get the log level from a GlobalConfig.
+pub fn get_level(config: GlobalConfig) -> Level {
+  config.level
+}

@@ -93,6 +93,39 @@ pub fn reset_config() -> Nil {
   platform.clear_global_config()
 }
 
+// ============================================================================
+// Runtime Level Changes
+// ============================================================================
+
+/// Set the global log level at runtime.
+///
+/// This changes the log level for all new log operations immediately.
+/// Other configuration (handlers, context) is preserved.
+///
+/// Example:
+/// ```gleam
+/// import gleam_log as log
+/// import gleam_log/level
+///
+/// // Enable debug logging for troubleshooting
+/// log.set_level(level.Debug)
+///
+/// // Later, reduce verbosity
+/// log.set_level(level.Warn)
+/// ```
+pub fn set_level(lvl: Level) -> Nil {
+  let current = get_config()
+  let new_config = config.with_level(current, lvl)
+  platform.set_global_config(new_config)
+}
+
+/// Get the current global log level.
+///
+/// Returns the configured log level, or Info if not configured.
+pub fn get_level() -> Level {
+  config.get_level(get_config())
+}
+
 /// Create a configuration option to set the global log level.
 pub fn config_level(lvl: Level) -> ConfigOption {
   config.level(lvl)
