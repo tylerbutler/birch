@@ -325,6 +325,7 @@ export function flush_async_writer(name) {
  * @returns {number}
  */
 export function random_float() {
+  // TODO: use a better random
   return Math.random();
 }
 
