@@ -9,7 +9,6 @@ import gleam/string
 import gleam_log/formatter
 import gleam_log/handler.{type Handler}
 import gleam_log/internal/platform
-import gleam_log/record.{type LogRecord}
 import simplifile
 
 /// Time interval for time-based rotation.
@@ -208,7 +207,7 @@ fn cleanup_old_rotated_files(base_path: String, max_files: Int) -> Nil {
         files
         |> list.filter(fn(f) {
           string.starts_with(f, filename <> ".")
-          && !string.ends_with(f, ".rotation")
+            && !string.ends_with(f, ".rotation")
         })
         |> list.sort(string.compare)
         |> list.reverse
