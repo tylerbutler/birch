@@ -4,3 +4,9 @@
 erl_crash.dump
 .gleam/
 /docs/api/
+
+# Node.js
+node_modules/
+
+# Coverage
+/coverage/

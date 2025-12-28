@@ -1,0 +1,29 @@
+{
+  "name": "gleam_log",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "gleam test --target javascript",
+    "test:coverage": "gleam build --target javascript && c8 node build/dev/javascript/gleam_log/gleam_log_test.mjs",
+    "coverage:report": "c8 report",
+    "coverage:lcov": "c8 report --reporter=lcov"
+  },
+  "c8": {
+    "include": [
+      "build/dev/javascript/gleam_log/**/*.mjs"
+    ],
+    "exclude": [
+      "build/dev/javascript/gleam_log/*_test.mjs"
+    ],
+    "reporter": [
+      "text",
+      "html",
+      "lcov"
+    ],
+    "report-dir": "coverage",
+    "all": false
+  },
+  "devDependencies": {
+    "c8": "^10.1.3"
+  }
+}
