@@ -713,7 +713,11 @@ pub fn handler_error_type_test() {
     )
 
   let err =
-    handler.HandlerError(handler_name: "test-handler", error: "write failed", record: r)
+    handler.HandlerError(
+      handler_name: "test-handler",
+      error: "write failed",
+      record: r,
+    )
 
   err.handler_name
   |> should.equal("test-handler")
@@ -757,7 +761,8 @@ pub fn handler_error_callback_invoked_on_failure_test() {
     |> should.equal("failing")
   }
 
-  let handler_with_cb = handler.with_error_callback(failing_handler, error_received)
+  let handler_with_cb =
+    handler.with_error_callback(failing_handler, error_received)
 
   let r =
     record.new_simple(
@@ -781,7 +786,8 @@ pub fn handler_error_callback_not_invoked_on_success_test() {
     panic as "error callback should not be called on success"
   }
 
-  let handler_with_cb = handler.with_error_callback(success_handler, error_callback)
+  let handler_with_cb =
+    handler.with_error_callback(success_handler, error_callback)
 
   let r =
     record.new_simple(
@@ -800,9 +806,7 @@ pub fn handler_error_includes_record_test() {
   let failing_handler =
     handler.new(
       name: "failing",
-      write: fn(_msg: String) {
-        panic as "simulated failure"
-      },
+      write: fn(_msg: String) { panic as "simulated failure" },
       format: fn(_) { "formatted" },
     )
 
@@ -815,7 +819,8 @@ pub fn handler_error_includes_record_test() {
     |> should.equal("test.logger")
   }
 
-  let handler_with_cb = handler.with_error_callback(failing_handler, error_callback)
+  let handler_with_cb =
+    handler.with_error_callback(failing_handler, error_callback)
 
   let r =
     record.new_simple(
