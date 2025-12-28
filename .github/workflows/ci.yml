@@ -32,6 +32,30 @@ jobs:
       - name: Run tests
         run: just ${{ matrix.target == 'javascript' && 'test-js' || 'test-erlang' }}
 
+  coverage:
+    runs-on: ubuntu-latest
+    name: Code Coverage (JavaScript)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup environment
+        uses: ./.github/actions/setup
+        with:
+          node: true
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage/lcov.info
+          fail_ci_if_error: false
+
   docs:
     runs-on: ubuntu-latest
     steps:

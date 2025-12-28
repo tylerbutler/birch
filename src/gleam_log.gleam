@@ -32,13 +32,15 @@
 //// ```
 
 import gleam/list
-import gleam_log/config.{type ConfigOption, type GlobalConfig}
+import gleam_log/config.{type ConfigOption, type GlobalConfig, type SampleConfig}
 import gleam_log/handler.{type Handler}
 import gleam_log/handler/console
 import gleam_log/internal/platform
 import gleam_log/level.{type Level}
 import gleam_log/logger.{type Logger}
 import gleam_log/record.{type Metadata}
+import gleam_log/sampling
+import gleam_log/scope
 
 // Re-export types for convenience
 pub type LogLevel =
@@ -141,12 +143,30 @@ pub fn config_context(ctx: Metadata) -> ConfigOption {
   config.context(ctx)
 }
 
-/// Default configuration: Info level, console handler, no context.
+/// Create a configuration option to set sampling.
+///
+/// Example:
+/// ```gleam
+/// import gleam_log as log
+/// import gleam_log/level
+/// import gleam_log/sampling
+///
+/// // Log only 10% of debug messages
+/// log.configure([
+///   log.config_sampling(sampling.config(level.Debug, 0.1)),
+/// ])
+/// ```
+pub fn config_sampling(sample_config: SampleConfig) -> ConfigOption {
+  config.sampling(sample_config)
+}
+
+/// Default configuration: Info level, console handler, no context, no sampling.
 pub fn default_config() -> GlobalConfig {
   config.GlobalConfig(
     level: level.Info,
     handlers: [console.handler()],
     context: [],
+    sampling: Error(Nil),
   )
 }
 
@@ -250,64 +270,106 @@ pub fn logger_fatal(lgr: Logger, message: String, metadata: Metadata) -> Nil {
 // Simple Module-Level Logging Functions
 // ============================================================================
 
+/// Check if a log should be sampled based on global config.
+fn should_sample(log_level: Level) -> Bool {
+  let cfg = get_config()
+  sampling.should_sample_with_config(cfg.sampling, log_level)
+}
+
 /// Log a trace message using the default logger.
 pub fn trace(message: String) -> Nil {
-  logger.trace(default_logger(), message, [])
+  case should_sample(level.Trace) {
+    False -> Nil
+    True -> logger.trace(default_logger(), message, [])
+  }
 }
 
 /// Log a trace message with metadata using the default logger.
 pub fn trace_m(message: String, metadata: Metadata) -> Nil {
-  logger.trace(default_logger(), message, metadata)
+  case should_sample(level.Trace) {
+    False -> Nil
+    True -> logger.trace(default_logger(), message, metadata)
+  }
 }
 
 /// Log a debug message using the default logger.
 pub fn debug(message: String) -> Nil {
-  logger.debug(default_logger(), message, [])
+  case should_sample(level.Debug) {
+    False -> Nil
+    True -> logger.debug(default_logger(), message, [])
+  }
 }
 
 /// Log a debug message with metadata using the default logger.
 pub fn debug_m(message: String, metadata: Metadata) -> Nil {
-  logger.debug(default_logger(), message, metadata)
+  case should_sample(level.Debug) {
+    False -> Nil
+    True -> logger.debug(default_logger(), message, metadata)
+  }
 }
 
 /// Log an info message using the default logger.
 pub fn info(message: String) -> Nil {
-  logger.info(default_logger(), message, [])
+  case should_sample(level.Info) {
+    False -> Nil
+    True -> logger.info(default_logger(), message, [])
+  }
 }
 
 /// Log an info message with metadata using the default logger.
 pub fn info_m(message: String, metadata: Metadata) -> Nil {
-  logger.info(default_logger(), message, metadata)
+  case should_sample(level.Info) {
+    False -> Nil
+    True -> logger.info(default_logger(), message, metadata)
+  }
 }
 
 /// Log a warning message using the default logger.
 pub fn warn(message: String) -> Nil {
-  logger.warn(default_logger(), message, [])
+  case should_sample(level.Warn) {
+    False -> Nil
+    True -> logger.warn(default_logger(), message, [])
+  }
 }
 
 /// Log a warning message with metadata using the default logger.
 pub fn warn_m(message: String, metadata: Metadata) -> Nil {
-  logger.warn(default_logger(), message, metadata)
+  case should_sample(level.Warn) {
+    False -> Nil
+    True -> logger.warn(default_logger(), message, metadata)
+  }
 }
 
 /// Log an error message using the default logger.
 pub fn error(message: String) -> Nil {
-  logger.error(default_logger(), message, [])
+  case should_sample(level.Err) {
+    False -> Nil
+    True -> logger.error(default_logger(), message, [])
+  }
 }
 
 /// Log an error message with metadata using the default logger.
 pub fn error_m(message: String, metadata: Metadata) -> Nil {
-  logger.error(default_logger(), message, metadata)
+  case should_sample(level.Err) {
+    False -> Nil
+    True -> logger.error(default_logger(), message, metadata)
+  }
 }
 
 /// Log a fatal message using the default logger.
 pub fn fatal(message: String) -> Nil {
-  logger.fatal(default_logger(), message, [])
+  case should_sample(level.Fatal) {
+    False -> Nil
+    True -> logger.fatal(default_logger(), message, [])
+  }
 }
 
 /// Log a fatal message with metadata using the default logger.
 pub fn fatal_m(message: String, metadata: Metadata) -> Nil {
-  logger.fatal(default_logger(), message, metadata)
+  case should_sample(level.Fatal) {
+    False -> Nil
+    True -> logger.fatal(default_logger(), message, metadata)
+  }
 }
 
 // ============================================================================
@@ -315,14 +377,78 @@ pub fn fatal_m(message: String, metadata: Metadata) -> Nil {
 // ============================================================================
 
 /// Log a debug message with lazy evaluation using the default logger.
-/// The message function is only called if debug level is enabled.
+/// The message function is only called if debug level is enabled and sampled.
 pub fn debug_lazy(message_fn: fn() -> String) -> Nil {
-  logger.debug_lazy(default_logger(), message_fn, [])
+  case should_sample(level.Debug) {
+    False -> Nil
+    True -> logger.debug_lazy(default_logger(), message_fn, [])
+  }
 }
 
 /// Log an info message with lazy evaluation using the default logger.
 pub fn info_lazy(message_fn: fn() -> String) -> Nil {
-  logger.info_lazy(default_logger(), message_fn, [])
+  case should_sample(level.Info) {
+    False -> Nil
+    True -> logger.info_lazy(default_logger(), message_fn, [])
+  }
+}
+
+// ============================================================================
+// Scoped Context
+// ============================================================================
+
+/// Execute a function with the given context applied.
+///
+/// All logs made within the scope (directly or through nested calls)
+/// will include the scoped context metadata.
+///
+/// Scopes can be nested, with inner scopes adding to (and potentially
+/// shadowing) the outer scope's context.
+///
+/// ## Example
+///
+/// ```gleam
+/// import gleam_log as log
+///
+/// pub fn handle_request(request_id: String) {
+///   log.with_scope([#("request_id", request_id)], fn() {
+///     // All logs in this block include request_id
+///     log.info("processing request")
+///     do_work()
+///     log.info("request complete")
+///   })
+/// }
+/// ```
+///
+/// ## Platform Support
+///
+/// - **Erlang:** Uses the process dictionary. Each process has its own scope.
+/// - **JavaScript (Node.js):** Uses AsyncLocalStorage for async context propagation.
+/// - **JavaScript (Other):** Falls back to simple storage; may not propagate to async operations.
+pub fn with_scope(context: Metadata, work: fn() -> a) -> a {
+  scope.with_scope(context, work)
+}
+
+/// Get the current scope context.
+///
+/// Returns the metadata from all active scopes, with inner scope values
+/// taking precedence (appearing first in the list).
+///
+/// Returns an empty list if called outside of any scope.
+pub fn get_scope_context() -> Metadata {
+  scope.get_context()
+}
+
+/// Check if scoped context is available on the current platform.
+///
+/// - On Erlang: Always returns `True` (uses process dictionary)
+/// - On Node.js: Returns `True` (uses AsyncLocalStorage)
+/// - On other JavaScript runtimes: Returns `False`
+///
+/// When not available, `with_scope` still works but context may not
+/// propagate to nested async operations.
+pub fn is_scoped_context_available() -> Bool {
+  scope.is_available()
 }
 
 // ============================================================================
