@@ -67,3 +67,15 @@ watch:
 # Watch and run tests on changes (requires watchexec)
 watch-test:
     watchexec -e gleam -r -- gleam test
+
+# Run JavaScript tests with code coverage (requires npm install)
+coverage:
+    npm run test:coverage
+
+# Generate coverage report (after running coverage)
+coverage-report:
+    npm run coverage:report
+
+# Generate LCOV coverage report for CI integration
+coverage-lcov:
+    npm run coverage:lcov
