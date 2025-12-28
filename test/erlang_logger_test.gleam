@@ -111,7 +111,8 @@ pub fn install_logger_handler_test() {
     }
     False -> {
       // On JavaScript, should return an error (feature not available)
-      should.be_error(result)
+      let _ = should.be_error(result)
+      Nil
     }
   }
 }
@@ -128,11 +129,14 @@ pub fn install_and_uninstall_logger_handler_test() {
     }
     False -> {
       // On JavaScript, both should return errors
-      erlang_logger.install_logger_handler()
-      |> should.be_error
+      let _ =
+        erlang_logger.install_logger_handler()
+        |> should.be_error
 
-      erlang_logger.uninstall_logger_handler()
-      |> should.be_error
+      let _ =
+        erlang_logger.uninstall_logger_handler()
+        |> should.be_error
+      Nil
     }
   }
 }
@@ -152,8 +156,10 @@ pub fn install_logger_handler_with_custom_id_test() {
     }
     False -> {
       // On JavaScript, should return error
-      erlang_logger.install_logger_handler_with_id("gleam_log_custom_test")
-      |> should.be_error
+      let _ =
+        erlang_logger.install_logger_handler_with_id("gleam_log_custom_test")
+        |> should.be_error
+      Nil
     }
   }
 }
@@ -166,7 +172,7 @@ pub fn install_logger_handler_twice_fails_test() {
       should.be_ok(result1)
 
       let result2 = erlang_logger.install_logger_handler()
-      should.be_error(result2)
+      let _ = should.be_error(result2)
 
       // Clean up
       let _ = erlang_logger.uninstall_logger_handler()
@@ -174,11 +180,14 @@ pub fn install_logger_handler_twice_fails_test() {
     }
     False -> {
       // On JavaScript, both installs fail with the same error
-      erlang_logger.install_logger_handler()
-      |> should.be_error
+      let _ =
+        erlang_logger.install_logger_handler()
+        |> should.be_error
 
-      erlang_logger.install_logger_handler()
-      |> should.be_error
+      let _ =
+        erlang_logger.install_logger_handler()
+        |> should.be_error
+      Nil
     }
   }
 }
