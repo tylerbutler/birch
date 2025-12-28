@@ -88,3 +88,13 @@ pub fn flush_async_writers() -> Nil
 @external(erlang, "gleam_log_ffi", "flush_async_writer")
 @external(javascript, "../../gleam_log_ffi.mjs", "flush_async_writer")
 pub fn flush_async_writer(name: String) -> Nil
+
+// ============================================================================
+// Safe Call (Error Catching)
+// ============================================================================
+
+/// Safely call a function, catching any errors/exceptions.
+/// Returns Ok(Nil) if the function succeeded, Error(message) if it failed.
+@external(erlang, "gleam_log_ffi", "safe_call")
+@external(javascript, "../../gleam_log_ffi.mjs", "safe_call")
+pub fn safe_call(f: fn() -> Nil) -> Result(Nil, String)

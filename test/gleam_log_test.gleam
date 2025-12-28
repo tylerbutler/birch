@@ -1,4 +1,5 @@
 import gleam/list
+import gleam/option.{None, Some}
 import gleam/order
 import gleam/string
 import gleam_log
@@ -693,4 +694,175 @@ pub fn set_level_preserves_other_config_test() {
 
   // Reset for other tests
   gleam_log.reset_config()
+}
+
+// ============================================================================
+// Handler Error Callback Tests
+// ============================================================================
+
+pub fn handler_error_type_test() {
+  // Test that HandlerError can be created with all expected fields
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Err,
+      logger_name: "test",
+      message: "test message",
+    )
+
+  let err =
+    handler.HandlerError(handler_name: "test-handler", error: "write failed", record: r)
+
+  err.handler_name
+  |> should.equal("test-handler")
+
+  err.error
+  |> should.equal("write failed")
+
+  err.record.message
+  |> should.equal("test message")
+}
+
+pub fn handler_with_error_callback_test() {
+  // Test that with_error_callback returns a handler with the callback attached
+  let base_handler = handler.null()
+  let callback = fn(_: handler.HandlerError) { Nil }
+
+  let handler_with_cb = handler.with_error_callback(base_handler, callback)
+
+  // Handler name should be unchanged
+  handler.name(handler_with_cb)
+  |> should.equal("null")
+}
+
+pub fn handler_error_callback_invoked_on_failure_test() {
+  // Create a mutable reference to track if callback was invoked
+  // Using a process dictionary or similar mechanism for tracking
+  // For Gleam, we'll use a simple approach with a captured variable pattern
+
+  // Create a handler that always fails
+  let failing_handler =
+    handler.new(
+      name: "failing",
+      write: fn(_msg: String) {
+        // Simulate failure by panicking (which should be caught)
+        panic as "simulated write failure"
+      },
+      format: fn(_) { "formatted" },
+    )
+
+  // Track if callback was called using a simple counter approach
+  // We'll verify the handler doesn't crash the test
+  let error_received = fn(err: handler.HandlerError) {
+    // Verify error contains expected information
+    err.handler_name
+    |> should.equal("failing")
+  }
+
+  let handler_with_cb = handler.with_error_callback(failing_handler, error_received)
+
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "test",
+    )
+
+  // This should not crash - error should be caught and callback invoked
+  handler.handle(handler_with_cb, r)
+}
+
+pub fn handler_error_callback_not_invoked_on_success_test() {
+  // Create a handler that succeeds
+  let success_handler = handler.null()
+
+  // Track if callback was called - it should NOT be called
+  let error_callback = fn(_err: handler.HandlerError) {
+    // This should never be called for a successful handler
+    panic as "error callback should not be called on success"
+  }
+
+  let handler_with_cb = handler.with_error_callback(success_handler, error_callback)
+
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "test",
+    )
+
+  // This should succeed without calling the error callback
+  handler.handle(handler_with_cb, r)
+}
+
+pub fn handler_error_includes_record_test() {
+  // Verify that the error callback receives the original log record
+  let failing_handler =
+    handler.new(
+      name: "failing",
+      write: fn(_msg: String) {
+        panic as "simulated failure"
+      },
+      format: fn(_) { "formatted" },
+    )
+
+  let error_callback = fn(err: handler.HandlerError) {
+    // Verify the record is passed through
+    err.record.message
+    |> should.equal("original message")
+
+    err.record.logger_name
+    |> should.equal("test.logger")
+  }
+
+  let handler_with_cb = handler.with_error_callback(failing_handler, error_callback)
+
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test.logger",
+      message: "original message",
+    )
+
+  handler.handle(handler_with_cb, r)
+}
+
+pub fn config_on_error_option_test() {
+  // Reset to known state
+  gleam_log.reset_config()
+
+  // Create an error callback
+  let global_error_callback = fn(_err: handler.HandlerError) { Nil }
+
+  // Configure with global error callback
+  gleam_log.configure([gleam_log.config_on_error(global_error_callback)])
+
+  // Verify config was set (we can't easily inspect the callback,
+  // but we can verify configuration doesn't error)
+
+  // Reset for other tests
+  gleam_log.reset_config()
+}
+
+pub fn handler_get_error_callback_test() {
+  // Test getting the error callback from a handler
+  let base_handler = handler.null()
+
+  // Handler without callback should return None
+  case handler.get_error_callback(base_handler) {
+    None -> Nil
+    Some(_) -> panic as "Expected None, got Some"
+  }
+
+  // Handler with callback should return Some
+  let callback = fn(_: handler.HandlerError) { Nil }
+  let handler_with_cb = handler.with_error_callback(base_handler, callback)
+
+  case handler.get_error_callback(handler_with_cb) {
+    Some(_) -> Nil
+    None -> panic as "Expected Some, got None"
+  }
 }

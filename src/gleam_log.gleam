@@ -31,9 +31,9 @@
 //// ])
 //// ```
 
-import gleam/list
+import gleam/option.{None}
 import gleam_log/config.{type ConfigOption, type GlobalConfig}
-import gleam_log/handler.{type Handler}
+import gleam_log/handler.{type ErrorCallback, type Handler}
 import gleam_log/handler/console
 import gleam_log/internal/platform
 import gleam_log/level.{type Level}
@@ -141,12 +141,32 @@ pub fn config_context(ctx: Metadata) -> ConfigOption {
   config.context(ctx)
 }
 
-/// Default configuration: Info level, console handler, no context.
+/// Create a configuration option to set the global error callback.
+///
+/// This callback is invoked when any handler encounters an error.
+/// It's useful for monitoring and alerting on handler failures.
+///
+/// Example:
+/// ```gleam
+/// import gleam_log as log
+///
+/// log.configure([
+///   log.config_on_error(fn(err) {
+///     io.println("Handler " <> err.handler_name <> " failed: " <> err.error)
+///   }),
+/// ])
+/// ```
+pub fn config_on_error(callback: ErrorCallback) -> ConfigOption {
+  config.on_error(callback)
+}
+
+/// Default configuration: Info level, console handler, no context, no error callback.
 pub fn default_config() -> GlobalConfig {
   config.GlobalConfig(
     level: level.Info,
     handlers: [console.handler()],
     context: [],
+    on_error: None,
   )
 }
 
