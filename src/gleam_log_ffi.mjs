@@ -1,7 +1,7 @@
 // JavaScript FFI for gleam_log
 
-// Import Gleam's Result constructors from the prelude
-import { Ok, Error } from "./gleam.mjs";
+// Import Gleam's Result constructors and List helpers from the prelude
+import { Ok, Error, toList } from "./gleam.mjs";
 
 /**
  * Get current timestamp in ISO 8601 format with milliseconds.
@@ -359,8 +359,24 @@ function initScopeContext() {
 }
 
 /**
+ * Convert a Gleam list to a JavaScript array.
+ * Gleam lists are linked lists with head/tail structure.
+ * @param {*} gleamList - A Gleam list
+ * @returns {Array} JavaScript array
+ */
+function gleamListToArray(gleamList) {
+  const result = [];
+  let current = gleamList;
+  while (current && current.head !== undefined) {
+    result.push(current.head);
+    current = current.tail;
+  }
+  return result;
+}
+
+/**
  * Get the current scope context.
- * @returns {Array} List of [key, value] tuples (Gleam Metadata format)
+ * @returns {List} Gleam List of [key, value] tuples (Gleam Metadata format)
  */
 export function get_scope_context() {
   initScopeContext();
@@ -370,16 +386,16 @@ export function get_scope_context() {
     scopeContextState.asyncLocalStorage
   ) {
     const store = scopeContextState.asyncLocalStorage.getStore();
-    return store !== undefined ? store : [];
+    return store !== undefined ? store : toList([]);
   }
-  // Fallback: return top of stack or empty array
+  // Fallback: return top of stack or empty list
   const stack = scopeContextState.fallbackContextStack;
-  return stack.length > 0 ? stack[stack.length - 1] : [];
+  return stack.length > 0 ? stack[stack.length - 1] : toList([]);
 }
 
 /**
  * Set the scope context (used internally for fallback only).
- * @param {Array} context - List of [key, value] tuples
+ * @param {List} context - Gleam List of [key, value] tuples
  */
 export function set_scope_context(context) {
   initScopeContext();
@@ -394,14 +410,29 @@ export function set_scope_context(context) {
   }
   // Fallback: replace the entire stack with just this context
   // (This is used when restoring - we want to reset to previous state)
-  scopeContextState.fallbackContextStack = context.length > 0 ? [context] : [];
+  // Check if context is empty by checking if it has a head
+  const isEmpty = !context || context.head === undefined;
+  scopeContextState.fallbackContextStack = isEmpty ? [] : [context];
   return undefined;
+}
+
+/**
+ * Merge two Gleam lists by converting to JS arrays and back.
+ * New context items are prepended (higher priority).
+ * @param {List} newContext - New context to add (Gleam list)
+ * @param {List} currentContext - Current context (Gleam list)
+ * @returns {List} Merged Gleam list
+ */
+function mergeGleamLists(newContext, currentContext) {
+  const newArray = gleamListToArray(newContext);
+  const currentArray = gleamListToArray(currentContext);
+  return toList([...newArray, ...currentArray]);
 }
 
 /**
  * Run a function with scoped context.
  * This properly handles AsyncLocalStorage.run() for Node.js.
- * @param {Array} context - Context to add to the scope
+ * @param {List} context - Gleam List of context to add to the scope
  * @param {function} callback - Function to run with the context
  * @returns {*} The result of the callback
  */
@@ -413,8 +444,9 @@ export function run_with_scope(context, callback) {
     scopeContextState.asyncLocalStorage
   ) {
     // Get current context and merge
-    const currentContext = scopeContextState.asyncLocalStorage.getStore() || [];
-    const mergedContext = [...context, ...currentContext];
+    const currentContext =
+      scopeContextState.asyncLocalStorage.getStore() || toList([]);
+    const mergedContext = mergeGleamLists(context, currentContext);
 
     // Use run() for proper scoping - context is automatically restored after
     return scopeContextState.asyncLocalStorage.run(mergedContext, callback);
@@ -422,8 +454,8 @@ export function run_with_scope(context, callback) {
 
   // Fallback for non-Node.js environments: use stack-based approach
   const stack = scopeContextState.fallbackContextStack;
-  const currentContext = stack.length > 0 ? stack[stack.length - 1] : [];
-  const mergedContext = [...context, ...currentContext];
+  const currentContext = stack.length > 0 ? stack[stack.length - 1] : toList([]);
+  const mergedContext = mergeGleamLists(context, currentContext);
 
   // Push new context onto stack
   stack.push(mergedContext);
