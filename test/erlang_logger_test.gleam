@@ -88,7 +88,9 @@ fn is_erlang_target() -> Bool {
     Ok(_) -> {
       // Clean up and return true
       let _ =
-        erlang_logger.uninstall_logger_handler_with_id("gleam_log_platform_check")
+        erlang_logger.uninstall_logger_handler_with_id(
+          "gleam_log_platform_check",
+        )
       True
     }
     Error(_) -> False

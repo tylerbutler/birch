@@ -164,9 +164,7 @@ pub fn forward_to_logger() -> Handler {
 }
 
 /// Create a handler that forwards to :logger with a custom formatter.
-pub fn forward_to_logger_with_formatter(
-  format: formatter.Formatter,
-) -> Handler {
+pub fn forward_to_logger_with_formatter(format: formatter.Formatter) -> Handler {
   handler.new(name: "erlang:logger", write: forward_write, format: format)
 }
 
@@ -227,9 +225,7 @@ pub fn install_logger_handler() -> Result(Nil, String) {
 ///
 /// This is useful if you want to install multiple instances or avoid conflicts
 /// with other handlers.
-pub fn install_logger_handler_with_id(
-  handler_id: String,
-) -> Result(Nil, String) {
+pub fn install_logger_handler_with_id(handler_id: String) -> Result(Nil, String) {
   do_install_logger_handler(handler_id)
 }
 
