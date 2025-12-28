@@ -5,6 +5,7 @@ import gleam_log
 import gleam_log/formatter
 import gleam_log/handler
 import gleam_log/handler/async
+import gleam_log/handler/file
 import gleam_log/handler/json
 import gleam_log/level
 import gleam_log/logger
@@ -858,4 +859,130 @@ pub fn config_without_sampling_test() {
 
   // Reset for other tests
   gleam_log.reset_config()
+}
+
+// ============================================================================
+// Time-Based Rotation Tests (Phase 3.1)
+// ============================================================================
+
+pub fn time_interval_hourly_test() {
+  // Hourly interval should be a valid TimeInterval variant
+  let interval = file.Hourly
+  case interval {
+    file.Hourly -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn time_interval_daily_test() {
+  // Daily interval should be a valid TimeInterval variant
+  let interval = file.Daily
+  case interval {
+    file.Daily -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn rotation_time_rotation_test() {
+  // TimeRotation should be constructible with interval and max_files
+  let rotation = file.TimeRotation(interval: file.Daily, max_files: 7)
+  case rotation {
+    file.TimeRotation(interval: file.Daily, max_files: 7) ->
+      should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn rotation_combined_rotation_test() {
+  // CombinedRotation should accept both size and time parameters
+  let rotation =
+    file.CombinedRotation(
+      max_bytes: 10_000_000,
+      interval: file.Hourly,
+      max_files: 24,
+    )
+  case rotation {
+    file.CombinedRotation(
+      max_bytes: 10_000_000,
+      interval: file.Hourly,
+      max_files: 24,
+    ) -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn time_interval_to_hours_hourly_test() {
+  // Hourly interval should represent 1 hour
+  file.interval_to_hours(file.Hourly)
+  |> should.equal(1)
+}
+
+pub fn time_interval_to_hours_daily_test() {
+  // Daily interval should represent 24 hours
+  file.interval_to_hours(file.Daily)
+  |> should.equal(24)
+}
+
+pub fn file_handler_with_time_rotation_test() {
+  // Should be able to create a file handler with TimeRotation
+  let config =
+    file.FileConfig(
+      path: "/tmp/gleam_log_test_time.log",
+      rotation: file.TimeRotation(interval: file.Daily, max_files: 7),
+    )
+  let h = file.handler(config)
+
+  handler.name(h)
+  |> string.contains("file:")
+  |> should.be_true
+}
+
+pub fn file_handler_with_combined_rotation_test() {
+  // Should be able to create a file handler with CombinedRotation
+  let config =
+    file.FileConfig(
+      path: "/tmp/gleam_log_test_combined.log",
+      rotation: file.CombinedRotation(
+        max_bytes: 1_000_000,
+        interval: file.Hourly,
+        max_files: 48,
+      ),
+    )
+  let h = file.handler(config)
+
+  handler.name(h)
+  |> string.contains("file:")
+  |> should.be_true
+}
+
+pub fn format_rotation_timestamp_hourly_test() {
+  // Hourly rotation should include hour in timestamp
+  // Example: "2024-12-26T14" for 2:00 PM on Dec 26
+  let timestamp = file.format_rotation_timestamp(file.Hourly)
+
+  // Should be in format YYYY-MM-DDTHH
+  timestamp
+  |> string.length
+  |> should.equal(13)
+
+  // Should contain 'T' separator
+  timestamp
+  |> string.contains("T")
+  |> should.be_true
+}
+
+pub fn format_rotation_timestamp_daily_test() {
+  // Daily rotation should include only date
+  // Example: "2024-12-26"
+  let timestamp = file.format_rotation_timestamp(file.Daily)
+
+  // Should be in format YYYY-MM-DD
+  timestamp
+  |> string.length
+  |> should.equal(10)
+
+  // Should contain dashes
+  timestamp
+  |> string.contains("-")
+  |> should.be_true
 }
