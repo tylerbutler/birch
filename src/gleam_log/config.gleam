@@ -7,7 +7,27 @@ import gleam/list
 import gleam_log/handler.{type Handler}
 import gleam_log/level.{type Level}
 import gleam_log/record.{type Metadata}
-import gleam_log/sampling.{type SampleConfig}
+
+// ============================================================================
+// Sampling Types (defined here to avoid circular imports)
+// ============================================================================
+
+/// Configuration for probabilistic sampling.
+///
+/// Logs at or below the configured level will be sampled at the specified rate.
+/// Logs above the configured level are always logged (no sampling applied).
+pub type SampleConfig {
+  SampleConfig(
+    /// Apply sampling to this level and below
+    level: Level,
+    /// Probability of logging (0.0 to 1.0)
+    rate: Float,
+  )
+}
+
+// ============================================================================
+// Global Configuration
+// ============================================================================
 
 /// Global configuration that affects the default logger and
 /// application-wide settings.

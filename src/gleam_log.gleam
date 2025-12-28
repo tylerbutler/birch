@@ -32,14 +32,14 @@
 //// ```
 
 import gleam/list
-import gleam_log/config.{type ConfigOption, type GlobalConfig}
+import gleam_log/config.{type ConfigOption, type GlobalConfig, type SampleConfig}
 import gleam_log/handler.{type Handler}
 import gleam_log/handler/console
 import gleam_log/internal/platform
 import gleam_log/level.{type Level}
 import gleam_log/logger.{type Logger}
 import gleam_log/record.{type Metadata}
-import gleam_log/sampling.{type SampleConfig}
+import gleam_log/sampling
 
 // Re-export types for convenience
 pub type LogLevel =
