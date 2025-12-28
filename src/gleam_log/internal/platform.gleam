@@ -4,7 +4,7 @@
 //// differ between Erlang and JavaScript targets.
 
 import gleam_log/config.{type GlobalConfig}
-import gleam_log/record.{type LogRecord}
+import gleam_log/record.{type LogRecord, type Metadata}
 
 /// Get the current timestamp in ISO 8601 format with milliseconds.
 /// Returns a string like "2024-12-26T10:30:45.123Z"
@@ -88,3 +88,28 @@ pub fn flush_async_writers() -> Nil
 @external(erlang, "gleam_log_ffi", "flush_async_writer")
 @external(javascript, "../../gleam_log_ffi.mjs", "flush_async_writer")
 pub fn flush_async_writer(name: String) -> Nil
+
+// ============================================================================
+// Scoped Context FFI
+// ============================================================================
+
+/// Get the current scope context.
+/// Returns the metadata from all active scopes.
+/// On Erlang: Uses process dictionary
+/// On JavaScript: Uses AsyncLocalStorage (Node.js) or empty list (fallback)
+@external(erlang, "gleam_log_ffi", "get_scope_context")
+@external(javascript, "../../gleam_log_ffi.mjs", "get_scope_context")
+pub fn get_scope_context() -> Metadata
+
+/// Set the current scope context.
+/// Replaces the entire scope context with the given metadata.
+@external(erlang, "gleam_log_ffi", "set_scope_context")
+@external(javascript, "../../gleam_log_ffi.mjs", "set_scope_context")
+pub fn set_scope_context(context: Metadata) -> Nil
+
+/// Check if scoped context is available on the current platform.
+/// Returns True on Erlang (process dictionary) and Node.js (AsyncLocalStorage).
+/// Returns False on other JavaScript runtimes.
+@external(erlang, "gleam_log_ffi", "is_scope_context_available")
+@external(javascript, "../../gleam_log_ffi.mjs", "is_scope_context_available")
+pub fn is_scope_context_available() -> Bool

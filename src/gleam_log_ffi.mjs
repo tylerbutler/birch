@@ -315,3 +315,92 @@ export function flush_async_writer(name) {
     writer.processQueueSync();
   }
 }
+
+// ============================================================================
+// Scoped Context Implementation
+// ============================================================================
+
+// Scope context state
+let scopeContextState = {
+  initialized: false,
+  asyncLocalStorage: null,
+  asyncLocalStorageAvailable: false,
+  fallbackContext: [],
+};
+
+/**
+ * Initialize the scope context system (lazy initialization).
+ * This is called on first use to set up AsyncLocalStorage if available.
+ */
+function initScopeContext() {
+  if (scopeContextState.initialized) {
+    return;
+  }
+  scopeContextState.initialized = true;
+
+  // Try to use AsyncLocalStorage in Node.js
+  try {
+    if (
+      typeof process !== "undefined" &&
+      process.versions &&
+      process.versions.node
+    ) {
+      // Node.js: use require for synchronous loading
+      // eslint-disable-next-line no-undef
+      const async_hooks = require("node:async_hooks");
+      scopeContextState.asyncLocalStorage = new async_hooks.AsyncLocalStorage();
+      scopeContextState.asyncLocalStorageAvailable = true;
+    }
+  } catch (e) {
+    // AsyncLocalStorage not available
+    scopeContextState.asyncLocalStorageAvailable = false;
+  }
+}
+
+/**
+ * Get the current scope context.
+ * @returns {Array} List of [key, value] tuples (Gleam Metadata format)
+ */
+export function get_scope_context() {
+  initScopeContext();
+
+  if (
+    scopeContextState.asyncLocalStorageAvailable &&
+    scopeContextState.asyncLocalStorage
+  ) {
+    const store = scopeContextState.asyncLocalStorage.getStore();
+    return store !== undefined ? store : [];
+  }
+  // Fallback for non-Node.js environments
+  return scopeContextState.fallbackContext;
+}
+
+/**
+ * Set the scope context.
+ * @param {Array} context - List of [key, value] tuples
+ */
+export function set_scope_context(context) {
+  initScopeContext();
+
+  if (
+    scopeContextState.asyncLocalStorageAvailable &&
+    scopeContextState.asyncLocalStorage
+  ) {
+    // For AsyncLocalStorage, we use enterWith for synchronous scope setting
+    // This sets the context for the current async execution chain
+    scopeContextState.asyncLocalStorage.enterWith(context);
+  } else {
+    // Fallback for non-Node.js environments
+    scopeContextState.fallbackContext = context;
+  }
+  return undefined;
+}
+
+/**
+ * Check if scoped context is available.
+ * @returns {boolean} True on Node.js (AsyncLocalStorage), False otherwise
+ */
+export function is_scope_context_available() {
+  initScopeContext();
+  return scopeContextState.asyncLocalStorageAvailable;
+}

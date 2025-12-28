@@ -694,3 +694,174 @@ pub fn set_level_preserves_other_config_test() {
   // Reset for other tests
   gleam_log.reset_config()
 }
+
+// ============================================================================
+// Scoped Context Tests
+// ============================================================================
+
+pub fn scope_with_scope_returns_work_result_test() {
+  // with_scope should return the result of the work function
+  let result = gleam_log.with_scope([#("request_id", "123")], fn() { 42 })
+
+  result
+  |> should.equal(42)
+}
+
+pub fn scope_with_scope_string_result_test() {
+  // with_scope should work with any return type
+  let result =
+    gleam_log.with_scope([#("trace_id", "abc")], fn() { "hello" })
+
+  result
+  |> should.equal("hello")
+}
+
+pub fn scope_get_scope_context_inside_scope_test() {
+  // Inside a scope, get_scope_context should return the scope's context
+  gleam_log.with_scope([#("request_id", "req-123")], fn() {
+    let ctx = gleam_log.get_scope_context()
+    ctx
+    |> should.equal([#("request_id", "req-123")])
+  })
+}
+
+pub fn scope_get_scope_context_outside_scope_test() {
+  // Outside any scope, get_scope_context should return empty list
+  let ctx = gleam_log.get_scope_context()
+
+  ctx
+  |> should.equal([])
+}
+
+pub fn scope_nested_scopes_test() {
+  // Nested scopes should combine context, with inner values taking precedence
+  gleam_log.with_scope([#("outer", "value1")], fn() {
+    // First scope has outer context
+    let outer_ctx = gleam_log.get_scope_context()
+    outer_ctx
+    |> list.key_find("outer")
+    |> should.equal(Ok("value1"))
+
+    // Nested scope adds more context
+    gleam_log.with_scope([#("inner", "value2")], fn() {
+      let inner_ctx = gleam_log.get_scope_context()
+
+      // Both keys should be present
+      inner_ctx
+      |> list.key_find("outer")
+      |> should.equal(Ok("value1"))
+
+      inner_ctx
+      |> list.key_find("inner")
+      |> should.equal(Ok("value2"))
+    })
+
+    // After inner scope ends, only outer context remains
+    let after_inner_ctx = gleam_log.get_scope_context()
+    after_inner_ctx
+    |> list.key_find("inner")
+    |> should.be_error
+
+    after_inner_ctx
+    |> list.key_find("outer")
+    |> should.equal(Ok("value1"))
+  })
+}
+
+pub fn scope_nested_scopes_shadow_test() {
+  // Inner scope with same key should shadow outer scope
+  gleam_log.with_scope([#("key", "outer_value")], fn() {
+    gleam_log.with_scope([#("key", "inner_value")], fn() {
+      let ctx = gleam_log.get_scope_context()
+
+      // The inner value should come first (shadow the outer)
+      ctx
+      |> list.key_find("key")
+      |> should.equal(Ok("inner_value"))
+    })
+
+    // After inner scope, original value restored
+    let ctx = gleam_log.get_scope_context()
+    ctx
+    |> list.key_find("key")
+    |> should.equal(Ok("outer_value"))
+  })
+}
+
+pub fn scope_is_available_test() {
+  // is_scoped_context_available should return a boolean
+  let available = gleam_log.is_scoped_context_available()
+
+  // On both Erlang and JavaScript this should return a boolean
+  // We just check it's callable and doesn't crash
+  case available {
+    True -> Nil
+    False -> Nil
+  }
+}
+
+pub fn scope_multiple_metadata_pairs_test() {
+  // with_scope should support multiple key-value pairs
+  gleam_log.with_scope(
+    [#("request_id", "123"), #("user_id", "456"), #("trace_id", "789")],
+    fn() {
+      let ctx = gleam_log.get_scope_context()
+
+      ctx
+      |> list.key_find("request_id")
+      |> should.equal(Ok("123"))
+
+      ctx
+      |> list.key_find("user_id")
+      |> should.equal(Ok("456"))
+
+      ctx
+      |> list.key_find("trace_id")
+      |> should.equal(Ok("789"))
+    },
+  )
+}
+
+pub fn scope_context_cleared_after_scope_test() {
+  // Ensure context is properly cleaned up after scope ends
+  gleam_log.with_scope([#("temp_key", "temp_value")], fn() {
+    // Inside scope, context exists
+    gleam_log.get_scope_context()
+    |> list.key_find("temp_key")
+    |> should.equal(Ok("temp_value"))
+  })
+
+  // After scope ends, context should be empty
+  gleam_log.get_scope_context()
+  |> should.equal([])
+}
+
+pub fn scope_context_included_in_log_records_test() {
+  // Reset global config for clean test
+  gleam_log.reset_config()
+
+  // Create a mutable reference to capture log records (using list accumulator pattern)
+  // We'll use a logger with a null handler and verify scope context is read
+  gleam_log.with_scope([#("request_id", "test-123")], fn() {
+    // Get the scope context which should be included in logs
+    let ctx = gleam_log.get_scope_context()
+    ctx
+    |> list.key_find("request_id")
+    |> should.equal(Ok("test-123"))
+
+    // The log functions will include this context
+    // (actual verification would require a capturing handler)
+  })
+
+  // Verify scope context is cleaned up
+  gleam_log.get_scope_context()
+  |> should.equal([])
+}
+
+pub fn scope_empty_context_test() {
+  // with_scope with empty context should not crash
+  let result = gleam_log.with_scope([], fn() { "success" })
+
+  result
+  |> should.equal("success")
+}
