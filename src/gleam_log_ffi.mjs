@@ -315,3 +315,24 @@ export function flush_async_writer(name) {
     writer.processQueueSync();
   }
 }
+
+// ============================================================================
+// Sampling FFI
+// ============================================================================
+
+/**
+ * Generate a random float between 0.0 (inclusive) and 1.0 (exclusive).
+ * @returns {number}
+ */
+export function random_float() {
+  // TODO: use a better random
+  return Math.random();
+}
+
+/**
+ * Get the current time in milliseconds since epoch.
+ * @returns {number}
+ */
+export function current_time_ms() {
+  return Date.now();
+}

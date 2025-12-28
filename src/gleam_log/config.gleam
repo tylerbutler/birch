@@ -8,7 +8,29 @@ import gleam_log/handler.{type Handler}
 import gleam_log/level.{type Level}
 import gleam_log/record.{type Metadata}
 
-/// Global configuration that affects the default logger and application-wide settings.
+// ============================================================================
+// Sampling Types (defined here to avoid circular imports)
+// ============================================================================
+
+/// Configuration for probabilistic sampling.
+///
+/// Logs at or below the configured level will be sampled at the specified rate.
+/// Logs above the configured level are always logged (no sampling applied).
+pub type SampleConfig {
+  SampleConfig(
+    /// Apply sampling to this level and below
+    level: Level,
+    /// Probability of logging (0.0 to 1.0)
+    rate: Float,
+  )
+}
+
+// ============================================================================
+// Global Configuration
+// ============================================================================
+
+/// Global configuration that affects the default logger and
+/// application-wide settings.
 pub type GlobalConfig {
   GlobalConfig(
     /// Minimum log level for the default logger
@@ -17,6 +39,8 @@ pub type GlobalConfig {
     handlers: List(Handler),
     /// Default context metadata applied to all loggers
     context: Metadata,
+    /// Optional sampling configuration
+    sampling: Result(SampleConfig, Nil),
   )
 }
 
@@ -25,6 +49,7 @@ pub opaque type ConfigOption {
   LevelOption(Level)
   HandlersOption(List(Handler))
   ContextOption(Metadata)
+  SamplingOption(SampleConfig)
 }
 
 /// Create a configuration option to set the log level.
@@ -42,10 +67,20 @@ pub fn context(ctx: Metadata) -> ConfigOption {
   ContextOption(ctx)
 }
 
+/// Create a configuration option to set sampling.
+pub fn sampling(config: SampleConfig) -> ConfigOption {
+  SamplingOption(config)
+}
+
 /// Returns the default global configuration with no handlers.
 /// Note: Use gleam_log.default_config() to get defaults with console handler.
 pub fn empty() -> GlobalConfig {
-  GlobalConfig(level: level.Info, handlers: [], context: [])
+  GlobalConfig(
+    level: level.Info,
+    handlers: [],
+    context: [],
+    sampling: Error(Nil),
+  )
 }
 
 /// Apply a list of configuration options to a GlobalConfig.
@@ -62,6 +97,7 @@ fn apply_option(config: GlobalConfig, option: ConfigOption) -> GlobalConfig {
     LevelOption(lvl) -> GlobalConfig(..config, level: lvl)
     HandlersOption(h) -> GlobalConfig(..config, handlers: h)
     ContextOption(ctx) -> GlobalConfig(..config, context: ctx)
+    SamplingOption(s) -> GlobalConfig(..config, sampling: Ok(s))
   }
 }
 

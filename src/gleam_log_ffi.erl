@@ -1,7 +1,8 @@
 -module(gleam_log_ffi).
 -export([timestamp_iso8601/0, write_stdout/1, write_stderr/1, is_stdout_tty/0,
          get_global_config/0, set_global_config/1, clear_global_config/0,
-         start_async_writer/5, async_send/2, flush_async_writers/0, flush_async_writer/1]).
+         start_async_writer/5, async_send/2, flush_async_writers/0, flush_async_writer/1,
+         random_float/0, current_time_ms/0]).
 
 %% Get current timestamp in ISO 8601 format with milliseconds
 timestamp_iso8601() ->
@@ -207,3 +208,15 @@ get_writer(Name) ->
         {Name, Pid} -> {ok, Pid};
         false -> error
     end.
+
+%% ============================================================================
+%% Sampling FFI
+%% ============================================================================
+
+%% Generate a random float between 0.0 (inclusive) and 1.0 (exclusive).
+random_float() ->
+    rand:uniform().
+
+%% Get the current time in milliseconds since epoch.
+current_time_ms() ->
+    erlang:system_time(millisecond).
