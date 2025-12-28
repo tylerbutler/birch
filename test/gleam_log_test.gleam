@@ -9,6 +9,7 @@ import gleam_log/handler/json
 import gleam_log/level
 import gleam_log/logger
 import gleam_log/record
+import gleam_log/sampling
 import gleeunit
 import gleeunit/should
 
@@ -690,6 +691,170 @@ pub fn set_level_preserves_other_config_test() {
 
   config.context
   |> should.equal([#("app", "test")])
+
+  // Reset for other tests
+  gleam_log.reset_config()
+}
+
+// ============================================================================
+// Sampling Tests
+// ============================================================================
+
+pub fn sampling_config_creation_test() {
+  let config = sampling.config(level.Debug, 0.5)
+
+  config.level
+  |> should.equal(level.Debug)
+
+  config.rate
+  |> should.equal(0.5)
+}
+
+pub fn sampling_config_rate_clamping_test() {
+  // Rates should be clamped to 0.0 - 1.0 range
+  let config_high = sampling.config(level.Debug, 2.0)
+  config_high.rate
+  |> should.equal(1.0)
+
+  let config_low = sampling.config(level.Debug, -0.5)
+  config_low.rate
+  |> should.equal(0.0)
+}
+
+pub fn sampling_should_sample_always_test() {
+  // Rate 1.0 should always sample
+  let config = sampling.config(level.Debug, 1.0)
+
+  // Run multiple times to ensure it always returns True
+  sampling.should_sample(config, level.Trace)
+  |> should.be_true
+
+  sampling.should_sample(config, level.Debug)
+  |> should.be_true
+
+  sampling.should_sample(config, level.Info)
+  |> should.be_true
+}
+
+pub fn sampling_should_sample_never_test() {
+  // Rate 0.0 should never sample (for levels at or below config level)
+  let config = sampling.config(level.Debug, 0.0)
+
+  sampling.should_sample(config, level.Trace)
+  |> should.be_false
+
+  sampling.should_sample(config, level.Debug)
+  |> should.be_false
+}
+
+pub fn sampling_bypasses_for_higher_levels_test() {
+  // Logs above the sample level should always be logged
+  let config = sampling.config(level.Debug, 0.0)
+
+  // Even with 0% rate, levels above Debug should still log
+  sampling.should_sample(config, level.Info)
+  |> should.be_true
+
+  sampling.should_sample(config, level.Warn)
+  |> should.be_true
+
+  sampling.should_sample(config, level.Err)
+  |> should.be_true
+}
+
+pub fn sampling_no_config_always_logs_test() {
+  // When no sampling config, should_sample_with_config should return True
+  let sample_config = Ok(sampling.config(level.Debug, 1.0))
+  sampling.should_sample_with_config(sample_config, level.Debug)
+  |> should.be_true
+
+  // With Error (no config), should always sample
+  sampling.should_sample_with_config(Error(Nil), level.Debug)
+  |> should.be_true
+}
+
+// ============================================================================
+// Rate Limiting Tests
+// ============================================================================
+
+pub fn rate_limit_config_creation_test() {
+  let config = sampling.rate_limit_config(100, 10)
+
+  config.max_per_second
+  |> should.equal(100)
+
+  config.burst_size
+  |> should.equal(10)
+}
+
+pub fn rate_limit_token_bucket_creation_test() {
+  let bucket = sampling.new_token_bucket(10, 5)
+
+  sampling.bucket_max_tokens(bucket)
+  |> should.equal(10)
+
+  sampling.bucket_burst_size(bucket)
+  |> should.equal(5)
+}
+
+pub fn rate_limit_try_consume_test() {
+  // Create a bucket with max 10 tokens
+  let bucket = sampling.new_token_bucket(10, 5)
+
+  // First consume should succeed (starts with max tokens)
+  let #(allowed1, bucket1) = sampling.try_consume(bucket)
+  allowed1
+  |> should.be_true
+
+  // Continue consuming until we hit the limit
+  let #(_allowed2, bucket2) = sampling.try_consume(bucket1)
+  let #(_allowed3, bucket3) = sampling.try_consume(bucket2)
+  let #(_allowed4, bucket4) = sampling.try_consume(bucket3)
+  let #(_allowed5, bucket5) = sampling.try_consume(bucket4)
+  let #(_allowed6, bucket6) = sampling.try_consume(bucket5)
+  let #(_allowed7, bucket7) = sampling.try_consume(bucket6)
+  let #(_allowed8, bucket8) = sampling.try_consume(bucket7)
+  let #(_allowed9, bucket9) = sampling.try_consume(bucket8)
+  let #(_allowed10, bucket10) = sampling.try_consume(bucket9)
+
+  // After 10 consumes, the next should fail (no tokens left)
+  let #(allowed11, _bucket11) = sampling.try_consume(bucket10)
+  allowed11
+  |> should.be_false
+}
+
+// ============================================================================
+// Global Sampling Configuration Tests
+// ============================================================================
+
+pub fn config_with_sampling_test() {
+  // Reset to known state
+  gleam_log.reset_config()
+
+  // Configure with sampling
+  gleam_log.configure([
+    gleam_log.config_sampling(sampling.config(level.Debug, 0.5)),
+  ])
+
+  let config = gleam_log.get_config()
+
+  // Verify sampling config is set
+  config.sampling
+  |> should.be_ok
+
+  // Reset for other tests
+  gleam_log.reset_config()
+}
+
+pub fn config_without_sampling_test() {
+  // Reset to known state
+  gleam_log.reset_config()
+
+  let config = gleam_log.get_config()
+
+  // Default should have no sampling
+  config.sampling
+  |> should.be_error
 
   // Reset for other tests
   gleam_log.reset_config()
