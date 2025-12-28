@@ -722,7 +722,8 @@ pub fn rotation_time_rotation_test() {
   // TimeRotation should be constructible with interval and max_files
   let rotation = file.TimeRotation(interval: file.Daily, max_files: 7)
   case rotation {
-    file.TimeRotation(interval: file.Daily, max_files: 7) -> should.be_true(True)
+    file.TimeRotation(interval: file.Daily, max_files: 7) ->
+      should.be_true(True)
     _ -> should.fail()
   }
 }

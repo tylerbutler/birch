@@ -197,17 +197,19 @@ fn cleanup_old_rotated_files(base_path: String, max_files: Int) -> Nil {
   let dir = get_parent_dir(base_path)
   let filename = get_filename(base_path)
 
-  case simplifile.read_directory(case dir {
-    "" -> "."
-    d -> d
-  }) {
+  case
+    simplifile.read_directory(case dir {
+      "" -> "."
+      d -> d
+    })
+  {
     Ok(files) -> {
       // Find all rotated files for this log (files starting with base name followed by a dot)
       let rotated_files =
         files
         |> list.filter(fn(f) {
           string.starts_with(f, filename <> ".")
-            && !string.ends_with(f, ".rotation")
+          && !string.ends_with(f, ".rotation")
         })
         |> list.sort(string.compare)
         |> list.reverse
