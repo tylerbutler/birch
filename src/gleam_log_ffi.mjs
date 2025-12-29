@@ -407,6 +407,25 @@ export function compress_file_gzip(sourcePath, destPath) {
 }
 
 // ============================================================================
+// Safe Call (Error Catching)
+// ============================================================================
+
+/**
+ * Safely call a function, catching any errors/exceptions.
+ * @param {function} fn - Function to call
+ * @returns {Ok | Error} Gleam Result type
+ */
+export function safe_call(fn) {
+  try {
+    fn();
+    return new Ok(undefined);
+  } catch (e) {
+    const errorMsg = e instanceof Error ? e.message : String(e);
+    return new Error(errorMsg);
+  }
+}
+
+// ============================================================================
 // Scoped Context Implementation
 // ============================================================================
 
