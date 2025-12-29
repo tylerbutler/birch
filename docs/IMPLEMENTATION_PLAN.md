@@ -27,18 +27,18 @@
 | Handler min_level filter | ✅ Complete | `src/gleam_log/handler.gleam` |
 | Null handler | ✅ Complete | `src/gleam_log/handler.gleam` |
 | Lazy evaluation | ✅ Complete | `src/gleam_log/logger.gleam` |
+| Global configuration API | ✅ Complete | `src/gleam_log/config.gleam` |
+| Runtime level changes | ✅ Complete | `src/gleam_log.gleam` |
+| Async console handler | ✅ Complete | `src/gleam_log/handler/async.gleam` |
+| Erlang :logger backend | ✅ Complete | `src/gleam_log/erlang_logger.gleam` |
 
 ### Remaining Work
 
 | Phase | Feature | Priority |
 |-------|---------|----------|
-| 2 | Global configuration API | P1 |
-| 2 | Runtime level changes | P1 |
-| 2 | Async console handler | P1 |
 | 3 | Time-based rotation | P2 |
 | 3 | Sampling/rate limiting | P2 |
 | 3 | Scoped context | P2 |
-| 3 | Erlang :logger backend | P2 |
 | 3 | Handler error callbacks | P2 |
 | 3 | Compression of rotated files | P2 |
 
