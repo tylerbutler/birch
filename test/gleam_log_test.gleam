@@ -594,6 +594,161 @@ pub fn async_flush_waits_for_pending_test() {
   async.flush()
 }
 
+pub fn async_flush_handler_by_name_test() {
+  let base_handler = handler.null()
+  let async_handler = async.make_async(base_handler, async.default_config())
+  let handler_name = handler.name(async_handler)
+
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "flush by name test",
+    )
+
+  handler.handle(async_handler, r)
+
+  // Flush specific handler by name
+  async.flush_handler(handler_name)
+}
+
+pub fn async_multiple_handlers_test() {
+  // Create multiple async handlers wrapping different base handlers
+  let handler1 = async.make_async(handler.null(), async.default_config())
+  let handler2 = async.make_async(handler.null(), async.default_config())
+
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "multi-handler test",
+    )
+
+  // Both handlers should receive records independently
+  handler.handle(handler1, r)
+  handler.handle(handler2, r)
+
+  // Flush all should work with multiple handlers
+  async.flush()
+}
+
+pub fn async_overflow_drop_oldest_test() {
+  // Configure with very small queue to test overflow
+  let config =
+    async.config()
+    |> async.with_queue_size(2)
+    |> async.with_overflow(async.DropOldest)
+
+  let async_handler = async.make_async(handler.null(), config)
+
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "overflow test",
+    )
+
+  // Send more records than queue can hold
+  handler.handle(async_handler, r)
+  handler.handle(async_handler, r)
+  handler.handle(async_handler, r)
+  handler.handle(async_handler, r)
+
+  // Should not crash, oldest messages dropped
+  async.flush()
+}
+
+pub fn async_overflow_drop_newest_test() {
+  let config =
+    async.config()
+    |> async.with_queue_size(2)
+    |> async.with_overflow(async.DropNewest)
+
+  let async_handler = async.make_async(handler.null(), config)
+
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "overflow newest test",
+    )
+
+  handler.handle(async_handler, r)
+  handler.handle(async_handler, r)
+  handler.handle(async_handler, r)
+
+  async.flush()
+}
+
+// Erlang-only tests for OTP actor features
+@target(erlang)
+pub fn async_shutdown_handler_test() {
+  let base_handler = handler.null()
+  let async_handler = async.make_async(base_handler, async.default_config())
+  let handler_name = handler.name(async_handler)
+
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "shutdown test",
+    )
+
+  handler.handle(async_handler, r)
+
+  // Shutdown should flush and stop the actor
+  async.shutdown_handler(handler_name)
+}
+
+@target(erlang)
+pub fn async_shutdown_all_test() {
+  // Create multiple handlers
+  let handler1 = async.make_async(handler.null(), async.default_config())
+  let handler2 = async.make_async(handler.null(), async.default_config())
+
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "shutdown all test",
+    )
+
+  handler.handle(handler1, r)
+  handler.handle(handler2, r)
+
+  // Shutdown all should flush and stop all actors
+  async.shutdown_all()
+}
+
+@target(erlang)
+pub fn async_get_subject_returns_subject_test() {
+  let async_handler = async.make_async(handler.null(), async.default_config())
+  let handler_name = handler.name(async_handler)
+
+  // Should be able to get the Subject for the async handler
+  case async.get_subject(handler_name) {
+    Ok(_subject) -> should.be_true(True)
+    Error(Nil) -> should.fail()
+  }
+
+  async.shutdown_handler(handler_name)
+}
+
+@target(erlang)
+pub fn async_get_subject_returns_error_for_unknown_test() {
+  // Should return Error for non-existent handler
+  case async.get_subject("non-existent-handler") {
+    Ok(_) -> should.fail()
+    Error(Nil) -> should.be_true(True)
+  }
+}
+
 // ============================================================================
 // Runtime Level Change Tests
 // ============================================================================

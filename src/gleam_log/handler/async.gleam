@@ -4,11 +4,14 @@
 //// are queued and written by a background process/task, preventing I/O from
 //// blocking application logic.
 ////
-//// ## Erlang Target
+//// ## Erlang Target (OTP Actor Pattern)
 ////
-//// On Erlang, a separate process is spawned that receives log records via
-//// message passing. This provides true non-blocking behavior with natural
-//// backpressure via the process mailbox.
+//// On Erlang, this uses a proper OTP actor with gleam_otp Subjects for message
+//// passing. This follows the glimt pattern, providing:
+////
+//// - True non-blocking behavior with natural backpressure via actor mailbox
+//// - Clean integration with OTP supervision trees
+//// - Proper flush semantics with synchronous confirmation
 ////
 //// ## JavaScript Target
 ////
@@ -40,9 +43,17 @@
 //// async.flush()
 //// ```
 
+import gleam/dict.{type Dict}
 import gleam_log/handler.{type Handler}
 import gleam_log/internal/platform
 import gleam_log/record.{type LogRecord}
+
+// Erlang-only imports (used conditionally)
+@target(erlang)
+import gleam/erlang/process.{type Subject}
+
+@target(erlang)
+import gleam_log/internal/async_actor.{type AsyncActor, type Message}
 
 /// Behavior when the async queue is full.
 pub type OverflowBehavior {
@@ -98,19 +109,143 @@ pub fn with_overflow(
   AsyncConfig(..config, overflow: overflow)
 }
 
-/// Wrap a handler to make it asynchronous.
+/// Convert overflow behavior to integer for FFI.
+fn overflow_to_int(overflow: OverflowBehavior) -> Int {
+  case overflow {
+    DropOldest -> 0
+    DropNewest -> 1
+    Block -> 2
+  }
+}
+
+// ============================================================================
+// Erlang Implementation (OTP Actor Pattern)
+// ============================================================================
+
+/// Registry of active async actors (Erlang only).
+/// This uses a mutable reference stored via process dictionary for simplicity.
+@target(erlang)
+type ActorRegistry =
+  Dict(String, AsyncActor)
+
+/// Get or create the actor registry.
+@target(erlang)
+fn get_actor_registry() -> ActorRegistry {
+  get_actor_registry_ffi()
+}
+
+@target(erlang)
+@external(erlang, "gleam_log_ffi", "get_actor_registry")
+fn get_actor_registry_ffi() -> ActorRegistry
+
+@target(erlang)
+fn set_actor_registry(registry: ActorRegistry) -> Nil {
+  set_actor_registry_ffi(registry)
+}
+
+@target(erlang)
+@external(erlang, "gleam_log_ffi", "set_actor_registry")
+fn set_actor_registry_ffi(registry: ActorRegistry) -> Nil
+
+/// Wrap a handler to make it asynchronous (Erlang implementation).
 ///
-/// Log records sent to the returned handler are queued and processed
-/// by a background process (Erlang) or via setTimeout batching (JavaScript).
+/// Uses an OTP actor with gleam_otp Subject for message passing.
+/// This follows the glimt pattern for async logging.
+@target(erlang)
+pub fn make_async(base_handler: Handler, async_config: AsyncConfig) -> Handler {
+  let base_name = handler.name(base_handler)
+  let async_name = "async:" <> base_name
+
+  // Start the OTP actor
+  let assert Ok(actor) =
+    async_actor.start(
+      base_handler,
+      async_config.queue_size,
+      overflow_to_int(async_config.overflow),
+    )
+
+  // Register the actor for later flush/shutdown
+  let registry = get_actor_registry()
+  let new_registry = dict.insert(registry, async_name, actor)
+  set_actor_registry(new_registry)
+
+  // Create a handler that sends records to the actor
+  handler.new_with_record_write(name: async_name, write: fn(record: LogRecord) {
+    async_actor.send(actor, record)
+  })
+}
+
+/// Flush all pending log messages (Erlang implementation).
 ///
-/// The original handler's write function is called from the background
-/// process/task, not the calling code.
+/// This function blocks until all queued messages have been written.
+/// Use this before application shutdown to ensure no logs are lost.
+@target(erlang)
+pub fn flush() -> Nil {
+  let registry = get_actor_registry()
+  dict.each(registry, fn(_name, actor) { async_actor.flush(actor) })
+}
+
+/// Flush a specific async handler by name (Erlang implementation).
+@target(erlang)
+pub fn flush_handler(name: String) -> Nil {
+  let registry = get_actor_registry()
+  case dict.get(registry, name) {
+    Ok(actor) -> async_actor.flush(actor)
+    Error(Nil) -> Nil
+  }
+}
+
+/// Shutdown all async handlers gracefully (Erlang only).
+///
+/// This flushes pending records and stops all async actors.
+/// Call this during application shutdown.
+@target(erlang)
+pub fn shutdown_all() -> Nil {
+  let registry = get_actor_registry()
+  dict.each(registry, fn(_name, actor) { async_actor.shutdown(actor) })
+  set_actor_registry(dict.new())
+}
+
+/// Shutdown a specific async handler (Erlang only).
+@target(erlang)
+pub fn shutdown_handler(name: String) -> Nil {
+  let registry = get_actor_registry()
+  case dict.get(registry, name) {
+    Ok(actor) -> {
+      async_actor.shutdown(actor)
+      let new_registry = dict.delete(registry, name)
+      set_actor_registry(new_registry)
+    }
+    Error(Nil) -> Nil
+  }
+}
+
+/// Get the OTP Subject for an async handler (Erlang only).
+///
+/// This allows advanced users to interact directly with the actor,
+/// for example to add it to a supervision tree.
+@target(erlang)
+pub fn get_subject(name: String) -> Result(Subject(Message), Nil) {
+  let registry = get_actor_registry()
+  case dict.get(registry, name) {
+    Ok(actor) -> Ok(async_actor.subject(actor))
+    Error(Nil) -> Error(Nil)
+  }
+}
+
+// ============================================================================
+// JavaScript Implementation (FFI-based)
+// ============================================================================
+
+/// Wrap a handler to make it asynchronous (JavaScript implementation).
+///
+/// Uses setTimeout batching for async writes.
+@target(javascript)
 pub fn make_async(base_handler: Handler, async_config: AsyncConfig) -> Handler {
   let base_name = handler.name(base_handler)
   let async_name = "async:" <> base_name
 
   // Create the callback that will be called by the async worker
-  // This callback calls the base handler with each record
   let callback = fn(record: LogRecord) { handler.handle(base_handler, record) }
 
   // Start the async writer with the callback
@@ -129,24 +264,14 @@ pub fn make_async(base_handler: Handler, async_config: AsyncConfig) -> Handler {
   })
 }
 
-/// Convert overflow behavior to integer for FFI.
-fn overflow_to_int(overflow: OverflowBehavior) -> Int {
-  case overflow {
-    DropOldest -> 0
-    DropNewest -> 1
-    Block -> 2
-  }
-}
-
-/// Flush all pending log messages.
-///
-/// This function blocks until all queued messages have been written.
-/// Use this before application shutdown to ensure no logs are lost.
+/// Flush all pending log messages (JavaScript implementation).
+@target(javascript)
 pub fn flush() -> Nil {
   platform.flush_async_writers()
 }
 
-/// Flush a specific async handler by name.
+/// Flush a specific async handler by name (JavaScript implementation).
+@target(javascript)
 pub fn flush_handler(name: String) -> Nil {
   platform.flush_async_writer(name)
 }
