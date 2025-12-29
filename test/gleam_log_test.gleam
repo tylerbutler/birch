@@ -1,3 +1,4 @@
+import gleam/json as gleam_json
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/order
@@ -343,6 +344,396 @@ pub fn json_format_test() {
 
   formatted
   |> string.contains("\"method\":\"POST\"")
+  |> should.be_true
+}
+
+// ============================================================================
+// JSON Builder Pattern Tests
+// ============================================================================
+
+pub fn json_builder_empty_test() {
+  // An empty builder should produce an empty JSON object
+  let format = json.builder() |> json.build()
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "Hello",
+    )
+
+  let formatted = format(r)
+  formatted
+  |> should.equal("{}")
+}
+
+pub fn json_builder_add_timestamp_test() {
+  let format =
+    json.builder()
+    |> json.add_timestamp()
+    |> json.build()
+
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "Hello",
+    )
+
+  let formatted = format(r)
+  formatted
+  |> string.contains("\"timestamp\":\"2024-12-26T10:30:45.123Z\"")
+  |> should.be_true
+}
+
+pub fn json_builder_add_level_test() {
+  let format =
+    json.builder()
+    |> json.add_level()
+    |> json.build()
+
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Warn,
+      logger_name: "test",
+      message: "Hello",
+    )
+
+  let formatted = format(r)
+  formatted
+  |> string.contains("\"level\":\"warn\"")
+  |> should.be_true
+}
+
+pub fn json_builder_add_logger_test() {
+  let format =
+    json.builder()
+    |> json.add_logger()
+    |> json.build()
+
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "myapp.database",
+      message: "Hello",
+    )
+
+  let formatted = format(r)
+  formatted
+  |> string.contains("\"logger\":\"myapp.database\"")
+  |> should.be_true
+}
+
+pub fn json_builder_add_message_test() {
+  let format =
+    json.builder()
+    |> json.add_message()
+    |> json.build()
+
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "Request completed",
+    )
+
+  let formatted = format(r)
+  formatted
+  |> string.contains("\"message\":\"Request completed\"")
+  |> should.be_true
+}
+
+pub fn json_builder_add_metadata_test() {
+  let format =
+    json.builder()
+    |> json.add_metadata()
+    |> json.build()
+
+  let r =
+    record.new(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "Hello",
+      metadata: [#("method", "GET"), #("path", "/api/users")],
+    )
+
+  let formatted = format(r)
+  formatted
+  |> string.contains("\"method\":\"GET\"")
+  |> should.be_true
+
+  formatted
+  |> string.contains("\"path\":\"/api/users\"")
+  |> should.be_true
+}
+
+pub fn json_builder_add_custom_test() {
+  let format =
+    json.builder()
+    |> json.add_custom(fn(_record) {
+      [
+        #("service", gleam_json.string("my-app")),
+        #("version", gleam_json.string("1.0.0")),
+      ]
+    })
+    |> json.build()
+
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "Hello",
+    )
+
+  let formatted = format(r)
+  formatted
+  |> string.contains("\"service\":\"my-app\"")
+  |> should.be_true
+
+  formatted
+  |> string.contains("\"version\":\"1.0.0\"")
+  |> should.be_true
+}
+
+pub fn json_builder_multiple_fields_test() {
+  // Test combining multiple fields
+  let format =
+    json.builder()
+    |> json.add_timestamp()
+    |> json.add_level()
+    |> json.add_message()
+    |> json.build()
+
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Err,
+      logger_name: "test",
+      message: "Something failed",
+    )
+
+  let formatted = format(r)
+  formatted
+  |> string.contains("\"timestamp\":\"2024-12-26T10:30:45.123Z\"")
+  |> should.be_true
+
+  formatted
+  |> string.contains("\"level\":\"error\"")
+  |> should.be_true
+
+  formatted
+  |> string.contains("\"message\":\"Something failed\"")
+  |> should.be_true
+}
+
+pub fn json_standard_builder_test() {
+  // Standard builder should include all common fields
+  let format = json.standard_builder() |> json.build()
+
+  let r =
+    record.new(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "myapp.http",
+      message: "Request complete",
+      metadata: [#("method", "POST")],
+    )
+
+  let formatted = format(r)
+
+  // Should have all standard fields
+  formatted
+  |> string.contains("\"timestamp\":\"2024-12-26T10:30:45.123Z\"")
+  |> should.be_true
+
+  formatted
+  |> string.contains("\"level\":\"info\"")
+  |> should.be_true
+
+  formatted
+  |> string.contains("\"logger\":\"myapp.http\"")
+  |> should.be_true
+
+  formatted
+  |> string.contains("\"message\":\"Request complete\"")
+  |> should.be_true
+
+  formatted
+  |> string.contains("\"method\":\"POST\"")
+  |> should.be_true
+}
+
+pub fn json_standard_builder_matches_format_json_test() {
+  // Standard builder should produce equivalent output to format_json
+  let r =
+    record.new(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "myapp.http",
+      message: "Request complete",
+      metadata: [#("method", "POST")],
+    )
+
+  let format_json_output = json.format_json(r)
+  let builder_format = json.standard_builder() |> json.build()
+  let builder_output = builder_format(r)
+
+  // Both should produce the same JSON (field order may vary, but content same)
+  // Check that both contain the same fields
+  format_json_output
+  |> string.contains("\"timestamp\"")
+  |> should.be_true
+  builder_output
+  |> string.contains("\"timestamp\"")
+  |> should.be_true
+
+  format_json_output
+  |> string.contains("\"level\"")
+  |> should.be_true
+  builder_output
+  |> string.contains("\"level\"")
+  |> should.be_true
+
+  format_json_output
+  |> string.contains("\"logger\"")
+  |> should.be_true
+  builder_output
+  |> string.contains("\"logger\"")
+  |> should.be_true
+
+  format_json_output
+  |> string.contains("\"message\"")
+  |> should.be_true
+  builder_output
+  |> string.contains("\"message\"")
+  |> should.be_true
+
+  format_json_output
+  |> string.contains("\"method\"")
+  |> should.be_true
+  builder_output
+  |> string.contains("\"method\"")
+  |> should.be_true
+}
+
+pub fn json_standard_builder_with_custom_extension_test() {
+  // Standard builder can be extended with custom fields
+  let format =
+    json.standard_builder()
+    |> json.add_custom(fn(_record) {
+      [#("environment", gleam_json.string("production"))]
+    })
+    |> json.build()
+
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "Hello",
+    )
+
+  let formatted = format(r)
+
+  // Should have standard fields
+  formatted
+  |> string.contains("\"timestamp\":")
+  |> should.be_true
+
+  formatted
+  |> string.contains("\"level\":")
+  |> should.be_true
+
+  // Plus custom field
+  formatted
+  |> string.contains("\"environment\":\"production\"")
+  |> should.be_true
+}
+
+pub fn json_handler_with_formatter_test() {
+  // handler_with_formatter should create a valid handler
+  let format =
+    json.builder()
+    |> json.add_message()
+    |> json.build()
+
+  let h = json.handler_with_formatter(format)
+
+  handler.name(h)
+  |> should.equal("json")
+}
+
+pub fn json_handler_stderr_with_formatter_test() {
+  // handler_stderr_with_formatter should create a handler writing to stderr
+  let format = json.standard_builder() |> json.build()
+  let h = json.handler_stderr_with_formatter(format)
+
+  handler.name(h)
+  |> should.equal("json_stderr")
+}
+
+pub fn json_add_custom_uses_record_data_test() {
+  // Custom extractor should have access to record data
+  let format =
+    json.builder()
+    |> json.add_custom(fn(record) {
+      // Use record data in custom field
+      let level_uppercase = level.to_string(record.level)
+      [#("severity", gleam_json.string(level_uppercase))]
+    })
+    |> json.build()
+
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Fatal,
+      logger_name: "test",
+      message: "Critical error",
+    )
+
+  let formatted = format(r)
+  formatted
+  |> string.contains("\"severity\":\"FATAL\"")
+  |> should.be_true
+}
+
+pub fn json_builder_field_order_test() {
+  // Fields should be added in order
+  let format =
+    json.builder()
+    |> json.add_level()
+    |> json.add_message()
+    |> json.add_timestamp()
+    |> json.build()
+
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "Hello",
+    )
+
+  let formatted = format(r)
+
+  // All fields should be present (order may vary in actual JSON output
+  // as JSON objects are unordered, but the builder adds them in sequence)
+  formatted
+  |> string.contains("\"level\":")
+  |> should.be_true
+
+  formatted
+  |> string.contains("\"message\":")
+  |> should.be_true
+
+  formatted
+  |> string.contains("\"timestamp\":")
   |> should.be_true
 }
 
