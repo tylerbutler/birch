@@ -250,15 +250,15 @@ pub fn uninstall_logger_handler_with_id(
 
 /// Log a message to Erlang's :logger at the specified level.
 @external(erlang, "gleam_log_erlang_logger_ffi", "logger_log")
-@external(javascript, "../../gleam_log_erlang_logger_ffi.mjs", "logger_log")
+@external(javascript, "../gleam_log_erlang_logger_ffi.mjs", "logger_log")
 fn do_logger_log(level: ErlangLevel, message: String) -> Nil
 
 /// Install gleam_log as a :logger handler.
 @external(erlang, "gleam_log_erlang_logger_ffi", "install_handler")
-@external(javascript, "../../gleam_log_erlang_logger_ffi.mjs", "install_handler")
+@external(javascript, "../gleam_log_erlang_logger_ffi.mjs", "install_handler")
 fn do_install_logger_handler(handler_id: String) -> Result(Nil, String)
 
 /// Uninstall a :logger handler.
 @external(erlang, "gleam_log_erlang_logger_ffi", "uninstall_handler")
-@external(javascript, "../../gleam_log_erlang_logger_ffi.mjs", "uninstall_handler")
+@external(javascript, "../gleam_log_erlang_logger_ffi.mjs", "uninstall_handler")
 fn do_uninstall_logger_handler(handler_id: String) -> Result(Nil, String)
