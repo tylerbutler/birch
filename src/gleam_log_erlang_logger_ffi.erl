@@ -19,26 +19,28 @@
 %% Gleam ErlangLevel type mapping
 %% ============================================================================
 
-%% Convert Gleam ErlangLevel type to Erlang atom
-gleam_level_to_atom({erlang_emergency}) -> emergency;
-gleam_level_to_atom({erlang_alert}) -> alert;
-gleam_level_to_atom({erlang_critical}) -> critical;
-gleam_level_to_atom({erlang_error}) -> error;
-gleam_level_to_atom({erlang_warning}) -> warning;
-gleam_level_to_atom({erlang_notice}) -> notice;
-gleam_level_to_atom({erlang_info}) -> info;
-gleam_level_to_atom({erlang_debug}) -> debug.
+%% Convert Gleam ErlangLevel type to Erlang atom.
+%% Gleam compiles simple custom type variants (no fields) to just atoms.
+gleam_level_to_atom(erlang_emergency) -> emergency;
+gleam_level_to_atom(erlang_alert) -> alert;
+gleam_level_to_atom(erlang_critical) -> critical;
+gleam_level_to_atom(erlang_error) -> error;
+gleam_level_to_atom(erlang_warning) -> warning;
+gleam_level_to_atom(erlang_notice) -> notice;
+gleam_level_to_atom(erlang_info) -> info;
+gleam_level_to_atom(erlang_debug) -> debug.
 
-%% Convert Erlang log level atom to Gleam Level type
-erlang_level_to_gleam(emergency) -> {fatal};
-erlang_level_to_gleam(alert) -> {fatal};
-erlang_level_to_gleam(critical) -> {fatal};
-erlang_level_to_gleam(error) -> {err};
-erlang_level_to_gleam(warning) -> {warn};
-erlang_level_to_gleam(notice) -> {info};
-erlang_level_to_gleam(info) -> {info};
-erlang_level_to_gleam(debug) -> {debug};
-erlang_level_to_gleam(_) -> {info}.
+%% Convert Erlang log level atom to Gleam Level type.
+%% Gleam Level variants are also just atoms.
+erlang_level_to_gleam(emergency) -> fatal;
+erlang_level_to_gleam(alert) -> fatal;
+erlang_level_to_gleam(critical) -> fatal;
+erlang_level_to_gleam(error) -> err;
+erlang_level_to_gleam(warning) -> warn;
+erlang_level_to_gleam(notice) -> info;
+erlang_level_to_gleam(info) -> info;
+erlang_level_to_gleam(debug) -> debug;
+erlang_level_to_gleam(_) -> info.
 
 %% ============================================================================
 %% Forward to :logger API
@@ -277,23 +279,24 @@ handle_with_handler(Handler, LogRecord) ->
 compare_levels(RecordLevel, MinLevel) ->
     level_to_int(RecordLevel) >= level_to_int(MinLevel).
 
-level_to_int({trace}) -> 0;
-level_to_int({debug}) -> 1;
-level_to_int({info}) -> 2;
-level_to_int({warn}) -> 3;
-level_to_int({err}) -> 4;
-level_to_int({fatal}) -> 5;
+%% Gleam Level variants are atoms
+level_to_int(trace) -> 0;
+level_to_int(debug) -> 1;
+level_to_int(info) -> 2;
+level_to_int(warn) -> 3;
+level_to_int(err) -> 4;
+level_to_int(fatal) -> 5;
 level_to_int(_) -> 2. %% Default to info
 
 %% Format and print a LogRecord to stdout (fallback)
 format_and_print_record({log_record, Timestamp, Level, LoggerName, Message, Metadata}) ->
     LevelStr = case Level of
-        {trace} -> <<"TRACE">>;
-        {debug} -> <<"DEBUG">>;
-        {info} -> <<"INFO">>;
-        {warn} -> <<"WARN">>;
-        {err} -> <<"ERROR">>;
-        {fatal} -> <<"FATAL">>;
+        trace -> <<"TRACE">>;
+        debug -> <<"DEBUG">>;
+        info -> <<"INFO">>;
+        warn -> <<"WARN">>;
+        err -> <<"ERROR">>;
+        fatal -> <<"FATAL">>;
         _ -> <<"INFO">>
     end,
     MetaStr = format_metadata_str(Metadata),
