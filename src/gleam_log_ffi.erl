@@ -2,6 +2,7 @@
 -export([timestamp_iso8601/0, write_stdout/1, write_stderr/1, is_stdout_tty/0,
          get_global_config/0, set_global_config/1, clear_global_config/0,
          start_async_writer/5, async_send/2, flush_async_writers/0, flush_async_writer/1,
+         safe_call/1,
          get_scope_context/0, set_scope_context/1, is_scope_context_available/0,
          random_float/0, current_time_ms/0]).
 
@@ -209,6 +210,30 @@ get_writer(Name) ->
         {Name, Pid} -> {ok, Pid};
         false -> error
     end.
+
+%% ============================================================================
+%% Safe Call (Error Catching)
+%% ============================================================================
+
+%% Safely call a function, catching any errors/exceptions.
+%% Returns {ok, nil} if successful, {error, ErrorMessage} if failed.
+safe_call(Fun) ->
+    try
+        Fun(),
+        {ok, nil}
+    catch
+        Class:Reason:_Stacktrace ->
+            ErrorMsg = format_error(Class, Reason),
+            {error, ErrorMsg}
+    end.
+
+%% Format an error/exception into a readable string
+format_error(error, Reason) ->
+    iolist_to_binary(io_lib:format("~p", [Reason]));
+format_error(throw, Reason) ->
+    iolist_to_binary(io_lib:format("throw: ~p", [Reason]));
+format_error(exit, Reason) ->
+    iolist_to_binary(io_lib:format("exit: ~p", [Reason])).
 
 %% ============================================================================
 %% Scoped Context Implementation

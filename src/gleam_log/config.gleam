@@ -4,7 +4,8 @@
 //// logger and application-wide logging settings.
 
 import gleam/list
-import gleam_log/handler.{type Handler}
+import gleam/option.{type Option, None, Some}
+import gleam_log/handler.{type ErrorCallback, type Handler}
 import gleam_log/level.{type Level}
 import gleam_log/record.{type Metadata}
 
@@ -39,6 +40,8 @@ pub type GlobalConfig {
     handlers: List(Handler),
     /// Default context metadata applied to all loggers
     context: Metadata,
+    /// Optional global error callback for handler failures
+    on_error: Option(ErrorCallback),
     /// Optional sampling configuration
     sampling: Result(SampleConfig, Nil),
   )
@@ -49,6 +52,7 @@ pub opaque type ConfigOption {
   LevelOption(Level)
   HandlersOption(List(Handler))
   ContextOption(Metadata)
+  OnErrorOption(ErrorCallback)
   SamplingOption(SampleConfig)
 }
 
@@ -67,6 +71,14 @@ pub fn context(ctx: Metadata) -> ConfigOption {
   ContextOption(ctx)
 }
 
+/// Create a configuration option to set the global error callback.
+///
+/// This callback is invoked when any handler encounters an error.
+/// It's useful for monitoring and alerting on handler failures.
+pub fn on_error(callback: ErrorCallback) -> ConfigOption {
+  OnErrorOption(callback)
+}
+
 /// Create a configuration option to set sampling.
 pub fn sampling(config: SampleConfig) -> ConfigOption {
   SamplingOption(config)
@@ -79,6 +91,7 @@ pub fn empty() -> GlobalConfig {
     level: level.Info,
     handlers: [],
     context: [],
+    on_error: None,
     sampling: Error(Nil),
   )
 }
@@ -97,6 +110,7 @@ fn apply_option(config: GlobalConfig, option: ConfigOption) -> GlobalConfig {
     LevelOption(lvl) -> GlobalConfig(..config, level: lvl)
     HandlersOption(h) -> GlobalConfig(..config, handlers: h)
     ContextOption(ctx) -> GlobalConfig(..config, context: ctx)
+    OnErrorOption(callback) -> GlobalConfig(..config, on_error: Some(callback))
     SamplingOption(s) -> GlobalConfig(..config, sampling: Ok(s))
   }
 }
@@ -113,4 +127,9 @@ pub fn with_level(config: GlobalConfig, lvl: Level) -> GlobalConfig {
 /// Get the log level from a GlobalConfig.
 pub fn get_level(config: GlobalConfig) -> Level {
   config.level
+}
+
+/// Get the error callback from a GlobalConfig, if set.
+pub fn get_on_error(config: GlobalConfig) -> Option(ErrorCallback) {
+  config.on_error
 }
