@@ -50,7 +50,6 @@
 import gleam_log/formatter
 import gleam_log/handler.{type Handler}
 import gleam_log/level.{type Level}
-import gleam_log/record.{type LogRecord}
 
 // ============================================================================
 // Erlang Log Level Type

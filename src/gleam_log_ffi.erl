@@ -2,7 +2,7 @@
 -export([timestamp_iso8601/0, write_stdout/1, write_stderr/1, is_stdout_tty/0,
          get_global_config/0, set_global_config/1, clear_global_config/0,
          start_async_writer/5, async_send/2, flush_async_writers/0, flush_async_writer/1,
-         safe_call/1,
+         compress_file_gzip/2, safe_call/1,
          get_scope_context/0, set_scope_context/1, is_scope_context_available/0,
          random_float/0, current_time_ms/0]).
 
@@ -209,6 +209,33 @@ get_writer(Name) ->
     case lists:keyfind(Name, 1, Writers) of
         {Name, Pid} -> {ok, Pid};
         false -> error
+    end.
+
+%% ============================================================================
+%% File Compression
+%% ============================================================================
+
+%% Compress a file using gzip.
+%% Reads the source file, compresses it with zlib:gzip, and writes to dest.
+compress_file_gzip(SourcePath, DestPath) ->
+    try
+        %% Read the source file
+        case file:read_file(SourcePath) of
+            {ok, Data} ->
+                %% Compress with gzip
+                Compressed = zlib:gzip(Data),
+                %% Write to destination
+                case file:write_file(DestPath, Compressed) of
+                    ok -> {ok, nil};
+                    {error, WriteReason} ->
+                        {error, iolist_to_binary(io_lib:format("write failed: ~p", [WriteReason]))}
+                end;
+            {error, ReadReason} ->
+                {error, iolist_to_binary(io_lib:format("read failed: ~p", [ReadReason]))}
+        end
+    catch
+        Type:Reason ->
+            {error, iolist_to_binary(io_lib:format("compression error: ~p:~p", [Type, Reason]))}
     end.
 
 %% ============================================================================

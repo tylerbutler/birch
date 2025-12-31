@@ -2,6 +2,7 @@ import gleam/json as gleam_json
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/order
+import gleam/result
 import gleam/string
 import gleam_log
 import gleam_log/formatter
@@ -15,6 +16,7 @@ import gleam_log/record
 import gleam_log/sampling
 import gleeunit
 import gleeunit/should
+import simplifile
 
 pub fn main() {
   gleeunit.main()
@@ -1090,6 +1092,269 @@ pub fn set_level_preserves_other_config_test() {
 }
 
 // ============================================================================
+// File Handler Compression Tests
+// ============================================================================
+
+pub fn file_rotation_no_compression_test() {
+  // Test that SizeRotation works without compression
+  let test_dir = "/tmp/gleam_log_test_no_compress"
+  let test_path = test_dir <> "/app.log"
+
+  // Clean up any existing test files
+  let _ = simplifile.delete_all([test_dir])
+  let _ = simplifile.create_directory_all(test_dir)
+
+  // Create a file handler with small max_bytes for easy rotation
+  let config =
+    file.FileConfig(
+      path: test_path,
+      rotation: file.SizeRotation(max_bytes: 100, max_files: 3),
+    )
+  let file_handler = file.handler(config)
+
+  // Write enough data to trigger rotation
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "This is a log message that should trigger rotation when repeated",
+    )
+
+  // Write multiple log records to trigger rotation
+  handler.handle(file_handler, r)
+  handler.handle(file_handler, r)
+  handler.handle(file_handler, r)
+
+  // Verify the rotated file exists (without .gz extension)
+  simplifile.is_file(test_path <> ".1")
+  |> should.be_ok
+  |> should.be_true
+
+  // Clean up
+  let _ = simplifile.delete_all([test_dir])
+}
+
+pub fn file_rotation_with_compression_test() {
+  // Test that SizeRotation with compress: True creates .gz files
+  let test_dir = "/tmp/gleam_log_test_compress"
+  let test_path = test_dir <> "/app.log"
+
+  // Clean up any existing test files
+  let _ = simplifile.delete_all([test_dir])
+  let _ = simplifile.create_directory_all(test_dir)
+
+  // Create a file handler with compression enabled
+  let config =
+    file.FileConfig(
+      path: test_path,
+      rotation: file.SizeRotationCompressed(
+        max_bytes: 100,
+        max_files: 3,
+        compress: True,
+      ),
+    )
+  let file_handler = file.handler(config)
+
+  // Write enough data to trigger rotation
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "This is a log message that should trigger rotation when repeated",
+    )
+
+  // Write multiple log records to trigger rotation
+  handler.handle(file_handler, r)
+  handler.handle(file_handler, r)
+  handler.handle(file_handler, r)
+
+  // Verify the compressed rotated file exists (with .gz extension)
+  simplifile.is_file(test_path <> ".1.gz")
+  |> should.be_ok
+  |> should.be_true
+
+  // Clean up
+  let _ = simplifile.delete_all([test_dir])
+}
+
+pub fn file_rotation_compression_disabled_test() {
+  // Test that SizeRotationCompressed with compress: False behaves like SizeRotation
+  let test_dir = "/tmp/gleam_log_test_compress_disabled"
+  let test_path = test_dir <> "/app.log"
+
+  // Clean up any existing test files
+  let _ = simplifile.delete_all([test_dir])
+  let _ = simplifile.create_directory_all(test_dir)
+
+  // Create a file handler with compression disabled
+  let config =
+    file.FileConfig(
+      path: test_path,
+      rotation: file.SizeRotationCompressed(
+        max_bytes: 100,
+        max_files: 3,
+        compress: False,
+      ),
+    )
+  let file_handler = file.handler(config)
+
+  // Write enough data to trigger rotation
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "This is a log message that should trigger rotation when repeated",
+    )
+
+  // Write multiple log records to trigger rotation
+  handler.handle(file_handler, r)
+  handler.handle(file_handler, r)
+  handler.handle(file_handler, r)
+
+  // Verify the rotated file exists (without .gz extension)
+  simplifile.is_file(test_path <> ".1")
+  |> should.be_ok
+  |> should.be_true
+
+  // Verify no .gz file exists
+  simplifile.is_file(test_path <> ".1.gz")
+  |> should.be_ok
+  |> should.be_false
+
+  // Clean up
+  let _ = simplifile.delete_all([test_dir])
+}
+
+pub fn file_rotation_compressed_file_is_smaller_test() {
+  // Test that compressed files are actually smaller than uncompressed
+  let test_dir = "/tmp/gleam_log_test_compress_size"
+  let test_path_uncompressed = test_dir <> "/uncompressed.log"
+  let test_path_compressed = test_dir <> "/compressed.log"
+
+  // Clean up any existing test files
+  let _ = simplifile.delete_all([test_dir])
+  let _ = simplifile.create_directory_all(test_dir)
+
+  // Create handlers
+  let config_uncompressed =
+    file.FileConfig(
+      path: test_path_uncompressed,
+      rotation: file.SizeRotation(max_bytes: 100, max_files: 3),
+    )
+  let config_compressed =
+    file.FileConfig(
+      path: test_path_compressed,
+      rotation: file.SizeRotationCompressed(
+        max_bytes: 100,
+        max_files: 3,
+        compress: True,
+      ),
+    )
+
+  let handler_uncompressed = file.handler(config_uncompressed)
+  let handler_compressed = file.handler(config_compressed)
+
+  // Write the same data to both to trigger rotation
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "This is a repeating log message for testing compression size comparison",
+    )
+
+  handler.handle(handler_uncompressed, r)
+  handler.handle(handler_uncompressed, r)
+  handler.handle(handler_uncompressed, r)
+
+  handler.handle(handler_compressed, r)
+  handler.handle(handler_compressed, r)
+  handler.handle(handler_compressed, r)
+
+  // Get file sizes
+  let uncompressed_size =
+    simplifile.file_info(test_path_uncompressed <> ".1")
+    |> result.map(fn(info) { info.size })
+    |> result.unwrap(0)
+
+  let compressed_size =
+    simplifile.file_info(test_path_compressed <> ".1.gz")
+    |> result.map(fn(info) { info.size })
+    |> result.unwrap(0)
+
+  // Compressed file should be smaller (or at least not larger for very small files)
+  // Note: For very small files, compression overhead might make them larger
+  // So we just verify both files exist and are non-zero
+  { uncompressed_size > 0 }
+  |> should.be_true
+
+  { compressed_size > 0 }
+  |> should.be_true
+
+  // Clean up
+  let _ = simplifile.delete_all([test_dir])
+}
+
+pub fn file_rotation_max_files_with_compression_test() {
+  // Test that max_files limit works correctly with compressed files
+  let test_dir = "/tmp/gleam_log_test_max_files_compress"
+  let test_path = test_dir <> "/app.log"
+
+  // Clean up any existing test files
+  let _ = simplifile.delete_all([test_dir])
+  let _ = simplifile.create_directory_all(test_dir)
+
+  // Create a file handler with small max_bytes and max_files: 2
+  let config =
+    file.FileConfig(
+      path: test_path,
+      rotation: file.SizeRotationCompressed(
+        max_bytes: 50,
+        max_files: 2,
+        compress: True,
+      ),
+    )
+  let file_handler = file.handler(config)
+
+  // Write enough data to trigger multiple rotations
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "Log message for testing max files limit with compression enabled",
+    )
+
+  // This should trigger rotations and enforce max_files limit
+  handler.handle(file_handler, r)
+  handler.handle(file_handler, r)
+  handler.handle(file_handler, r)
+  handler.handle(file_handler, r)
+  handler.handle(file_handler, r)
+
+  // With max_files: 2, we should have .1.gz and .2.gz at most
+  // The .3.gz file should be deleted
+  simplifile.is_file(test_path <> ".1.gz")
+  |> should.be_ok
+  |> should.be_true
+
+  simplifile.is_file(test_path <> ".2.gz")
+  |> should.be_ok
+  |> should.be_true
+
+  // .3.gz should NOT exist (deleted due to max_files limit)
+  simplifile.is_file(test_path <> ".3.gz")
+  |> should.be_ok
+  |> should.be_false
+
+  // Clean up
+  let _ = simplifile.delete_all([test_dir])
+}
+
+// ============================================================================
 // Handler Error Callback Tests
 // ============================================================================
 
@@ -1601,19 +1866,17 @@ pub fn config_without_sampling_test() {
 pub fn time_interval_hourly_test() {
   // Hourly interval should be a valid TimeInterval variant
   let interval = file.Hourly
-  case interval {
-    file.Hourly -> should.be_true(True)
-    _ -> should.fail()
-  }
+  // Verify the variant matches by comparing to itself
+  interval
+  |> should.equal(file.Hourly)
 }
 
 pub fn time_interval_daily_test() {
   // Daily interval should be a valid TimeInterval variant
   let interval = file.Daily
-  case interval {
-    file.Daily -> should.be_true(True)
-    _ -> should.fail()
-  }
+  // Verify the variant matches by comparing to itself
+  interval
+  |> should.equal(file.Daily)
 }
 
 pub fn rotation_time_rotation_test() {

@@ -69,6 +69,20 @@ pub fn flush_async_writers() -> Nil
 pub fn flush_async_writer(name: String) -> Nil
 
 // ============================================================================
+// File Compression FFI
+// ============================================================================
+
+/// Compress a file using gzip and write to the destination path.
+/// The source file is read, compressed, and written to dest_path.
+/// Returns Ok(Nil) on success, Error(String) with error message on failure.
+@external(erlang, "gleam_log_ffi", "compress_file_gzip")
+@external(javascript, "../../gleam_log_ffi.mjs", "compress_file_gzip")
+pub fn compress_file_gzip(
+  source_path: String,
+  dest_path: String,
+) -> Result(Nil, String)
+
+// ============================================================================
 // Safe Call (Error Catching)
 // ============================================================================
 

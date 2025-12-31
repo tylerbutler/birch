@@ -25,6 +25,9 @@ pub type Rotation {
   NoRotation
   /// Rotate when file exceeds max_bytes, keep up to max_files old files
   SizeRotation(max_bytes: Int, max_files: Int)
+  /// Rotate when file exceeds max_bytes, keep up to max_files old files,
+  /// with optional gzip compression of rotated files
+  SizeRotationCompressed(max_bytes: Int, max_files: Int, compress: Bool)
   /// Rotate based on time interval, keep up to max_files old files
   TimeRotation(interval: TimeInterval, max_files: Int)
   /// Rotate on size OR time, whichever comes first
@@ -69,7 +72,13 @@ fn write_to_file(config: FileConfig, message: String) -> Nil {
     NoRotation -> Nil
     SizeRotation(max_bytes, max_files) -> {
       case should_rotate_by_size(config.path, max_bytes) {
-        True -> rotate_file(config.path, max_files)
+        True -> rotate_file(config.path, max_files, False)
+        False -> Nil
+      }
+    }
+    SizeRotationCompressed(max_bytes, max_files, compress) -> {
+      case should_rotate_by_size(config.path, max_bytes) {
+        True -> rotate_file(config.path, max_files, compress)
         False -> Nil
       }
     }
@@ -148,19 +157,46 @@ fn file_size(path: String) -> Result(Int, Nil) {
 }
 
 /// Rotate log files using numeric suffixes.
-/// myapp.log -> myapp.log.1 -> myapp.log.2 -> ... -> deleted
-fn rotate_file(path: String, max_files: Int) -> Nil {
+/// When compress is False: myapp.log -> myapp.log.1 -> myapp.log.2 -> ... -> deleted
+/// When compress is True: myapp.log -> myapp.log.1.gz -> myapp.log.2.gz -> ... -> deleted
+fn rotate_file(path: String, max_files: Int, compress: Bool) -> Nil {
   // Delete the oldest file if it exists
-  let oldest = path <> "." <> int.to_string(max_files)
+  let oldest_suffix = case compress {
+    True -> ".gz"
+    False -> ""
+  }
+  let oldest = path <> "." <> int.to_string(max_files) <> oldest_suffix
   let _ = simplifile.delete(oldest)
 
   // Shift all existing rotated files
-  shift_files(path, max_files - 1)
+  shift_files(path, max_files - 1, compress)
 
-  // Rename current file to .1
-  let _ = simplifile.rename(path, path <> ".1")
-
-  Nil
+  // Rename current file to .1 (and compress if enabled)
+  case compress {
+    True -> {
+      // Compress the current file to .1.gz
+      let compressed_path = path <> ".1.gz"
+      case platform.compress_file_gzip(path, compressed_path) {
+        Ok(Nil) -> {
+          // Delete the original file after successful compression
+          let _ = simplifile.delete(path)
+          Nil
+        }
+        Error(_) -> {
+          // If compression fails, fall back to rename without compression
+          platform.write_stderr(
+            "gleam_log: compression failed, falling back to uncompressed rotation",
+          )
+          let _ = simplifile.rename(path, path <> ".1")
+          Nil
+        }
+      }
+    }
+    False -> {
+      let _ = simplifile.rename(path, path <> ".1")
+      Nil
+    }
+  }
 }
 
 /// Rotate log files using timestamp-based suffixes for time-based rotation.
@@ -248,14 +284,19 @@ fn get_filename(path: String) -> String {
 }
 
 /// Shift rotated files: .N -> .N+1 for N from max down to 1
-fn shift_files(base_path: String, n: Int) -> Nil {
+/// When compress is True, files have .gz extension
+fn shift_files(base_path: String, n: Int, compress: Bool) -> Nil {
   case n < 1 {
     True -> Nil
     False -> {
-      let from = base_path <> "." <> int.to_string(n)
-      let to = base_path <> "." <> int.to_string(n + 1)
+      let suffix = case compress {
+        True -> ".gz"
+        False -> ""
+      }
+      let from = base_path <> "." <> int.to_string(n) <> suffix
+      let to = base_path <> "." <> int.to_string(n + 1) <> suffix
       let _ = simplifile.rename(from, to)
-      shift_files(base_path, n - 1)
+      shift_files(base_path, n - 1, compress)
     }
   }
 }
