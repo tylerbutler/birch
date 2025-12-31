@@ -133,3 +133,23 @@ pub fn get_level(config: GlobalConfig) -> Level {
 pub fn get_on_error(config: GlobalConfig) -> Option(ErrorCallback) {
   config.on_error
 }
+
+// ============================================================================
+// Global Configuration Storage (FFI)
+// ============================================================================
+
+/// Get the global configuration from platform-specific storage.
+/// Returns Ok(config) if set, Error(Nil) if not configured.
+@external(erlang, "gleam_log_ffi", "get_global_config")
+@external(javascript, "../gleam_log_ffi.mjs", "get_global_config")
+pub fn get_global_config() -> Result(GlobalConfig, Nil)
+
+/// Set the global configuration in platform-specific storage.
+@external(erlang, "gleam_log_ffi", "set_global_config")
+@external(javascript, "../gleam_log_ffi.mjs", "set_global_config")
+pub fn set_global_config(config: GlobalConfig) -> Nil
+
+/// Clear the global configuration from platform-specific storage.
+@external(erlang, "gleam_log_ffi", "clear_global_config")
+@external(javascript, "../gleam_log_ffi.mjs", "clear_global_config")
+pub fn clear_global_config() -> Nil
