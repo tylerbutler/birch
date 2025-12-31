@@ -710,7 +710,7 @@ pub fn file_rotation_no_compression_test() {
   let test_path = test_dir <> "/app.log"
 
   // Clean up any existing test files
-  let _ = simplifile.delete_all(test_dir)
+  let _ = simplifile.delete_all([test_dir])
   let _ = simplifile.create_directory_all(test_dir)
 
   // Create a file handler with small max_bytes for easy rotation
@@ -741,7 +741,7 @@ pub fn file_rotation_no_compression_test() {
   |> should.be_true
 
   // Clean up
-  let _ = simplifile.delete_all(test_dir)
+  let _ = simplifile.delete_all([test_dir])
 }
 
 pub fn file_rotation_with_compression_test() {
@@ -750,7 +750,7 @@ pub fn file_rotation_with_compression_test() {
   let test_path = test_dir <> "/app.log"
 
   // Clean up any existing test files
-  let _ = simplifile.delete_all(test_dir)
+  let _ = simplifile.delete_all([test_dir])
   let _ = simplifile.create_directory_all(test_dir)
 
   // Create a file handler with compression enabled
@@ -785,7 +785,7 @@ pub fn file_rotation_with_compression_test() {
   |> should.be_true
 
   // Clean up
-  let _ = simplifile.delete_all(test_dir)
+  let _ = simplifile.delete_all([test_dir])
 }
 
 pub fn file_rotation_compression_disabled_test() {
@@ -794,7 +794,7 @@ pub fn file_rotation_compression_disabled_test() {
   let test_path = test_dir <> "/app.log"
 
   // Clean up any existing test files
-  let _ = simplifile.delete_all(test_dir)
+  let _ = simplifile.delete_all([test_dir])
   let _ = simplifile.create_directory_all(test_dir)
 
   // Create a file handler with compression disabled
@@ -830,10 +830,11 @@ pub fn file_rotation_compression_disabled_test() {
 
   // Verify no .gz file exists
   simplifile.is_file(test_path <> ".1.gz")
-  |> should.be_error
+  |> should.be_ok
+  |> should.be_false
 
   // Clean up
-  let _ = simplifile.delete_all(test_dir)
+  let _ = simplifile.delete_all([test_dir])
 }
 
 pub fn file_rotation_compressed_file_is_smaller_test() {
@@ -843,7 +844,7 @@ pub fn file_rotation_compressed_file_is_smaller_test() {
   let test_path_compressed = test_dir <> "/compressed.log"
 
   // Clean up any existing test files
-  let _ = simplifile.delete_all(test_dir)
+  let _ = simplifile.delete_all([test_dir])
   let _ = simplifile.create_directory_all(test_dir)
 
   // Create handlers
@@ -903,7 +904,7 @@ pub fn file_rotation_compressed_file_is_smaller_test() {
   |> should.be_true
 
   // Clean up
-  let _ = simplifile.delete_all(test_dir)
+  let _ = simplifile.delete_all([test_dir])
 }
 
 pub fn file_rotation_max_files_with_compression_test() {
@@ -912,7 +913,7 @@ pub fn file_rotation_max_files_with_compression_test() {
   let test_path = test_dir <> "/app.log"
 
   // Clean up any existing test files
-  let _ = simplifile.delete_all(test_dir)
+  let _ = simplifile.delete_all([test_dir])
   let _ = simplifile.create_directory_all(test_dir)
 
   // Create a file handler with small max_bytes and max_files: 2
@@ -955,10 +956,11 @@ pub fn file_rotation_max_files_with_compression_test() {
 
   // .3.gz should NOT exist (deleted due to max_files limit)
   simplifile.is_file(test_path <> ".3.gz")
-  |> should.be_error
+  |> should.be_ok
+  |> should.be_false
 
   // Clean up
-  let _ = simplifile.delete_all(test_dir)
+  let _ = simplifile.delete_all([test_dir])
 }
 
 // ============================================================================
@@ -1473,19 +1475,17 @@ pub fn config_without_sampling_test() {
 pub fn time_interval_hourly_test() {
   // Hourly interval should be a valid TimeInterval variant
   let interval = file.Hourly
-  case interval {
-    file.Hourly -> should.be_true(True)
-    _ -> should.fail()
-  }
+  // Verify the variant matches by comparing to itself
+  interval
+  |> should.equal(file.Hourly)
 }
 
 pub fn time_interval_daily_test() {
   // Daily interval should be a valid TimeInterval variant
   let interval = file.Daily
-  case interval {
-    file.Daily -> should.be_true(True)
-    _ -> should.fail()
-  }
+  // Verify the variant matches by comparing to itself
+  interval
+  |> should.equal(file.Daily)
 }
 
 pub fn rotation_time_rotation_test() {
