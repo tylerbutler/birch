@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(gleam format:*)"
+      "Bash(gleam format:*)",
+      "Skill(pr:*)"
     ]
   }
 }
