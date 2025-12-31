@@ -62,10 +62,7 @@ pub fn builder() -> JsonBuilder {
 
 /// Add a field extractor to the builder.
 /// This is a low-level function; prefer using specific add_* functions.
-pub fn add_field(
-  builder: JsonBuilder,
-  extractor: FieldExtractor,
-) -> JsonBuilder {
+pub fn add_field(builder: JsonBuilder, extractor: FieldExtractor) -> JsonBuilder {
   JsonBuilder(fields: list.append(builder.fields, [extractor]))
 }
 
