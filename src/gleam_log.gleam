@@ -78,13 +78,13 @@ pub type Config =
 pub fn configure(options: List(ConfigOption)) -> Nil {
   let current = get_config()
   let new_config = config.apply_options(current, options)
-  platform.set_global_config(new_config)
+  config.set_global_config(new_config)
 }
 
 /// Get the current global configuration.
 /// Returns the configured settings, or defaults if not configured.
 pub fn get_config() -> GlobalConfig {
-  case platform.get_global_config() {
+  case config.get_global_config() {
     Ok(cfg) -> cfg
     Error(Nil) -> default_config()
   }
@@ -92,7 +92,7 @@ pub fn get_config() -> GlobalConfig {
 
 /// Reset the global configuration to defaults.
 pub fn reset_config() -> Nil {
-  platform.clear_global_config()
+  config.clear_global_config()
 }
 
 // ============================================================================
@@ -118,7 +118,7 @@ pub fn reset_config() -> Nil {
 pub fn set_level(lvl: Level) -> Nil {
   let current = get_config()
   let new_config = config.with_level(current, lvl)
-  platform.set_global_config(new_config)
+  config.set_global_config(new_config)
 }
 
 /// Get the current global log level.

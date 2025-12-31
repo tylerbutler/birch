@@ -3,7 +3,6 @@
 //// This module provides cross-platform abstractions for operations that
 //// differ between Erlang and JavaScript targets.
 
-import gleam_log/config.{type GlobalConfig}
 import gleam_log/record.{type LogRecord, type Metadata}
 
 /// Get the current timestamp in ISO 8601 format with milliseconds.
@@ -26,26 +25,6 @@ pub fn write_stderr(message: String) -> Nil
 @external(erlang, "gleam_log_ffi", "is_stdout_tty")
 @external(javascript, "../../gleam_log_ffi.mjs", "is_stdout_tty")
 pub fn is_stdout_tty() -> Bool
-
-// ============================================================================
-// Global Configuration Storage
-// ============================================================================
-
-/// Get the global configuration from platform-specific storage.
-/// Returns Ok(config) if set, Error(Nil) if not configured.
-@external(erlang, "gleam_log_ffi", "get_global_config")
-@external(javascript, "../../gleam_log_ffi.mjs", "get_global_config")
-pub fn get_global_config() -> Result(GlobalConfig, Nil)
-
-/// Set the global configuration in platform-specific storage.
-@external(erlang, "gleam_log_ffi", "set_global_config")
-@external(javascript, "../../gleam_log_ffi.mjs", "set_global_config")
-pub fn set_global_config(config: GlobalConfig) -> Nil
-
-/// Clear the global configuration from platform-specific storage.
-@external(erlang, "gleam_log_ffi", "clear_global_config")
-@external(javascript, "../../gleam_log_ffi.mjs", "clear_global_config")
-pub fn clear_global_config() -> Nil
 
 // ============================================================================
 // Async Handler FFI
