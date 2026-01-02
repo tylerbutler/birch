@@ -3,8 +3,8 @@
 //// A LogRecord captures all information about a single log event:
 //// timestamp, level, logger name, message, and metadata.
 
+import birch/level.{type Level}
 import gleam/list
-import gleam_log/level.{type Level}
 
 /// Metadata is a list of key-value pairs attached to a log record.
 /// Keys and values are both strings for simplicity and cross-target compatibility.

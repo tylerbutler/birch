@@ -1,9 +1,11 @@
-# gleam_log
+# birch
 
-A modern, production-ready logging library for Gleam.
+A logging library for Gleam with cross-platform support.
 
-[![Package Version](https://img.shields.io/hexpm/v/gleam_log)](https://hex.pm/packages/gleam_log)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/gleam_log/)
+The name "birch" comes from birch trees, whose white bark gleams in the light.
+
+[![Package Version](https://img.shields.io/hexpm/v/birch)](https://hex.pm/packages/birch)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/birch/)
 
 ## Features
 
@@ -18,7 +20,7 @@ A modern, production-ready logging library for Gleam.
 ## Quick Start
 
 ```gleam
-import gleam_log as log
+import birch as log
 
 pub fn main() {
   // Simple logging
@@ -33,11 +35,11 @@ pub fn main() {
 
 ## Installation
 
-Add `gleam_log` to your `gleam.toml`:
+Add `birch` to your `gleam.toml`:
 
 ```toml
 [dependencies]
-gleam_log = ">= 0.1.0"
+birch = ">= 0.1.0"
 ```
 
 ## Named Loggers
@@ -45,7 +47,7 @@ gleam_log = ">= 0.1.0"
 Create named loggers for different components:
 
 ```gleam
-import gleam_log as log
+import birch as log
 
 pub fn main() {
   let db_logger = log.new("myapp.database")
@@ -61,7 +63,7 @@ pub fn main() {
 Add persistent context to a logger:
 
 ```gleam
-import gleam_log as log
+import birch as log
 
 pub fn handle_request(request_id: String) {
   let logger = log.new("myapp.http")
@@ -92,8 +94,8 @@ Six log levels are supported, from least to most severe:
 Set the minimum level for a logger:
 
 ```gleam
-import gleam_log as log
-import gleam_log/level
+import birch as log
+import birch/level
 
 let logger = log.new("myapp")
   |> log.with_level(level.Debug)  // Log Debug and above
@@ -106,7 +108,7 @@ let logger = log.new("myapp")
 The default handler outputs to stdout with colors:
 
 ```gleam
-import gleam_log/handler/console
+import birch/handler/console
 
 let handler = console.handler()
 // or with configuration
@@ -121,7 +123,7 @@ let handler = console.handler_with_config(console.ConsoleConfig(
 For log aggregation systems:
 
 ```gleam
-import gleam_log/handler/json
+import birch/handler/json
 
 let handler = json.handler()
 ```
@@ -136,7 +138,7 @@ Output:
 Write to files with optional rotation:
 
 ```gleam
-import gleam_log/handler/file
+import birch/handler/file
 
 let handler = file.handler(file.FileConfig(
   path: "/var/log/myapp.log",
@@ -149,7 +151,7 @@ let handler = file.handler(file.FileConfig(
 For testing or disabling logging:
 
 ```gleam
-import gleam_log/handler
+import birch/handler
 
 let handler = handler.null()
 ```
@@ -159,8 +161,8 @@ let handler = handler.null()
 Create custom handlers with the handler interface:
 
 ```gleam
-import gleam_log/handler
-import gleam_log/formatter
+import birch/handler
+import birch/formatter
 
 let my_handler = handler.new(
   name: "custom",
@@ -176,7 +178,7 @@ let my_handler = handler.new(
 Avoid expensive operations when logs are filtered:
 
 ```gleam
-import gleam_log as log
+import birch as log
 
 // The closure is only called if debug level is enabled
 log.debug_lazy(fn() {
@@ -204,7 +206,7 @@ For library code, create silent loggers that consumers can configure:
 
 ```gleam
 // In your library
-import gleam_log as log
+import birch as log
 
 const logger = log.silent("mylib.internal")
 
@@ -247,7 +249,7 @@ This project uses:
 - **gleeunit** - Standard test runner for Gleam
 - **qcheck** - Property-based testing for more thorough test coverage
 
-Unit tests are in `test/gleam_log_test.gleam` and property tests are in `test/property_test.gleam`.
+Unit tests are in `test/birch_test.gleam` and property tests are in `test/property_test.gleam`.
 
 ### CI/CD
 
@@ -259,6 +261,39 @@ GitHub Actions runs on every push and PR:
 ### Code Coverage
 
 Note: Gleam currently has limited support for code coverage tools. Since Gleam compiles to Erlang source (rather than abstract format), integration with Erlang's `cover` tool is challenging. We rely on comprehensive unit and property tests instead.
+
+## Comparison with Other Logging Libraries
+
+Several logging libraries exist in the Gleam ecosystem. Here's how they compare:
+
+| Feature | birch | [glight](https://hexdocs.pm/glight/) | [glogg](https://hexdocs.pm/glogg/) | [palabres](https://hexdocs.pm/palabres/) |
+|---------|-------|--------|-------|----------|
+| Erlang target | ✅ | ✅ | ✅ | ✅ |
+| JavaScript target | ✅ | ❌ | ✅ | ✅ |
+| Console output | ✅ | ✅ | ❌ | ✅ |
+| File output | ✅ | ✅ | ❌ | ❌ |
+| JSON output | ✅ | ✅ | ✅ | ✅ |
+| File rotation | ✅ | ❌ | ❌ | ❌ |
+| Colored output | ✅ | ✅ | ❌ | ✅ |
+| Structured metadata | ✅ | ✅ | ✅ | ✅ |
+| Typed metadata values | ❌ | ❌ | ✅ | ✅ |
+| Named loggers | ✅ | ❌ | ❌ | ❌ |
+| Logger context | ✅ | ✅ | ✅ | ❌ |
+| Scoped context | ✅ | ❌ | ❌ | ❌ |
+| Lazy evaluation | ✅ | ❌ | ❌ | ❌ |
+| Custom handlers | ✅ | ❌ | ❌ | ❌ |
+| Sampling | ✅ | ❌ | ❌ | ❌ |
+| Stacktrace capture | ❌ | ❌ | ✅ | ❌ |
+| Erlang logger integration | ❌ | ✅ | ❌ | ❌ |
+| Wisp integration | ❌ | ❌ | ❌ | ✅ |
+| Zero-config startup | ✅ | ❌ | ❌ | ✅ |
+
+### When to Choose Each Library
+
+- **birch**: Applications needing file rotation, scoped context propagation, lazy evaluation, or custom handler support.
+- **glight**: Erlang-only applications that want integration with Erlang's standard logger module.
+- **glogg**: Applications requiring typed metadata fields (Int, Float, Bool, Duration) or stacktrace capture.
+- **palabres**: Wisp web applications that benefit from built-in middleware integration.
 
 ## License
 

@@ -1,4 +1,4 @@
-// JavaScript FFI for gleam_log
+// JavaScript FFI for birch
 
 // Import Gleam's Result constructors and List helpers from the prelude
 import { Ok, Error, toList } from "./gleam.mjs";
@@ -313,6 +313,96 @@ export function flush_async_writer(name) {
   const writer = asyncWriterRegistry.get(name);
   if (writer && writer instanceof AsyncWriter) {
     writer.processQueueSync();
+  }
+}
+
+// ============================================================================
+// File Compression
+// ============================================================================
+
+// Pre-load Node.js modules if available (for synchronous access)
+let _nodeFs = null;
+let _nodeZlib = null;
+
+// Initialize Node.js modules synchronously
+if (typeof process !== "undefined" && process.versions?.node) {
+  try {
+    // In Node.js ESM, we can use createRequire to load CommonJS modules synchronously
+    // This works because Gleam generates ESM output
+    const module = await import("node:module");
+    const require = module.createRequire(import.meta.url);
+    _nodeFs = require("node:fs");
+    _nodeZlib = require("node:zlib");
+  } catch (e) {
+    // Module loading failed - will fall back to error in compress_file_gzip
+    console.error("birch: Failed to load Node.js compression modules:", e);
+  }
+}
+
+/**
+ * Compress a file using gzip.
+ * Works in Node.js, Bun, and Deno.
+ * @param {string} sourcePath - Path to the source file
+ * @param {string} destPath - Path to write the compressed file
+ * @returns {Ok | Error} Gleam Result type
+ */
+export function compress_file_gzip(sourcePath, destPath) {
+  try {
+    // Node.js (modules pre-loaded at top level)
+    if (_nodeFs && _nodeZlib) {
+      // Read source file
+      const data = _nodeFs.readFileSync(sourcePath);
+
+      // Compress with gzip (synchronous)
+      const compressed = _nodeZlib.gzipSync(data);
+
+      // Write compressed data
+      _nodeFs.writeFileSync(destPath, compressed);
+
+      return new Ok(undefined);
+    }
+
+    // Deno
+    if (typeof Deno !== "undefined") {
+      // Use gzip command for synchronous compression in Deno
+      const command = new Deno.Command("gzip", {
+        args: ["-c", sourcePath],
+        stdout: "piped",
+        stderr: "piped",
+      });
+
+      const { code, stdout, stderr } = command.outputSync();
+
+      if (code !== 0) {
+        const errorMsg = new TextDecoder().decode(stderr);
+        return new Error(`gzip command failed: ${errorMsg}`);
+      }
+
+      Deno.writeFileSync(destPath, stdout);
+      return new Ok(undefined);
+    }
+
+    // Bun
+    if (typeof Bun !== "undefined") {
+      const fs = require("fs");
+      const zlib = require("zlib");
+
+      // Read source file
+      const data = fs.readFileSync(sourcePath);
+
+      // Compress with gzip (synchronous)
+      const compressed = zlib.gzipSync(data);
+
+      // Write compressed data
+      fs.writeFileSync(destPath, compressed);
+
+      return new Ok(undefined);
+    }
+
+    // Browser or unsupported environment
+    return new Error("File compression not supported in this environment");
+  } catch (e) {
+    return new Error(`compression error: ${e.message || String(e)}`);
   }
 }
 

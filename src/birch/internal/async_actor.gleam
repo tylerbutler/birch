@@ -11,13 +11,22 @@
 ////
 //// On JavaScript, this module is not used - the platform FFI handles async there.
 
-import gleam/erlang/process.{type Subject}
-import gleam/list
-import gleam/option.{type Option, None, Some}
-import gleam/otp/actor
-import gleam_log/handler.{type Handler}
-import gleam_log/record.{type LogRecord}
+@target(erlang)
+import birch/handler.{type Handler}
 
+@target(erlang)
+import birch/record.{type LogRecord}
+
+@target(erlang)
+import gleam/erlang/process.{type Subject}
+
+@target(erlang)
+import gleam/list
+
+@target(erlang)
+import gleam/otp/actor
+
+@target(erlang)
 /// Messages that can be sent to the async handler actor.
 pub type Message {
   /// Log a record asynchronously
@@ -28,6 +37,7 @@ pub type Message {
   Shutdown
 }
 
+@target(erlang)
 /// Internal state of the async handler actor.
 pub type State {
   State(
@@ -42,6 +52,7 @@ pub type State {
   )
 }
 
+@target(erlang)
 /// Start result containing the actor's Subject.
 pub type AsyncActor {
   AsyncActor(
@@ -52,12 +63,14 @@ pub type AsyncActor {
   )
 }
 
+@target(erlang)
 /// Error that can occur when starting the async actor.
 pub type StartError {
   /// Actor failed to start
   ActorStartError(actor.StartError)
 }
 
+@target(erlang)
 /// Start an async handler actor that wraps the given handler.
 ///
 /// Returns a Subject that can be used to send log records to the actor.
@@ -69,7 +82,8 @@ pub type StartError {
 /// let assert Ok(async_actor) =
 ///   async_actor.start(
 ///     console.handler(),
-///     async_actor.default_config(),
+///     1000,
+///     0,
 ///   )
 ///
 /// // Send a log record (non-blocking)
@@ -94,21 +108,25 @@ pub fn start(
       overflow: overflow,
     )
 
-  case actor.start(initial_state, handle_message) {
-    Ok(subject) -> Ok(AsyncActor(subject: subject, name: async_name))
+  let builder =
+    actor.new(initial_state)
+    |> actor.on_message(handle_message)
+
+  case actor.start(builder) {
+    Ok(started) -> Ok(AsyncActor(subject: started.data, name: async_name))
     Error(err) -> Error(ActorStartError(err))
   }
 }
 
+@target(erlang)
 /// Handle incoming messages to the async actor.
-fn handle_message(
-  message: Message,
-  state: State,
-) -> actor.Next(Message, State) {
+fn handle_message(state: State, message: Message) -> actor.Next(State, Message) {
   case message {
     Log(record) -> {
       // Apply overflow handling if queue is full
-      let new_pending = case list.length(state.pending) >= state.max_queue_size {
+      let new_pending = case
+        list.length(state.pending) >= state.max_queue_size
+      {
         True -> handle_overflow(record, state.pending, state.overflow)
         False -> [record, ..state.pending]
       }
@@ -136,11 +154,12 @@ fn handle_message(
     Shutdown -> {
       // Flush remaining records before stopping
       flush_pending(state.handler, state.pending)
-      actor.Stop(process.Normal)
+      actor.stop()
     }
   }
 }
 
+@target(erlang)
 /// Handle queue overflow based on configured behavior.
 fn handle_overflow(
   record: LogRecord,
@@ -162,27 +181,30 @@ fn handle_overflow(
   }
 }
 
+@target(erlang)
 /// Flush all pending records to the handler.
-fn flush_pending(handler: Handler, pending: List(LogRecord)) -> Nil {
+fn flush_pending(hndlr: Handler, pending: List(LogRecord)) -> Nil {
   // Pending is stored newest-first, so reverse before writing
   pending
   |> list.reverse
-  |> list.each(fn(record) { handler.handle(handler, record) })
+  |> list.each(fn(record) { handler.handle(hndlr, record) })
 }
 
+@target(erlang)
 /// Send a log record to the async actor (non-blocking).
-pub fn send(actor: AsyncActor, record: LogRecord) -> Nil {
-  process.send(actor.subject, Log(record))
+pub fn send(async_actor: AsyncActor, record: LogRecord) -> Nil {
+  process.send(async_actor.subject, Log(record))
 }
 
+@target(erlang)
 /// Flush all pending records and wait for completion.
 ///
 /// This function blocks until all queued records have been written.
 /// Use before application shutdown to ensure no logs are lost.
-pub fn flush(actor: AsyncActor) -> Nil {
+pub fn flush(async_actor: AsyncActor) -> Nil {
   // Create a subject to receive the flush confirmation
   let reply_subject = process.new_subject()
-  process.send(actor.subject, Flush(reply_subject))
+  process.send(async_actor.subject, Flush(reply_subject))
 
   // Wait for the flush to complete (with timeout)
   case process.receive(reply_subject, 5000) {
@@ -191,19 +213,22 @@ pub fn flush(actor: AsyncActor) -> Nil {
   }
 }
 
+@target(erlang)
 /// Shutdown the async actor gracefully.
 ///
 /// This flushes any pending records before stopping the actor.
-pub fn shutdown(actor: AsyncActor) -> Nil {
-  process.send(actor.subject, Shutdown)
+pub fn shutdown(async_actor: AsyncActor) -> Nil {
+  process.send(async_actor.subject, Shutdown)
 }
 
+@target(erlang)
 /// Get the name of the async actor.
-pub fn name(actor: AsyncActor) -> String {
-  actor.name
+pub fn name(async_actor: AsyncActor) -> String {
+  async_actor.name
 }
 
+@target(erlang)
 /// Get the Subject for direct message sending (advanced use).
-pub fn subject(actor: AsyncActor) -> Subject(Message) {
-  actor.subject
+pub fn subject(async_actor: AsyncActor) -> Subject(Message) {
+  async_actor.subject
 }

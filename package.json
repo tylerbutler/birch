@@ -1,19 +1,21 @@
 {
-  "name": "gleam_log",
+  "name": "birch",
   "private": true,
   "type": "module",
   "scripts": {
     "test": "gleam test --target javascript",
-    "test:coverage": "gleam build --target javascript && c8 node build/dev/javascript/gleam_log/gleam_log_test.mjs",
+    "test:coverage": "gleam build --target javascript && c8 node build/dev/javascript/birch/birch_test.mjs",
+    "test:integration": "gleam build --target javascript && node --test test/integration/test_runner.mjs",
+    "test:all:coverage": "gleam build --target javascript && c8 -- sh -c 'node build/dev/javascript/birch/birch_test.mjs && node --test test/integration/test_runner.mjs'",
     "coverage:report": "c8 report",
     "coverage:lcov": "c8 report --reporter=lcov"
   },
   "c8": {
     "include": [
-      "build/dev/javascript/gleam_log/**/*.mjs"
+      "build/dev/javascript/birch/**/*.mjs"
     ],
     "exclude": [
-      "build/dev/javascript/gleam_log/*_test.mjs"
+      "build/dev/javascript/birch/*_test.mjs"
     ],
     "reporter": [
       "text",

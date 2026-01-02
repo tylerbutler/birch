@@ -1,4 +1,4 @@
-// JavaScript FFI stubs for gleam_log's Erlang :logger integration.
+// JavaScript FFI stubs for birch's Erlang :logger integration.
 //
 // Erlang's :logger is not available on the JavaScript target.
 // These stubs provide graceful fallback behavior:
@@ -80,7 +80,7 @@ function getLevelName(level) {
 }
 
 /**
- * Install gleam_log as an Erlang :logger handler.
+ * Install birch as an Erlang :logger handler.
  *
  * This is not available on JavaScript - always returns an error.
  *

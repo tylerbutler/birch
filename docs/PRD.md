@@ -1,8 +1,10 @@
-# Gleam Logging Library - Product Requirements Document
+# birch - Product Requirements Document
 
 **Version:** 1.0
 **Date:** December 2025
 **Status:** Draft
+
+The name "birch" comes from birch trees, whose white bark gleams in the light.
 
 -----
 
@@ -10,11 +12,11 @@
 
 ### 1.1 Problem Statement
 
-The Gleam ecosystem lacks a modern, production-ready logging library. The existing option (glimt) has been unmaintained since July 2023, uses outdated dependencies, supports only the Erlang target, and lacks critical production features like file output, log rotation, and rate limiting.
+The Gleam ecosystem lacks a full-featured logging library with cross-platform support. The existing option (glimt) has been unmaintained since July 2023, uses outdated dependencies, supports only the Erlang target, and lacks features like file output, log rotation, and rate limiting.
 
 ### 1.2 Vision
 
-Build a cross-platform logging library for Gleam that is simple for basic use cases, extensible for advanced needs, and production-ready out of the box. The library should feel native to Gleam's functional style while providing the reliability expected in server and application environments.
+Build a cross-platform logging library for Gleam that is simple for basic use cases and extensible for advanced needs. The library should feel native to Gleam's functional style while providing the reliability expected in server and application environments.
 
 ### 1.3 Success Criteria
 
@@ -388,8 +390,8 @@ let logger = log.new("api")
 
 ```
 src/
-├── gleam_log.gleam           # Main public API
-├── gleam_log/
+├── birch.gleam               # Main public API
+├── birch/
 │   ├── level.gleam           # LogLevel type and comparisons
 │   ├── record.gleam          # LogRecord type
 │   ├── logger.gleam          # Logger type and operations
@@ -402,8 +404,10 @@ src/
 │   ├── formatter.gleam       # Formatting utilities
 │   ├── config.gleam          # Configuration types
 │   └── internal/
-│       ├── erlang.gleam      # Erlang-specific FFI
-│       └── javascript.gleam  # JS-specific FFI
+│       ├── platform.gleam    # Cross-platform FFI declarations
+│       └── ...
+├── birch_ffi.erl             # Erlang FFI implementation
+└── birch_ffi.mjs             # JavaScript FFI implementation
 ```
 
 -----
@@ -412,14 +416,7 @@ src/
 
 ### 8.1 Naming
 
-|Option     |Pros                      |Cons                            |
-|-----------|--------------------------|--------------------------------|
-|`gleam_log`|Clear, follows conventions|Generic                         |
-|`timber`   |Evocative, memorable      |Conflicts with existing services|
-|`chronicle`|Descriptive               |Long                            |
-|`emit`     |Short, action-oriented    |Vague                           |
-
-**Decision needed:** Library name
+**Decision:** The library is named `birch` after birch trees, whose white bark gleams in the light. This provides a memorable, nature-themed name while avoiding the reserved `gleam_*` prefix.
 
 ### 8.2 Global State
 
@@ -583,18 +580,18 @@ JavaScript lacks Erlang's process dictionary. Options:
 ### Basic Application
 
 ```gleam
-import gleam_log as log
+import birch as log
 
 pub fn main() {
   log.info("Application starting")
 
   case connect_database() {
     Ok(conn) -> {
-      log.info("Database connected", [#("host", conn.host)])
+      log.info_m("Database connected", [#("host", conn.host)])
       run_server(conn)
     }
     Error(e) -> {
-      log.error("Database connection failed", [#("error", string.inspect(e))])
+      log.error_m("Database connection failed", [#("error", string.inspect(e))])
     }
   }
 }
@@ -603,15 +600,13 @@ pub fn main() {
 ### Web Application with Request Context
 
 ```gleam
-import gleam_log as log
-import gleam_log/handler
+import birch as log
+import birch/handler/json
 
 pub fn main() {
   log.configure([
-    log.level(log.Info),
-    log.handlers([
-      handler.json_console(),
-    ]),
+    log.config_level(level.Info),
+    log.config_handlers([json.handler()]),
   ])
 
   wisp.start(router, config)
@@ -626,11 +621,11 @@ fn handle_request(req: Request) -> Response {
       #("path", req.path),
     ])
 
-  logger |> log.info("Request received")
+  logger |> log.logger_info("Request received", [])
 
   let response = process_request(req, logger)
 
-  logger |> log.info("Request complete", [
+  logger |> log.logger_info_m("Request complete", [
     #("status", int.to_string(response.status)),
   ])
 
@@ -642,14 +637,14 @@ fn handle_request(req: Request) -> Response {
 
 ```gleam
 // In library code
-import gleam_log as log
+import birch as log
 
-const logger = log.new("mylib.internal")
+const logger = log.silent("mylib.internal")
 
 pub fn do_something() {
-  logger |> log.debug("Starting operation")
+  logger |> log.logger_debug("Starting operation", [])
   // ... work ...
-  logger |> log.debug("Operation complete")
+  logger |> log.logger_debug("Operation complete", [])
 }
 
 // Consumer controls visibility via level configuration

@@ -1,8 +1,8 @@
--module(gleam_log_ffi).
+-module(birch_ffi).
 -export([timestamp_iso8601/0, write_stdout/1, write_stderr/1, is_stdout_tty/0,
          get_global_config/0, set_global_config/1, clear_global_config/0,
          start_async_writer/5, async_send/2, flush_async_writers/0, flush_async_writer/1,
-         safe_call/1,
+         compress_file_gzip/2, safe_call/1,
          get_scope_context/0, set_scope_context/1, is_scope_context_available/0,
          random_float/0, current_time_ms/0,
          get_actor_registry/0, set_actor_registry/1]).
@@ -50,7 +50,7 @@ is_stdout_tty() ->
 %% persistent_term is ideal for read-heavy, write-rarely data like logging config.
 %% It's also thread-safe for concurrent access.
 
--define(GLOBAL_CONFIG_KEY, gleam_log_global_config).
+-define(GLOBAL_CONFIG_KEY, birch_global_config).
 
 %% Get the global configuration. Returns {ok, Config} or {error, nil}.
 get_global_config() ->
@@ -78,7 +78,7 @@ clear_global_config() ->
 %% ============================================================================
 
 %% Registry for async writers (uses persistent_term for fast reads)
--define(ASYNC_REGISTRY_KEY, gleam_log_async_registry).
+-define(ASYNC_REGISTRY_KEY, birch_async_registry).
 
 %% Start an async writer process
 %% Overflow: 0=DropOldest, 1=DropNewest, 2=Block
@@ -213,6 +213,33 @@ get_writer(Name) ->
     end.
 
 %% ============================================================================
+%% File Compression
+%% ============================================================================
+
+%% Compress a file using gzip.
+%% Reads the source file, compresses it with zlib:gzip, and writes to dest.
+compress_file_gzip(SourcePath, DestPath) ->
+    try
+        %% Read the source file
+        case file:read_file(SourcePath) of
+            {ok, Data} ->
+                %% Compress with gzip
+                Compressed = zlib:gzip(Data),
+                %% Write to destination
+                case file:write_file(DestPath, Compressed) of
+                    ok -> {ok, nil};
+                    {error, WriteReason} ->
+                        {error, iolist_to_binary(io_lib:format("write failed: ~p", [WriteReason]))}
+                end;
+            {error, ReadReason} ->
+                {error, iolist_to_binary(io_lib:format("read failed: ~p", [ReadReason]))}
+        end
+    catch
+        Type:Reason ->
+            {error, iolist_to_binary(io_lib:format("compression error: ~p:~p", [Type, Reason]))}
+    end.
+
+%% ============================================================================
 %% Safe Call (Error Catching)
 %% ============================================================================
 
@@ -241,7 +268,7 @@ format_error(exit, Reason) ->
 %% ============================================================================
 
 %% Key for scope context in process dictionary
--define(SCOPE_CONTEXT_KEY, gleam_log_scope_context).
+-define(SCOPE_CONTEXT_KEY, birch_scope_context).
 
 %% Get the current scope context from the process dictionary.
 %% Returns a list of {Key, Value} tuples (Gleam Metadata format).
