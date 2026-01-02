@@ -1,8 +1,7 @@
 //// OTP Actor-based async handler implementation (Erlang only).
 ////
 //// This module provides a proper OTP actor using gleam_otp for async log handling
-//// on the Erlang target. It follows the glimt pattern of using Subjects for
-//// message passing, providing:
+//// on the Erlang target. It uses Subjects for message passing, providing:
 ////
 //// - True non-blocking log writes
 //// - Natural backpressure via actor mailbox

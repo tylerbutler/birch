@@ -260,10 +260,7 @@ pub fn with_handler(lgr: Logger, handler: Handler) -> Logger {
 ///   log.new("test")
 ///   |> log.with_time_provider(fn() { "2024-01-01T00:00:00.000Z" })
 /// ```
-pub fn with_time_provider(
-  lgr: Logger,
-  provider: fn() -> String,
-) -> Logger {
+pub fn with_time_provider(lgr: Logger, provider: fn() -> String) -> Logger {
   logger.with_time_provider(lgr, provider)
 }
 

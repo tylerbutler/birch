@@ -2343,8 +2343,8 @@ pub fn log_module_with_caller_id_capture_test() {
 // Combined Feature Tests
 // ============================================================================
 
-pub fn logger_all_glimt_features_combined_test() {
-  // Test all new GLIMT features together
+pub fn logger_all_advanced_features_combined_test() {
+  // Test all advanced features together
   let lgr =
     log.new("combined-test")
     |> log.with_time_provider(fn() { "2025-01-02T12:00:00.000Z" })

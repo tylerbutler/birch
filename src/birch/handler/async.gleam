@@ -7,7 +7,7 @@
 //// ## Erlang Target (OTP Actor Pattern)
 ////
 //// On Erlang, this uses a proper OTP actor with gleam_otp Subjects for message
-//// passing. This follows the glimt pattern, providing:
+//// passing, providing:
 ////
 //// - True non-blocking behavior with natural backpressure via actor mailbox
 //// - Clean integration with OTP supervision trees
@@ -156,7 +156,6 @@ fn set_actor_registry_ffi(registry: ActorRegistry) -> Nil
 /// Wrap a handler to make it asynchronous (Erlang implementation).
 ///
 /// Uses an OTP actor with gleam_otp Subject for message passing.
-/// This follows the glimt pattern for async logging.
 pub fn make_async(base_handler: Handler, async_config: AsyncConfig) -> Handler {
   let base_name = handler.name(base_handler)
   let async_name = "async:" <> base_name

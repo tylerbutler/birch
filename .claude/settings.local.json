@@ -10,7 +10,8 @@
       "Skill(pr:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:packages.gleam.run)",
-      "WebFetch(domain:hexdocs.pm)"
+      "WebFetch(domain:hexdocs.pm)",
+      "mcp__plugin_claude-mem_mem-search__search"
     ]
   }
 }
