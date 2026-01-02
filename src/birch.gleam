@@ -1,9 +1,11 @@
-//// A modern, production-ready logging library for Gleam.
+//// A logging library for Gleam with cross-platform support.
+////
+//// The name "birch" comes from birch trees, whose white bark gleams in the light.
 ////
 //// ## Quick Start
 ////
 //// ```gleam
-//// import gleam_log as log
+//// import birch as log
 ////
 //// pub fn main() {
 ////   log.info("Application starting")
@@ -14,6 +16,8 @@
 //// ## Named Loggers
 ////
 //// ```gleam
+//// import birch as log
+////
 //// let logger = log.new("myapp.database")
 //// logger |> log.logger_info("Connected", [])
 //// ```
@@ -21,9 +25,9 @@
 //// ## Configuration
 ////
 //// ```gleam
-//// import gleam_log as log
-//// import gleam_log/level
-//// import gleam_log/handler/console
+//// import birch as log
+//// import birch/level
+//// import birch/handler/console
 ////
 //// log.configure([
 ////   log.config_level(level.Debug),
@@ -31,16 +35,16 @@
 //// ])
 //// ```
 
+import birch/config.{type ConfigOption, type GlobalConfig, type SampleConfig}
+import birch/handler.{type ErrorCallback, type Handler}
+import birch/handler/console
+import birch/internal/platform
+import birch/level.{type Level}
+import birch/logger.{type Logger}
+import birch/record.{type Metadata}
+import birch/sampling
+import birch/scope
 import gleam/option.{None}
-import gleam_log/config.{type ConfigOption, type GlobalConfig, type SampleConfig}
-import gleam_log/handler.{type ErrorCallback, type Handler}
-import gleam_log/handler/console
-import gleam_log/internal/platform
-import gleam_log/level.{type Level}
-import gleam_log/logger.{type Logger}
-import gleam_log/record.{type Metadata}
-import gleam_log/sampling
-import gleam_log/scope
 
 // Re-export types for convenience
 pub type LogLevel =
@@ -65,9 +69,9 @@ pub type Config =
 ///
 /// Example:
 /// ```gleam
-/// import gleam_log as log
-/// import gleam_log/level
-/// import gleam_log/handler/console
+/// import birch as log
+/// import birch/level
+/// import birch/handler/console
 ///
 /// log.configure([
 ///   log.config_level(level.Debug),
@@ -106,8 +110,8 @@ pub fn reset_config() -> Nil {
 ///
 /// Example:
 /// ```gleam
-/// import gleam_log as log
-/// import gleam_log/level
+/// import birch as log
+/// import birch/level
 ///
 /// // Enable debug logging for troubleshooting
 /// log.set_level(level.Debug)
@@ -150,7 +154,7 @@ pub fn config_context(ctx: Metadata) -> ConfigOption {
 ///
 /// Example:
 /// ```gleam
-/// import gleam_log as log
+/// import birch as log
 ///
 /// log.configure([
 ///   log.config_on_error(fn(err) {
@@ -166,9 +170,9 @@ pub fn config_on_error(callback: ErrorCallback) -> ConfigOption {
 ///
 /// Example:
 /// ```gleam
-/// import gleam_log as log
-/// import gleam_log/level
-/// import gleam_log/sampling
+/// import birch as log
+/// import birch/level
+/// import birch/sampling
 ///
 /// // Log only 10% of debug messages
 /// log.configure([
@@ -428,7 +432,7 @@ pub fn info_lazy(message_fn: fn() -> String) -> Nil {
 /// ## Example
 ///
 /// ```gleam
-/// import gleam_log as log
+/// import birch as log
 ///
 /// pub fn handle_request(request_id: String) {
 ///   log.with_scope([#("request_id", request_id)], fn() {

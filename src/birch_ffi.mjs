@@ -1,4 +1,4 @@
-// JavaScript FFI for gleam_log
+// JavaScript FFI for birch
 
 // Import Gleam's Result constructors and List helpers from the prelude
 import { Ok, Error, toList } from "./gleam.mjs";
@@ -335,7 +335,7 @@ if (typeof process !== "undefined" && process.versions?.node) {
     _nodeZlib = require("node:zlib");
   } catch (e) {
     // Module loading failed - will fall back to error in compress_file_gzip
-    console.error("gleam_log: Failed to load Node.js compression modules:", e);
+    console.error("birch: Failed to load Node.js compression modules:", e);
   }
 }
 

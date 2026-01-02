@@ -3,12 +3,12 @@
 //// A Logger is a named logging context with an associated level, handlers,
 //// and persistent metadata.
 
+import birch/handler.{type Handler}
+import birch/handler/console
+import birch/internal/platform
+import birch/level.{type Level}
+import birch/record.{type Metadata}
 import gleam/list
-import gleam_log/handler.{type Handler}
-import gleam_log/handler/console
-import gleam_log/internal/platform
-import gleam_log/level.{type Level}
-import gleam_log/record.{type Metadata}
 
 /// A logger instance with configuration and context.
 pub opaque type Logger {

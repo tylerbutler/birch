@@ -1,10 +1,12 @@
-# CLAUDE.md - AI Assistant Guide for gleam_log
+# CLAUDE.md - AI Assistant Guide for birch
 
-This document provides essential context for AI assistants working with the gleam_log codebase.
+This document provides essential context for AI assistants working with the birch codebase.
 
 ## Project Overview
 
-**gleam_log** is a modern, production-ready logging library for Gleam. It provides cross-platform support (Erlang and JavaScript targets), structured logging with metadata, multiple output handlers, and lazy evaluation for performance.
+**birch** is a logging library for Gleam with cross-platform support (Erlang and JavaScript targets), structured logging with metadata, multiple output handlers, and lazy evaluation for performance.
+
+The name "birch" comes from birch trees, whose white bark gleams in the light.
 
 ### Key Features
 - Cross-platform: Works on both Erlang (BEAM) and JavaScript targets
@@ -18,8 +20,8 @@ This document provides essential context for AI assistants working with the glea
 
 ```
 src/
-├── gleam_log.gleam              # Main public API - re-exports and convenience functions
-├── gleam_log/
+├── birch.gleam                  # Main public API - re-exports and convenience functions
+├── birch/
 │   ├── level.gleam              # LogLevel type (Trace/Debug/Info/Warn/Err/Fatal)
 │   ├── record.gleam             # LogRecord type and Metadata
 │   ├── logger.gleam             # Logger type with handlers and context
@@ -31,11 +33,11 @@ src/
 │   │   └── file.gleam           # File output with size-based rotation
 │   └── internal/
 │       └── platform.gleam       # Cross-platform FFI declarations
-├── gleam_log_ffi.erl            # Erlang FFI implementation
-└── gleam_log_ffi.mjs            # JavaScript FFI implementation
+├── birch_ffi.erl                # Erlang FFI implementation
+└── birch_ffi.mjs                # JavaScript FFI implementation
 
 test/
-├── gleam_log_test.gleam         # Unit tests using gleeunit
+├── birch_test.gleam             # Unit tests using gleeunit
 └── property_test.gleam          # Property tests (pending qcheck 1.0+ migration)
 
 docs/
@@ -44,10 +46,10 @@ docs/
 
 ### Internal Modules
 
-The `gleam_log/internal` directory contains internal implementation details that are not part of the public API. These are marked in `gleam.toml`:
+The `birch/internal` directory contains internal implementation details that are not part of the public API. These are marked in `gleam.toml`:
 
 ```toml
-internal_modules = ["gleam_log/internal", "gleam_log/internal/*"]
+internal_modules = ["birch/internal", "birch/internal/*"]
 ```
 
 ## Development Commands
@@ -114,10 +116,14 @@ gleam deps download               # Download dependencies
 Loggers are immutable and configured via method chaining:
 
 ```gleam
-let logger = gleam_log.new("myapp.database")
-  |> gleam_log.with_level(level.Debug)
-  |> gleam_log.with_context([#("service", "db")])
-  |> gleam_log.with_handler(json.handler())
+import birch as log
+import birch/level
+import birch/handler/json
+
+let logger = log.new("myapp.database")
+  |> log.with_level(level.Debug)
+  |> log.with_context([#("service", "db")])
+  |> log.with_handler(json.handler())
 ```
 
 ### Handler Interface
@@ -145,15 +151,15 @@ Metadata uses `List(#(String, String))` - both keys and values are strings for c
 
 ## Cross-Platform FFI
 
-Platform-specific operations are in `src/gleam_log/internal/platform.gleam`:
+Platform-specific operations are in `src/birch/internal/platform.gleam`:
 
 - `timestamp_iso8601()` - Get current time in ISO 8601 format
 - `write_stdout(message)` / `write_stderr(message)` - Output functions
 - `is_stdout_tty()` - TTY detection for color support
 
 Implementations:
-- **Erlang**: `src/gleam_log_ffi.erl` - Uses `calendar`, `io`, and `os` modules
-- **JavaScript**: `src/gleam_log_ffi.mjs` - Supports Node.js, Deno, Bun, and browser fallbacks
+- **Erlang**: `src/birch_ffi.erl` - Uses `calendar`, `io`, and `os` modules
+- **JavaScript**: `src/birch_ffi.mjs` - Supports Node.js, Deno, Bun, and browser fallbacks
 
 ## Testing
 
@@ -171,7 +177,7 @@ just test-js       # JavaScript only
 
 ### Test Structure
 Tests are organized by module:
-- `test/gleam_log_test.gleam` - Unit tests
+- `test/birch_test.gleam` - Unit tests
   - Level tests
   - Record tests
   - Formatter tests
@@ -223,21 +229,21 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR to main using `just`
 ## Common Tasks
 
 ### Adding a New Handler
-1. Create a new file in `src/gleam_log/handler/`
+1. Create a new file in `src/birch/handler/`
 2. Implement formatting using `formatter.Formatter` type
 3. Use `handler.new()` to create the handler
-4. Add tests in `test/gleam_log_test.gleam`
+4. Add tests in `test/birch_test.gleam`
 
 ### Adding a New Log Level
 1. Add variant to `Level` type in `level.gleam`
 2. Update `to_int`, `from_string`, `to_string`, `to_string_lowercase`
-3. Add convenience functions in `logger.gleam` and `gleam_log.gleam`
+3. Add convenience functions in `logger.gleam` and `birch.gleam`
 4. Add color mapping in `console.gleam`
 5. Add tests
 
 ### Modifying FFI
 When changing platform-specific code:
-1. Update both `gleam_log_ffi.erl` AND `gleam_log_ffi.mjs`
+1. Update both `birch_ffi.erl` AND `birch_ffi.mjs`
 2. Ensure behavior is consistent across platforms
 3. Test on both Erlang and JavaScript targets
 
@@ -258,4 +264,4 @@ Specified in `.tool-versions`:
 
 - [Product Requirements Document](docs/PRD.md) - Detailed requirements and design decisions
 - [README.md](README.md) - User-facing documentation with examples
-- [Gleam Documentation](https://hexdocs.pm/gleam_log/) - API documentation (after publishing)
+- [Gleam Documentation](https://hexdocs.pm/birch/) - API documentation (after publishing)

@@ -8,9 +8,9 @@
 //// Sampling allows you to log only a percentage of messages at certain levels:
 ////
 //// ```gleam
-//// import gleam_log as log
-//// import gleam_log/level
-//// import gleam_log/sampling
+//// import birch as log
+//// import birch/level
+//// import birch/sampling
 ////
 //// // Log only 10% of debug messages
 //// log.configure([
@@ -23,17 +23,17 @@
 //// Rate limiting uses a token bucket algorithm to limit logs per second:
 ////
 //// ```gleam
-//// import gleam_log/sampling
+//// import birch/sampling
 ////
 //// // Allow max 100 logs/second with burst of 10
 //// let config = sampling.rate_limit_config(100, 10)
 //// ```
 
+import birch/config.{type SampleConfig, SampleConfig}
+import birch/internal/platform
+import birch/level.{type Level}
 import gleam/float
 import gleam/int
-import gleam_log/config.{type SampleConfig, SampleConfig}
-import gleam_log/internal/platform
-import gleam_log/level.{type Level}
 
 // ============================================================================
 // Sampling Configuration

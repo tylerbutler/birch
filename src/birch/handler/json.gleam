@@ -18,13 +18,13 @@
 ////      |> json.handler_with_formatter()
 ////    ```
 
+import birch/formatter
+import birch/handler.{type Handler}
+import birch/internal/platform
+import birch/level
+import birch/record.{type LogRecord}
 import gleam/json.{type Json}
 import gleam/list
-import gleam_log/formatter
-import gleam_log/handler.{type Handler}
-import gleam_log/internal/platform
-import gleam_log/level
-import gleam_log/record.{type LogRecord}
 
 // ============================================================================
 // Builder Types

@@ -1,5 +1,5 @@
 /**
- * Integration test runner for gleam_log JavaScript target.
+ * Integration test runner for birch JavaScript target.
  *
  * This test harness:
  * 1. Runs compiled Gleam fixtures as separate processes
@@ -21,7 +21,7 @@ const __dirname = dirname(__filename);
 const projectRoot = resolve(__dirname, "../..");
 
 // Path to compiled JavaScript modules
-const buildDir = join(projectRoot, "build/dev/javascript/gleam_log");
+const buildDir = join(projectRoot, "build/dev/javascript/birch");
 
 /**
  * Run a compiled Gleam fixture and capture output.

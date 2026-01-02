@@ -7,29 +7,29 @@
 //// - Metadata is included correctly
 //// - Each line is a separate JSON object
 
-import gleam_log
-import gleam_log/handler/json
-import gleam_log/level
+import birch as log
+import birch/handler/json
+import birch/level
 
 pub fn main() {
   // Configure with JSON handler
-  gleam_log.configure([
-    gleam_log.config_level(level.Debug),
-    gleam_log.config_handlers([json.handler()]),
+  log.configure([
+    log.config_level(level.Debug),
+    log.config_handlers([json.handler()]),
   ])
 
   // Log at various levels
-  gleam_log.debug("JSON debug message")
-  gleam_log.info("JSON info message")
-  gleam_log.warn("JSON warn message")
-  gleam_log.error("JSON error message")
+  log.debug("JSON debug message")
+  log.info("JSON info message")
+  log.warn("JSON warn message")
+  log.error("JSON error message")
 
   // Log with metadata - should appear as additional JSON fields
-  gleam_log.info_m("JSON with metadata", [
+  log.info_m("JSON with metadata", [
     #("transaction_id", "txn-456"),
     #("amount", "100.50"),
   ])
 
   // Reset config for clean state
-  gleam_log.reset_config()
+  log.reset_config()
 }

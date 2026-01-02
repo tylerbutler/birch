@@ -2,11 +2,11 @@
 ////
 //// Writes log messages to stdout or stderr, with optional color support.
 
-import gleam_log/formatter
-import gleam_log/handler.{type Handler, type OutputTarget, Stderr, Stdout}
-import gleam_log/internal/platform
-import gleam_log/level
-import gleam_log/record.{type LogRecord}
+import birch/formatter
+import birch/handler.{type Handler, type OutputTarget, Stderr, Stdout}
+import birch/internal/platform
+import birch/level
+import birch/record.{type LogRecord}
 
 /// ANSI color codes for terminal output.
 pub type Color {

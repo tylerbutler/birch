@@ -3,12 +3,12 @@
 //// Handlers receive log records and write them to various destinations
 //// (console, files, external services, etc.).
 
+import birch/formatter
+import birch/internal/platform
+import birch/level.{type Level}
+import birch/record.{type LogRecord}
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam_log/formatter
-import gleam_log/internal/platform
-import gleam_log/level.{type Level}
-import gleam_log/record.{type LogRecord}
 
 /// Output target for console handlers.
 pub type OutputTarget {

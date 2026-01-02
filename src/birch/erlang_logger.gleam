@@ -1,13 +1,13 @@
-//// Erlang :logger integration for gleam_log.
+//// Erlang :logger integration for birch.
 ////
 //// This module provides optional integration with Erlang's built-in :logger
-//// system, allowing gleam_log to:
+//// system, allowing birch to:
 ////
-//// 1. **Forward to :logger**: Create a handler that sends gleam_log records
+//// 1. **Forward to :logger**: Create a handler that sends birch records
 ////    to Erlang's :logger system (useful for integrating with OTP applications)
 ////
-//// 2. **Receive from :logger**: Install gleam_log as an Erlang :logger handler
-////    to receive logs from OTP applications and process them with gleam_log handlers
+//// 2. **Receive from :logger**: Install birch as an Erlang :logger handler
+////    to receive logs from OTP applications and process them with birch handlers
 ////
 //// **Note**: These features are only available on the Erlang target. On JavaScript,
 //// the functions will return errors indicating the feature is unavailable.
@@ -15,30 +15,30 @@
 //// ## Example: Forward logs to Erlang :logger
 ////
 //// ```gleam
-//// import gleam_log
-//// import gleam_log/erlang_logger
+//// import birch as log
+//// import birch/erlang_logger
 ////
 //// pub fn main() {
-////   // Configure gleam_log to forward to Erlang's :logger
-////   gleam_log.configure([
-////     gleam_log.config_handlers([erlang_logger.forward_to_logger()]),
+////   // Configure birch to forward to Erlang's :logger
+////   log.configure([
+////     log.config_handlers([erlang_logger.forward_to_logger()]),
 ////   ])
 ////
 ////   // Logs will now go to Erlang's :logger system
-////   gleam_log.info("Hello from Gleam!")
+////   log.info("Hello from Gleam!")
 //// }
 //// ```
 ////
 //// ## Example: Receive logs from OTP applications
 ////
 //// ```gleam
-//// import gleam_log/erlang_logger
+//// import birch/erlang_logger
 ////
 //// pub fn main() {
-////   // Install gleam_log as an Erlang :logger handler
+////   // Install birch as an Erlang :logger handler
 ////   case erlang_logger.install_logger_handler() {
 ////     Ok(Nil) -> {
-////       // Logs from OTP applications will now be processed by gleam_log
+////       // Logs from OTP applications will now be processed by birch
 ////     }
 ////     Error(reason) -> {
 ////       // Handle error (e.g., on JavaScript target)
@@ -47,9 +47,9 @@
 //// }
 //// ```
 
-import gleam_log/formatter
-import gleam_log/handler.{type Handler}
-import gleam_log/level.{type Level}
+import birch/formatter
+import birch/handler.{type Handler}
+import birch/level.{type Level}
 
 // ============================================================================
 // Erlang Log Level Type
@@ -57,8 +57,8 @@ import gleam_log/level.{type Level}
 
 /// Erlang :logger log levels.
 ///
-/// Erlang uses syslog-style levels which are more granular than gleam_log levels.
-/// These are mapped to/from gleam_log levels as follows:
+/// Erlang uses syslog-style levels which are more granular than birch levels.
+/// These are mapped to/from birch levels as follows:
 ///
 /// | Erlang Level | Gleam Level |
 /// |--------------|-------------|
@@ -129,9 +129,9 @@ pub fn erlang_level_to_atom(erlang_level: ErlangLevel) -> String {
 // Forward to :logger Handler
 // ============================================================================
 
-/// Create a handler that forwards gleam_log records to Erlang's :logger system.
+/// Create a handler that forwards birch records to Erlang's :logger system.
 ///
-/// This allows gleam_log to integrate with existing OTP logging infrastructure,
+/// This allows birch to integrate with existing OTP logging infrastructure,
 /// including any :logger handlers already configured (default handler, file handlers, etc.).
 ///
 /// On JavaScript, this creates a handler that writes to console instead,
@@ -140,14 +140,14 @@ pub fn erlang_level_to_atom(erlang_level: ErlangLevel) -> String {
 /// ## Example
 ///
 /// ```gleam
-/// import gleam_log
-/// import gleam_log/erlang_logger
-/// import gleam_log/handler/console
+/// import birch as log
+/// import birch/erlang_logger
+/// import birch/handler/console
 ///
 /// pub fn main() {
 ///   // Use both console and :logger output
-///   gleam_log.configure([
-///     gleam_log.config_handlers([
+///   log.configure([
+///     log.config_handlers([
 ///       console.handler(),
 ///       erlang_logger.forward_to_logger(),
 ///     ]),
@@ -176,7 +176,7 @@ fn forward_write(message: String) -> Nil {
 // Forward to :logger with Level (raw handler)
 // ============================================================================
 
-/// Create a handler that forwards gleam_log records to :logger with proper
+/// Create a handler that forwards birch records to :logger with proper
 /// level mapping (not just the formatted message).
 ///
 /// This handler passes the full LogRecord to :logger, preserving the log level
@@ -190,16 +190,16 @@ pub fn forward_to_logger_raw() -> Handler {
 }
 
 // ============================================================================
-// Install gleam_log as :logger Handler
+// Install birch as :logger Handler
 // ============================================================================
 
-/// Default handler ID used when installing gleam_log as a :logger handler.
-pub const default_handler_id = "gleam_log"
+/// Default handler ID used when installing birch as a :logger handler.
+pub const default_handler_id = "birch"
 
-/// Install gleam_log as an Erlang :logger handler.
+/// Install birch as an Erlang :logger handler.
 ///
 /// Once installed, logs from OTP applications (and Erlang code using :logger)
-/// will be processed by gleam_log's configured handlers.
+/// will be processed by birch's configured handlers.
 ///
 /// Returns `Ok(Nil)` on success, or `Error(reason)` if installation fails.
 /// On JavaScript, always returns `Error("erlang:logger is not available on JavaScript target")`.
@@ -207,11 +207,11 @@ pub const default_handler_id = "gleam_log"
 /// ## Example
 ///
 /// ```gleam
-/// import gleam_log/erlang_logger
+/// import birch/erlang_logger
 ///
 /// pub fn main() {
 ///   case erlang_logger.install_logger_handler() {
-///     Ok(Nil) -> io.println("Installed gleam_log as :logger handler")
+///     Ok(Nil) -> io.println("Installed birch as :logger handler")
 ///     Error(reason) -> io.println("Failed: " <> reason)
 ///   }
 /// }
@@ -220,7 +220,7 @@ pub fn install_logger_handler() -> Result(Nil, String) {
   install_logger_handler_with_id(default_handler_id)
 }
 
-/// Install gleam_log as an Erlang :logger handler with a custom handler ID.
+/// Install birch as an Erlang :logger handler with a custom handler ID.
 ///
 /// This is useful if you want to install multiple instances or avoid conflicts
 /// with other handlers.
@@ -228,7 +228,7 @@ pub fn install_logger_handler_with_id(handler_id: String) -> Result(Nil, String)
   do_install_logger_handler(handler_id)
 }
 
-/// Uninstall the gleam_log :logger handler.
+/// Uninstall the birch :logger handler.
 ///
 /// Removes the handler installed by `install_logger_handler()`.
 /// Returns `Ok(Nil)` on success, or `Error(reason)` if removal fails.
@@ -236,7 +236,7 @@ pub fn uninstall_logger_handler() -> Result(Nil, String) {
   uninstall_logger_handler_with_id(default_handler_id)
 }
 
-/// Uninstall a gleam_log :logger handler with a specific ID.
+/// Uninstall a birch :logger handler with a specific ID.
 pub fn uninstall_logger_handler_with_id(
   handler_id: String,
 ) -> Result(Nil, String) {
@@ -248,16 +248,16 @@ pub fn uninstall_logger_handler_with_id(
 // ============================================================================
 
 /// Log a message to Erlang's :logger at the specified level.
-@external(erlang, "gleam_log_erlang_logger_ffi", "logger_log")
-@external(javascript, "../gleam_log_erlang_logger_ffi.mjs", "logger_log")
+@external(erlang, "birch_erlang_logger_ffi", "logger_log")
+@external(javascript, "../birch_erlang_logger_ffi.mjs", "logger_log")
 fn do_logger_log(level: ErlangLevel, message: String) -> Nil
 
-/// Install gleam_log as a :logger handler.
-@external(erlang, "gleam_log_erlang_logger_ffi", "install_handler")
-@external(javascript, "../gleam_log_erlang_logger_ffi.mjs", "install_handler")
+/// Install birch as a :logger handler.
+@external(erlang, "birch_erlang_logger_ffi", "install_handler")
+@external(javascript, "../birch_erlang_logger_ffi.mjs", "install_handler")
 fn do_install_logger_handler(handler_id: String) -> Result(Nil, String)
 
 /// Uninstall a :logger handler.
-@external(erlang, "gleam_log_erlang_logger_ffi", "uninstall_handler")
-@external(javascript, "../gleam_log_erlang_logger_ffi.mjs", "uninstall_handler")
+@external(erlang, "birch_erlang_logger_ffi", "uninstall_handler")
+@external(javascript, "../birch_erlang_logger_ffi.mjs", "uninstall_handler")
 fn do_uninstall_logger_handler(handler_id: String) -> Result(Nil, String)
