@@ -1,4 +1,4 @@
-# justfile for gleam_log
+# justfile for birch
 # https://just.systems/
 
 # Default recipe: show available commands
