@@ -119,7 +119,7 @@ changing_config(_SetOrUpdate, _OldConfig, NewConfig) ->
     {ok, NewConfig}.
 
 %% Main log callback - receives log events from :logger.
-%% Routes them to gleam_log's handlers.
+%% Routes them to birch's handlers.
 -spec log(logger:log_event(), logger:handler_config()) -> ok.
 log(#{level := Level, msg := Msg, meta := Meta}, _Config) ->
     %% Extract message string
@@ -141,7 +141,7 @@ log(#{level := Level, msg := Msg, meta := Meta}, _Config) ->
     %% LogRecord(timestamp, level, logger_name, message, metadata)
     LogRecord = {log_record, Timestamp, GleamLevel, LoggerName, Message, Metadata},
 
-    %% Route to gleam_log handlers via the global config
+    %% Route to birch handlers via the global config
     route_to_gleam_handlers(LogRecord),
 
     ok.

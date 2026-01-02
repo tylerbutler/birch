@@ -256,7 +256,7 @@ pub fn logger_with_forward_handler_test() {
 
   // Should be able to log without crashing
   logger.info(lgr, "Message forwarded to Erlang :logger", [
-    #("source", "gleam_log"),
+    #("source", "birch"),
   ])
 }
 
@@ -264,7 +264,7 @@ pub fn configure_with_forward_handler_test() {
   // Reset config first
   log.reset_config()
 
-  // Configure gleam_log to forward to Erlang :logger
+  // Configure birch to forward to Erlang :logger
   log.configure([
     log.config_handlers([erlang_logger.forward_to_logger()]),
   ])
