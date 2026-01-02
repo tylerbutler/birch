@@ -81,6 +81,37 @@ pub fn make_async(handler: Handler) -> Handler
 - Requires gleam_otp dependency (Erlang only)
 - Need JavaScript alternative (setTimeout queue)
 
+### Implementation Status: ✅ IMPLEMENTED
+
+The actor-based async pattern has been fully implemented:
+
+- **Erlang target**: Uses `gleam_otp` actor pattern with proper OTP Subjects
+  - `src/gleam_log/internal/async_actor.gleam` - OTP actor implementation
+  - `src/gleam_log/handler/async.gleam` - Public API with `@target(erlang)` functions
+  - Features: `shutdown_handler()`, `shutdown_all()`, `get_subject()` for supervision integration
+
+- **JavaScript target**: Falls back to setTimeout-based batching (FFI implementation)
+  - Maintains API compatibility across targets
+  - Uses the existing `AsyncWriter` class in `gleam_log_ffi.mjs`
+
+**Usage:**
+```gleam
+import gleam_log/handler/async
+import gleam_log/handler/console
+
+// Create async handler (uses OTP actor on Erlang, setTimeout on JS)
+let async_console = async.make_async(console.handler(), async.default_config())
+
+// Erlang-only: Get the OTP Subject for supervision tree integration
+let assert Ok(subject) = async.get_subject("async:console")
+
+// Flush before shutdown
+async.flush()
+
+// Erlang-only: Graceful shutdown
+async.shutdown_all()
+```
+
 ---
 
 ## 2. Generic Data and Context Types
@@ -439,7 +470,7 @@ Based on this analysis, here's the recommended order for adopting glimt patterns
 
 ### High Priority (Phase 2)
 
-1. **Actor-based async instances** - Core async handler implementation
+1. **Actor-based async instances** - ✅ IMPLEMENTED (uses gleam_otp on Erlang)
 2. **Serializer builder pattern** - JSON customization
 
 ### Medium Priority (Phase 3)
@@ -451,6 +482,19 @@ Based on this analysis, here's the recommended order for adopting glimt patterns
 
 5. **Process ID tracking** - Debugging enhancement
 6. **Generic typed data** - Only if users request it
+
+---
+
+## Implementation Summary
+
+| Pattern | Priority | Status | Notes |
+|---------|----------|--------|-------|
+| Actor-based async instances | High | ✅ Implemented | Uses gleam_otp Subjects on Erlang, FFI on JS |
+| Serializer builder pattern | High | ❌ Not implemented | JSON format is fixed |
+| Error result functions | Medium | ❌ Not implemented | Manual error conversion needed |
+| Time provider | Medium | ❌ Not implemented | Uses platform.timestamp_iso8601() |
+| Process ID tracking | Low | ❌ Not implemented | Not critical |
+| Generic typed data | Low | ❌ Not implemented | String metadata is sufficient |
 
 ---
 

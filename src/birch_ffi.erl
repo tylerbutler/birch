@@ -4,7 +4,8 @@
          start_async_writer/5, async_send/2, flush_async_writers/0, flush_async_writer/1,
          compress_file_gzip/2, safe_call/1,
          get_scope_context/0, set_scope_context/1, is_scope_context_available/0,
-         random_float/0, current_time_ms/0]).
+         random_float/0, current_time_ms/0,
+         get_actor_registry/0, set_actor_registry/1]).
 
 %% Get current timestamp in ISO 8601 format with milliseconds
 timestamp_iso8601() ->
@@ -297,3 +298,26 @@ random_float() ->
 %% Get the current time in milliseconds since epoch.
 current_time_ms() ->
     erlang:system_time(millisecond).
+
+%% ============================================================================
+%% OTP Actor Registry
+%% ============================================================================
+
+%% Key for the actor registry in persistent_term
+-define(ACTOR_REGISTRY_KEY, gleam_log_actor_registry).
+
+%% Get the actor registry (returns a Gleam Dict).
+%% The registry stores async actor references by name.
+get_actor_registry() ->
+    try persistent_term:get(?ACTOR_REGISTRY_KEY) of
+        Registry -> Registry
+    catch
+        error:badarg ->
+            %% Return empty Gleam Dict
+            gleam@dict:new()
+    end.
+
+%% Set the actor registry.
+set_actor_registry(Registry) ->
+    persistent_term:put(?ACTOR_REGISTRY_KEY, Registry),
+    nil.
