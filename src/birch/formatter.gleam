@@ -4,8 +4,8 @@
 
 import gleam/list
 import gleam/string
-import gleam_log/level
-import gleam_log/record.{type LogRecord}
+import birch/level
+import birch/record.{type LogRecord}
 
 /// A formatter is a function that converts a LogRecord to a string.
 pub type Formatter =

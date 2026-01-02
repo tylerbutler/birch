@@ -3,11 +3,11 @@
 //// This module provides types and functions for configuring the default
 //// logger and application-wide logging settings.
 
+import birch/handler.{type ErrorCallback, type Handler}
+import birch/level.{type Level}
+import birch/record.{type Metadata}
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam_log/handler.{type ErrorCallback, type Handler}
-import gleam_log/level.{type Level}
-import gleam_log/record.{type Metadata}
 
 // ============================================================================
 // Sampling Types (defined here to avoid circular imports)
@@ -85,7 +85,7 @@ pub fn sampling(config: SampleConfig) -> ConfigOption {
 }
 
 /// Returns the default global configuration with no handlers.
-/// Note: Use gleam_log.default_config() to get defaults with console handler.
+/// Note: Use birch.default_config() to get defaults with console handler.
 pub fn empty() -> GlobalConfig {
   GlobalConfig(
     level: level.Info,
@@ -140,16 +140,16 @@ pub fn get_on_error(config: GlobalConfig) -> Option(ErrorCallback) {
 
 /// Get the global configuration from platform-specific storage.
 /// Returns Ok(config) if set, Error(Nil) if not configured.
-@external(erlang, "gleam_log_ffi", "get_global_config")
-@external(javascript, "../gleam_log_ffi.mjs", "get_global_config")
+@external(erlang, "birch_ffi", "get_global_config")
+@external(javascript, "../birch_ffi.mjs", "get_global_config")
 pub fn get_global_config() -> Result(GlobalConfig, Nil)
 
 /// Set the global configuration in platform-specific storage.
-@external(erlang, "gleam_log_ffi", "set_global_config")
-@external(javascript, "../gleam_log_ffi.mjs", "set_global_config")
+@external(erlang, "birch_ffi", "set_global_config")
+@external(javascript, "../birch_ffi.mjs", "set_global_config")
 pub fn set_global_config(config: GlobalConfig) -> Nil
 
 /// Clear the global configuration from platform-specific storage.
-@external(erlang, "gleam_log_ffi", "clear_global_config")
-@external(javascript, "../gleam_log_ffi.mjs", "clear_global_config")
+@external(erlang, "birch_ffi", "clear_global_config")
+@external(javascript, "../birch_ffi.mjs", "clear_global_config")
 pub fn clear_global_config() -> Nil

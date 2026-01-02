@@ -1,13 +1,13 @@
-//// Property-based tests for gleam_log using qcheck.
+//// Property-based tests for birch using qcheck.
 ////
 //// These tests verify invariants that should hold for all inputs.
 
+import birch/formatter
+import birch/level.{Debug, Err, Fatal, Info, Trace, Warn}
+import birch/record
 import gleam/list
 import gleam/order
 import gleam/string
-import gleam_log/formatter
-import gleam_log/level.{Debug, Err, Fatal, Info, Trace, Warn}
-import gleam_log/record
 import gleeunit/should
 import qcheck
 

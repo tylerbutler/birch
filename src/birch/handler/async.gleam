@@ -19,8 +19,8 @@
 //// ## Usage
 ////
 //// ```gleam
-//// import gleam_log/handler/async
-//// import gleam_log/handler/console
+//// import birch/handler/async
+//// import birch/handler/console
 ////
 //// // Wrap any handler to make it async
 //// let async_console =
@@ -40,9 +40,9 @@
 //// async.flush()
 //// ```
 
-import gleam_log/handler.{type Handler}
-import gleam_log/internal/platform
-import gleam_log/record.{type LogRecord}
+import birch/handler.{type Handler}
+import birch/internal/platform
+import birch/record.{type LogRecord}
 
 /// Behavior when the async queue is full.
 pub type OverflowBehavior {

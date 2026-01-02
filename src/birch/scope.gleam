@@ -6,7 +6,7 @@
 //// ## Example
 ////
 //// ```gleam
-//// import gleam_log/scope
+//// import birch/scope
 ////
 //// pub fn handle_request(request_id: String) {
 ////   scope.with_scope([#("request_id", request_id)], fn() {
@@ -29,9 +29,9 @@
 //// - **JavaScript (Other):** Falls back to stack-based context storage.
 ////   Use `is_available()` to check if async context propagation is supported.
 
+import birch/internal/platform
+import birch/record.{type Metadata}
 import gleam/list
-import gleam_log/internal/platform
-import gleam_log/record.{type Metadata}
 
 /// Execute a function with the given context applied.
 ///
@@ -52,7 +52,7 @@ import gleam_log/record.{type Metadata}
 ///   log.info("done")  // Only request_id=123
 /// })
 /// ```
-@external(javascript, "../gleam_log_ffi.mjs", "run_with_scope")
+@external(javascript, "../birch_ffi.mjs", "run_with_scope")
 pub fn with_scope(context: Metadata, work: fn() -> a) -> a {
   // Erlang implementation: use process dictionary
   // Get current scope context (may be empty or from outer scope)

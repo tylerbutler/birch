@@ -2,13 +2,13 @@
 ////
 //// Writes log messages to files with configurable rotation strategies.
 
+import birch/formatter
+import birch/handler.{type Handler}
+import birch/internal/platform
 import gleam/int
 import gleam/list
 import gleam/result
 import gleam/string
-import gleam_log/formatter
-import gleam_log/handler.{type Handler}
-import gleam_log/internal/platform
 import simplifile
 
 /// Time interval for time-based rotation.
@@ -106,7 +106,7 @@ fn write_to_file(config: FileConfig, message: String) -> Nil {
     Error(e) -> {
       // Log to stderr on failure, but don't crash
       platform.write_stderr(
-        "gleam_log: failed to write to "
+        "birch: failed to write to "
         <> config.path
         <> ": "
         <> simplifile.describe_error(e),
@@ -185,7 +185,7 @@ fn rotate_file(path: String, max_files: Int, compress: Bool) -> Nil {
         Error(_) -> {
           // If compression fails, fall back to rename without compression
           platform.write_stderr(
-            "gleam_log: compression failed, falling back to uncompressed rotation",
+            "birch: compression failed, falling back to uncompressed rotation",
           )
           let _ = simplifile.rename(path, path <> ".1")
           Nil

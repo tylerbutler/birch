@@ -1,13 +1,13 @@
-%% Erlang FFI for gleam_log's Erlang :logger integration.
+%% Erlang FFI for birch's Erlang :logger integration.
 %%
 %% This module provides:
-%% 1. Functions to forward gleam_log records to Erlang's :logger
-%% 2. A :logger handler that routes logs to gleam_log handlers
+%% 1. Functions to forward birch records to Erlang's :logger
+%% 2. A :logger handler that routes logs to birch handlers
 %%
 %% The :logger handler behavior requires implementing:
 %% - log(LogEvent, Config) -> ok
 
--module(gleam_log_erlang_logger_ffi).
+-module(birch_erlang_logger_ffi).
 
 %% API exports
 -export([logger_log/2, install_handler/1, uninstall_handler/1]).
@@ -57,18 +57,18 @@ logger_log(GleamLevel, Message) ->
     nil.
 
 %% ============================================================================
-%% Install/Uninstall gleam_log as :logger handler
+%% Install/Uninstall birch as :logger handler
 %% ============================================================================
 
-%% Install gleam_log as a :logger handler.
+%% Install birch as a :logger handler.
 %% Returns {ok, nil} on success, {error, Reason} on failure.
 -spec install_handler(binary()) -> {ok, nil} | {error, binary()}.
 install_handler(HandlerId) ->
     Id = binary_to_atom(HandlerId, utf8),
     Config = #{
         config => #{
-            %% Store reference to gleam_log config
-            gleam_log => true
+            %% Store reference to birch config
+            birch => true
         },
         level => all,
         formatter => {?MODULE, #{}}
@@ -227,11 +227,11 @@ format_metadata(Meta) ->
         end
     end, maps:to_list(Meta)).
 
-%% Route a LogRecord to gleam_log's handlers
+%% Route a LogRecord to birch's handlers
 %% This reads the global config and sends to all configured handlers
 route_to_gleam_handlers(LogRecord) ->
-    %% Try to get global config from gleam_log_ffi
-    case gleam_log_ffi:get_global_config() of
+    %% Try to get global config from birch_ffi
+    case birch_ffi:get_global_config() of
         {ok, Config} ->
             %% Config is a GlobalConfig record: {global_config, Level, Handlers, Context}
             {global_config, _Level, Handlers, _Context} = Config,

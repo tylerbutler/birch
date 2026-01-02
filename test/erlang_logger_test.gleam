@@ -7,13 +7,13 @@
 //// - **Forward handler tests**: Work on both (uses console.log on JS)
 //// - **Install/uninstall tests**: Only succeed on Erlang, expect errors on JS
 
+import birch as log
+import birch/erlang_logger
+import birch/handler
+import birch/level
+import birch/logger
+import birch/record
 import gleam/list
-import gleam_log
-import gleam_log/erlang_logger
-import gleam_log/handler
-import gleam_log/level
-import gleam_log/logger
-import gleam_log/record
 import gleeunit/should
 
 // ============================================================================
@@ -83,13 +83,13 @@ pub fn forward_to_logger_with_all_levels_test() {
 fn is_erlang_target() -> Bool {
   // Try to install a test handler - if it succeeds, we're on Erlang
   let result =
-    erlang_logger.install_logger_handler_with_id("gleam_log_platform_check")
+    erlang_logger.install_logger_handler_with_id("birch_platform_check")
   case result {
     Ok(_) -> {
       // Clean up and return true
       let _ =
         erlang_logger.uninstall_logger_handler_with_id(
-          "gleam_log_platform_check",
+          "birch_platform_check",
         )
       True
     }
@@ -146,18 +146,18 @@ pub fn install_logger_handler_with_custom_id_test() {
     True -> {
       // On Erlang, should be able to install with custom ID
       let result =
-        erlang_logger.install_logger_handler_with_id("gleam_log_custom_test")
+        erlang_logger.install_logger_handler_with_id("birch_custom_test")
       should.be_ok(result)
 
       // Clean up
       let _ =
-        erlang_logger.uninstall_logger_handler_with_id("gleam_log_custom_test")
+        erlang_logger.uninstall_logger_handler_with_id("birch_custom_test")
       Nil
     }
     False -> {
       // On JavaScript, should return error
       let _ =
-        erlang_logger.install_logger_handler_with_id("gleam_log_custom_test")
+        erlang_logger.install_logger_handler_with_id("birch_custom_test")
         |> should.be_error
       Nil
     }
@@ -264,15 +264,15 @@ pub fn logger_with_forward_handler_test() {
 
 pub fn configure_with_forward_handler_test() {
   // Reset config first
-  gleam_log.reset_config()
+  log.reset_config()
 
   // Configure gleam_log to forward to Erlang :logger
-  gleam_log.configure([
-    gleam_log.config_handlers([erlang_logger.forward_to_logger()]),
+  log.configure([
+    log.config_handlers([erlang_logger.forward_to_logger()]),
   ])
 
   // Verify the handler was added
-  let config = gleam_log.get_config()
+  let config = log.get_config()
   config.handlers
   |> list.length
   |> should.equal(1)
@@ -284,5 +284,5 @@ pub fn configure_with_forward_handler_test() {
   |> should.equal("erlang:logger")
 
   // Reset for other tests
-  gleam_log.reset_config()
+  log.reset_config()
 }

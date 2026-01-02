@@ -1,19 +1,19 @@
+import birch as log
+import birch/formatter
+import birch/handler
+import birch/handler/async
+import birch/handler/file
+import birch/handler/json
+import birch/level
+import birch/logger
+import birch/record
+import birch/sampling
 import gleam/json as gleam_json
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/order
 import gleam/result
 import gleam/string
-import gleam_log
-import gleam_log/formatter
-import gleam_log/handler
-import gleam_log/handler/async
-import gleam_log/handler/file
-import gleam_log/handler/json
-import gleam_log/level
-import gleam_log/logger
-import gleam_log/record
-import gleam_log/sampling
 import gleeunit
 import gleeunit/should
 import simplifile
@@ -744,7 +744,7 @@ pub fn json_builder_field_order_test() {
 // ============================================================================
 
 pub fn main_api_new_test() {
-  let lgr = gleam_log.new("myapp")
+  let lgr = log.new("myapp")
 
   logger.name(lgr)
   |> should.equal("myapp")
@@ -752,8 +752,8 @@ pub fn main_api_new_test() {
 
 pub fn main_api_with_context_test() {
   let lgr =
-    gleam_log.new("myapp")
-    |> gleam_log.with_context([#("env", "test")])
+    log.new("myapp")
+    |> log.with_context([#("env", "test")])
 
   logger.get_context(lgr)
   |> should.equal([#("env", "test")])
@@ -761,23 +761,23 @@ pub fn main_api_with_context_test() {
 
 pub fn main_api_with_level_test() {
   let lgr =
-    gleam_log.new("myapp")
-    |> gleam_log.with_level(level.Debug)
+    log.new("myapp")
+    |> log.with_level(level.Debug)
 
   logger.get_level(lgr)
   |> should.equal(level.Debug)
 }
 
 pub fn main_api_level_from_string_test() {
-  gleam_log.level_from_string("debug")
+  log.level_from_string("debug")
   |> should.equal(Ok(level.Debug))
 
-  gleam_log.level_from_string("error")
+  log.level_from_string("error")
   |> should.equal(Ok(level.Err))
 }
 
 pub fn main_api_level_to_string_test() {
-  gleam_log.level_to_string(level.Info)
+  log.level_to_string(level.Info)
   |> should.equal("INFO")
 }
 
@@ -787,7 +787,7 @@ pub fn main_api_level_to_string_test() {
 
 pub fn config_default_test() {
   // Get default config before any configuration
-  let config = gleam_log.get_config()
+  let config = log.get_config()
 
   // Default level should be Info
   config.level
@@ -801,22 +801,22 @@ pub fn config_default_test() {
 
 pub fn config_set_level_test() {
   // Configure with Debug level
-  gleam_log.configure([gleam_log.config_level(level.Debug)])
+  log.configure([log.config_level(level.Debug)])
 
-  let config = gleam_log.get_config()
+  let config = log.get_config()
   config.level
   |> should.equal(level.Debug)
 
   // Reset to default for other tests
-  gleam_log.configure([gleam_log.config_level(level.Info)])
+  log.configure([log.config_level(level.Info)])
 }
 
 pub fn config_set_handlers_test() {
   // Configure with custom handlers
   let null_handler = handler.null()
-  gleam_log.configure([gleam_log.config_handlers([null_handler])])
+  log.configure([log.config_handlers([null_handler])])
 
-  let config = gleam_log.get_config()
+  let config = log.get_config()
   config.handlers
   |> list.length
   |> should.equal(1)
@@ -829,33 +829,33 @@ pub fn config_set_handlers_test() {
   |> should.equal("null")
 
   // Reset to default
-  gleam_log.reset_config()
+  log.reset_config()
 }
 
 pub fn config_set_context_test() {
   // Configure with default context
-  gleam_log.configure([
-    gleam_log.config_context([#("app", "test"), #("env", "testing")]),
+  log.configure([
+    log.config_context([#("app", "test"), #("env", "testing")]),
   ])
 
-  let config = gleam_log.get_config()
+  let config = log.get_config()
   config.context
   |> should.equal([#("app", "test"), #("env", "testing")])
 
   // Reset to default
-  gleam_log.reset_config()
+  log.reset_config()
 }
 
 pub fn config_multiple_options_test() {
   // Configure with multiple options at once
   let null_handler = handler.null()
-  gleam_log.configure([
-    gleam_log.config_level(level.Warn),
-    gleam_log.config_handlers([null_handler]),
-    gleam_log.config_context([#("service", "api")]),
+  log.configure([
+    log.config_level(level.Warn),
+    log.config_handlers([null_handler]),
+    log.config_context([#("service", "api")]),
   ])
 
-  let config = gleam_log.get_config()
+  let config = log.get_config()
   config.level
   |> should.equal(level.Warn)
   config.handlers
@@ -865,40 +865,40 @@ pub fn config_multiple_options_test() {
   |> should.equal([#("service", "api")])
 
   // Reset to default
-  gleam_log.reset_config()
+  log.reset_config()
 }
 
 pub fn config_reset_test() {
   // Configure with custom settings
-  gleam_log.configure([gleam_log.config_level(level.Fatal)])
+  log.configure([log.config_level(level.Fatal)])
 
   // Verify it was set
-  let config1 = gleam_log.get_config()
+  let config1 = log.get_config()
   config1.level
   |> should.equal(level.Fatal)
 
   // Reset to default
-  gleam_log.reset_config()
+  log.reset_config()
 
   // Verify it was reset
-  let config2 = gleam_log.get_config()
+  let config2 = log.get_config()
   config2.level
   |> should.equal(level.Info)
 }
 
 pub fn config_default_logger_uses_config_test() {
   // Configure the global config with Debug level
-  gleam_log.configure([gleam_log.config_level(level.Debug)])
+  log.configure([log.config_level(level.Debug)])
 
   // Create a new default logger - it should inherit the global level
-  let lgr = gleam_log.new("test.config")
+  let lgr = log.new("test.config")
 
   // The logger should use the global configuration's level
   logger.get_level(lgr)
   |> should.equal(level.Debug)
 
   // Reset to default
-  gleam_log.reset_config()
+  log.reset_config()
 }
 
 // ============================================================================
@@ -993,83 +993,83 @@ pub fn async_flush_waits_for_pending_test() {
 
 pub fn set_level_changes_global_level_test() {
   // Reset to known state
-  gleam_log.reset_config()
+  log.reset_config()
 
   // Default level should be Info
-  gleam_log.get_level()
+  log.get_level()
   |> should.equal(level.Info)
 
   // Set to Debug level
-  gleam_log.set_level(level.Debug)
+  log.set_level(level.Debug)
 
   // Level should now be Debug
-  gleam_log.get_level()
+  log.get_level()
   |> should.equal(level.Debug)
 
   // Reset for other tests
-  gleam_log.reset_config()
+  log.reset_config()
 }
 
 pub fn set_level_affects_new_loggers_test() {
   // Reset to known state
-  gleam_log.reset_config()
+  log.reset_config()
 
   // Set global level to Warn
-  gleam_log.set_level(level.Warn)
+  log.set_level(level.Warn)
 
   // New loggers should inherit the global level
-  let lgr = gleam_log.new("test.runtime_level")
+  let lgr = log.new("test.runtime_level")
   logger.get_level(lgr)
   |> should.equal(level.Warn)
 
   // Reset for other tests
-  gleam_log.reset_config()
+  log.reset_config()
 }
 
 pub fn set_level_takes_effect_immediately_test() {
   // Reset to known state
-  gleam_log.reset_config()
+  log.reset_config()
 
   // Verify starting at Info
-  let config1 = gleam_log.get_config()
+  let config1 = log.get_config()
   config1.level
   |> should.equal(level.Info)
 
   // Change to Trace
-  gleam_log.set_level(level.Trace)
+  log.set_level(level.Trace)
 
   // Should take effect immediately
-  let config2 = gleam_log.get_config()
+  let config2 = log.get_config()
   config2.level
   |> should.equal(level.Trace)
 
   // Change again to Fatal
-  gleam_log.set_level(level.Fatal)
+  log.set_level(level.Fatal)
 
   // Should take effect immediately
-  let config3 = gleam_log.get_config()
+  let config3 = log.get_config()
   config3.level
   |> should.equal(level.Fatal)
 
   // Reset for other tests
-  gleam_log.reset_config()
+  log.reset_config()
 }
 
 pub fn set_level_preserves_other_config_test() {
   // Reset to known state
-  gleam_log.reset_config()
+  log.reset_config()
 
   // Configure with custom handlers and context
   let null_handler = handler.null()
-  gleam_log.configure([
-    gleam_log.config_handlers([null_handler]),
-    gleam_log.config_context([#("app", "test")]),
+  log.configure([
+    log.config_handlers([null_handler]),
+    log.config_context([#("app", "test")]),
   ])
 
   // Set level (should preserve other settings)
-  gleam_log.set_level(level.Debug)
+  log.set_level(level.Debug)
 
-  let config = gleam_log.get_config()
+  let config = log.get_config()
   config.level
   |> should.equal(level.Debug)
 
@@ -1088,7 +1088,7 @@ pub fn set_level_preserves_other_config_test() {
   |> should.equal([#("app", "test")])
 
   // Reset for other tests
-  gleam_log.reset_config()
+  log.reset_config()
 }
 
 // ============================================================================
@@ -1097,7 +1097,7 @@ pub fn set_level_preserves_other_config_test() {
 
 pub fn file_rotation_no_compression_test() {
   // Test that SizeRotation works without compression
-  let test_dir = "/tmp/gleam_log_test_no_compress"
+  let test_dir = "/tmp/birch_test_no_compress"
   let test_path = test_dir <> "/app.log"
 
   // Clean up any existing test files
@@ -1137,7 +1137,7 @@ pub fn file_rotation_no_compression_test() {
 
 pub fn file_rotation_with_compression_test() {
   // Test that SizeRotation with compress: True creates .gz files
-  let test_dir = "/tmp/gleam_log_test_compress"
+  let test_dir = "/tmp/birch_test_compress"
   let test_path = test_dir <> "/app.log"
 
   // Clean up any existing test files
@@ -1181,7 +1181,7 @@ pub fn file_rotation_with_compression_test() {
 
 pub fn file_rotation_compression_disabled_test() {
   // Test that SizeRotationCompressed with compress: False behaves like SizeRotation
-  let test_dir = "/tmp/gleam_log_test_compress_disabled"
+  let test_dir = "/tmp/birch_test_compress_disabled"
   let test_path = test_dir <> "/app.log"
 
   // Clean up any existing test files
@@ -1230,7 +1230,7 @@ pub fn file_rotation_compression_disabled_test() {
 
 pub fn file_rotation_compressed_file_is_smaller_test() {
   // Test that compressed files are actually smaller than uncompressed
-  let test_dir = "/tmp/gleam_log_test_compress_size"
+  let test_dir = "/tmp/birch_test_compress_size"
   let test_path_uncompressed = test_dir <> "/uncompressed.log"
   let test_path_compressed = test_dir <> "/compressed.log"
 
@@ -1300,7 +1300,7 @@ pub fn file_rotation_compressed_file_is_smaller_test() {
 
 pub fn file_rotation_max_files_with_compression_test() {
   // Test that max_files limit works correctly with compressed files
-  let test_dir = "/tmp/gleam_log_test_max_files_compress"
+  let test_dir = "/tmp/birch_test_max_files_compress"
   let test_path = test_dir <> "/app.log"
 
   // Clean up any existing test files
@@ -1491,19 +1491,19 @@ pub fn handler_error_includes_record_test() {
 
 pub fn config_on_error_option_test() {
   // Reset to known state
-  gleam_log.reset_config()
+  log.reset_config()
 
   // Create an error callback
   let global_error_callback = fn(_err: handler.HandlerError) { Nil }
 
   // Configure with global error callback
-  gleam_log.configure([gleam_log.config_on_error(global_error_callback)])
+  log.configure([log.config_on_error(global_error_callback)])
 
   // Verify config was set (we can't easily inspect the callback,
   // but we can verify configuration doesn't error)
 
   // Reset for other tests
-  gleam_log.reset_config()
+  log.reset_config()
 }
 
 pub fn handler_get_error_callback_test() {
@@ -1532,7 +1532,7 @@ pub fn handler_get_error_callback_test() {
 
 pub fn scope_with_scope_returns_work_result_test() {
   // with_scope should return the result of the work function
-  let result = gleam_log.with_scope([#("request_id", "123")], fn() { 42 })
+  let result = log.with_scope([#("request_id", "123")], fn() { 42 })
 
   result
   |> should.equal(42)
@@ -1540,7 +1540,7 @@ pub fn scope_with_scope_returns_work_result_test() {
 
 pub fn scope_with_scope_string_result_test() {
   // with_scope should work with any return type
-  let result = gleam_log.with_scope([#("trace_id", "abc")], fn() { "hello" })
+  let result = log.with_scope([#("trace_id", "abc")], fn() { "hello" })
 
   result
   |> should.equal("hello")
@@ -1548,8 +1548,8 @@ pub fn scope_with_scope_string_result_test() {
 
 pub fn scope_get_scope_context_inside_scope_test() {
   // Inside a scope, get_scope_context should return the scope's context
-  gleam_log.with_scope([#("request_id", "req-123")], fn() {
-    let ctx = gleam_log.get_scope_context()
+  log.with_scope([#("request_id", "req-123")], fn() {
+    let ctx = log.get_scope_context()
     ctx
     |> should.equal([#("request_id", "req-123")])
   })
@@ -1557,7 +1557,7 @@ pub fn scope_get_scope_context_inside_scope_test() {
 
 pub fn scope_get_scope_context_outside_scope_test() {
   // Outside any scope, get_scope_context should return empty list
-  let ctx = gleam_log.get_scope_context()
+  let ctx = log.get_scope_context()
 
   ctx
   |> should.equal([])
@@ -1565,16 +1565,16 @@ pub fn scope_get_scope_context_outside_scope_test() {
 
 pub fn scope_nested_scopes_test() {
   // Nested scopes should combine context, with inner values taking precedence
-  gleam_log.with_scope([#("outer", "value1")], fn() {
+  log.with_scope([#("outer", "value1")], fn() {
     // First scope has outer context
-    let outer_ctx = gleam_log.get_scope_context()
+    let outer_ctx = log.get_scope_context()
     outer_ctx
     |> list.key_find("outer")
     |> should.equal(Ok("value1"))
 
     // Nested scope adds more context
-    gleam_log.with_scope([#("inner", "value2")], fn() {
-      let inner_ctx = gleam_log.get_scope_context()
+    log.with_scope([#("inner", "value2")], fn() {
+      let inner_ctx = log.get_scope_context()
 
       // Both keys should be present
       inner_ctx
@@ -1587,7 +1587,7 @@ pub fn scope_nested_scopes_test() {
     })
 
     // After inner scope ends, only outer context remains
-    let after_inner_ctx = gleam_log.get_scope_context()
+    let after_inner_ctx = log.get_scope_context()
     after_inner_ctx
     |> list.key_find("inner")
     |> should.be_error
@@ -1600,9 +1600,9 @@ pub fn scope_nested_scopes_test() {
 
 pub fn scope_nested_scopes_shadow_test() {
   // Inner scope with same key should shadow outer scope
-  gleam_log.with_scope([#("key", "outer_value")], fn() {
-    gleam_log.with_scope([#("key", "inner_value")], fn() {
-      let ctx = gleam_log.get_scope_context()
+  log.with_scope([#("key", "outer_value")], fn() {
+    log.with_scope([#("key", "inner_value")], fn() {
+      let ctx = log.get_scope_context()
 
       // The inner value should come first (shadow the outer)
       ctx
@@ -1611,7 +1611,7 @@ pub fn scope_nested_scopes_shadow_test() {
     })
 
     // After inner scope, original value restored
-    let ctx = gleam_log.get_scope_context()
+    let ctx = log.get_scope_context()
     ctx
     |> list.key_find("key")
     |> should.equal(Ok("outer_value"))
@@ -1620,7 +1620,7 @@ pub fn scope_nested_scopes_shadow_test() {
 
 pub fn scope_is_available_test() {
   // is_scoped_context_available should return a boolean
-  let available = gleam_log.is_scoped_context_available()
+  let available = log.is_scoped_context_available()
 
   // On both Erlang and JavaScript this should return a boolean
   // We just check it's callable and doesn't crash
@@ -1632,10 +1632,10 @@ pub fn scope_is_available_test() {
 
 pub fn scope_multiple_metadata_pairs_test() {
   // with_scope should support multiple key-value pairs
-  gleam_log.with_scope(
+  log.with_scope(
     [#("request_id", "123"), #("user_id", "456"), #("trace_id", "789")],
     fn() {
-      let ctx = gleam_log.get_scope_context()
+      let ctx = log.get_scope_context()
 
       ctx
       |> list.key_find("request_id")
@@ -1654,27 +1654,27 @@ pub fn scope_multiple_metadata_pairs_test() {
 
 pub fn scope_context_cleared_after_scope_test() {
   // Ensure context is properly cleaned up after scope ends
-  gleam_log.with_scope([#("temp_key", "temp_value")], fn() {
+  log.with_scope([#("temp_key", "temp_value")], fn() {
     // Inside scope, context exists
-    gleam_log.get_scope_context()
+    log.get_scope_context()
     |> list.key_find("temp_key")
     |> should.equal(Ok("temp_value"))
   })
 
   // After scope ends, context should be empty
-  gleam_log.get_scope_context()
+  log.get_scope_context()
   |> should.equal([])
 }
 
 pub fn scope_context_included_in_log_records_test() {
   // Reset global config for clean test
-  gleam_log.reset_config()
+  log.reset_config()
 
   // Create a mutable reference to capture log records (using list accumulator pattern)
   // We'll use a logger with a null handler and verify scope context is read
-  gleam_log.with_scope([#("request_id", "test-123")], fn() {
+  log.with_scope([#("request_id", "test-123")], fn() {
     // Get the scope context which should be included in logs
-    let ctx = gleam_log.get_scope_context()
+    let ctx = log.get_scope_context()
     ctx
     |> list.key_find("request_id")
     |> should.equal(Ok("test-123"))
@@ -1683,13 +1683,13 @@ pub fn scope_context_included_in_log_records_test() {
   })
 
   // Verify scope context is cleaned up
-  gleam_log.get_scope_context()
+  log.get_scope_context()
   |> should.equal([])
 }
 
 pub fn scope_empty_context_test() {
   // with_scope with empty context should not crash
-  let result = gleam_log.with_scope([], fn() { "success" })
+  let result = log.with_scope([], fn() { "success" })
 
   result
   |> should.equal("success")
@@ -1828,35 +1828,35 @@ pub fn rate_limit_try_consume_test() {
 
 pub fn config_with_sampling_test() {
   // Reset to known state
-  gleam_log.reset_config()
+  log.reset_config()
 
   // Configure with sampling
-  gleam_log.configure([
-    gleam_log.config_sampling(sampling.config(level.Debug, 0.5)),
+  log.configure([
+    log.config_sampling(sampling.config(level.Debug, 0.5)),
   ])
 
-  let config = gleam_log.get_config()
+  let config = log.get_config()
 
   // Verify sampling config is set
   config.sampling
   |> should.be_ok
 
   // Reset for other tests
-  gleam_log.reset_config()
+  log.reset_config()
 }
 
 pub fn config_without_sampling_test() {
   // Reset to known state
-  gleam_log.reset_config()
+  log.reset_config()
 
-  let config = gleam_log.get_config()
+  let config = log.get_config()
 
   // Default should have no sampling
   config.sampling
   |> should.be_error
 
   // Reset for other tests
-  gleam_log.reset_config()
+  log.reset_config()
 }
 
 // ============================================================================
@@ -1923,7 +1923,7 @@ pub fn file_handler_with_time_rotation_test() {
   // Should be able to create a file handler with TimeRotation
   let config =
     file.FileConfig(
-      path: "/tmp/gleam_log_test_time.log",
+      path: "/tmp/birch_test_time.log",
       rotation: file.TimeRotation(interval: file.Daily, max_files: 7),
     )
   let h = file.handler(config)
@@ -1937,7 +1937,7 @@ pub fn file_handler_with_combined_rotation_test() {
   // Should be able to create a file handler with CombinedRotation
   let config =
     file.FileConfig(
-      path: "/tmp/gleam_log_test_combined.log",
+      path: "/tmp/birch_test_combined.log",
       rotation: file.CombinedRotation(
         max_bytes: 1_000_000,
         interval: file.Hourly,
