@@ -2,10 +2,10 @@
 ////
 //// Formatters transform LogRecords into strings for output.
 
-import gleam/list
-import gleam/string
 import birch/level
 import birch/record.{type LogRecord}
+import gleam/list
+import gleam/string
 
 /// A formatter is a function that converts a LogRecord to a string.
 pub type Formatter =
