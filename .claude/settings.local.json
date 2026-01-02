@@ -1,7 +1,6 @@
 {
   "permissions": {
     "allow": [
-      "Bash(gleam format:*)",
       "Bash(cat:*)",
       "Bash(deno:*)",
       "Bash(gleam:*)",
