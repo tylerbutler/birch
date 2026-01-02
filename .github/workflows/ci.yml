@@ -49,7 +49,7 @@ jobs:
         run: npm ci
 
       - name: Run tests with coverage
-        run: npm run test:coverage
+        run: npm run test:all:coverage
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v5

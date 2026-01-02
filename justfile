@@ -72,6 +72,10 @@ watch-test:
 coverage:
     npm run test:coverage
 
+# Run all tests (gleeunit + integration) with combined coverage
+coverage-all:
+    npm run test:all:coverage
+
 # Generate coverage report (after running coverage)
 coverage-report:
     npm run coverage:report
