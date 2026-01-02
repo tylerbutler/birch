@@ -49,13 +49,47 @@ jobs:
         run: npm ci
 
       - name: Run tests with coverage
-        run: npm run test:coverage
+        run: npm run test:all:coverage
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v5
         with:
           files: coverage/lcov.info
           fail_ci_if_error: false
+
+  integration-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        runtime: [node, deno, bun]
+
+    name: Integration Test (${{ matrix.runtime }})
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup environment
+        uses: ./.github/actions/setup
+        with:
+          node: true
+
+      - name: Setup Deno
+        if: matrix.runtime == 'deno'
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Setup Bun
+        if: matrix.runtime == 'bun'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Build for JavaScript
+        run: just build-js
+
+      - name: Run integration tests
+        run: just test-integration-${{ matrix.runtime }}
 
   docs:
     runs-on: ubuntu-latest

@@ -73,6 +73,18 @@ just deps         # Download dependencies
 just clean        # Remove build artifacts
 ```
 
+### Integration Tests (JavaScript Target)
+
+Integration tests run compiled Gleam fixtures on Node.js, Deno, and Bun:
+
+```bash
+just test-integration-node  # Run on Node.js
+just test-integration-deno  # Run on Deno
+just test-integration-bun   # Run on Bun (via Node.js test runner)
+just test-integration       # Run on Node.js (default)
+just test-integration-all   # Run on all three runtimes
+```
+
 ### Watch Mode (requires watchexec)
 
 ```bash
