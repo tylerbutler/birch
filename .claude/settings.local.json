@@ -1,10 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(gleam format:*)",
       "Bash(cat:*)",
-      "WebFetch(domain:raw.githubusercontent.com)",
-      "WebFetch(domain:docs.cocogitto.io)"
+      "Bash(deno:*)",
+      "Bash(gleam:*)",
+      "Bash(grep:*)",
+      "Bash(npm:*)"
+      "Bash(npx c8:*)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }
