@@ -605,3 +605,43 @@ export function random_float() {
 export function current_time_ms() {
   return Date.now();
 }
+
+// ============================================================================
+// Process/Thread ID
+// ============================================================================
+
+/**
+ * Get the current process or thread identifier as a string.
+ * On JavaScript: Returns "main" for the main thread, or worker ID if in a worker.
+ * @returns {string}
+ */
+export function get_caller_id() {
+  // Web Workers have a name property
+  if (typeof self !== "undefined" && self.name) {
+    return self.name;
+  }
+  // Node.js worker threads
+  if (typeof process !== "undefined" && process.versions?.node) {
+    try {
+      // Try to get worker thread ID if in a worker
+      const worker_threads = require("worker_threads");
+      if (!worker_threads.isMainThread) {
+        return `worker-${worker_threads.threadId}`;
+      }
+    } catch (e) {
+      // Not in a worker thread or module not available
+    }
+    // Return process ID for main thread
+    return `pid-${process.pid}`;
+  }
+  // Deno - check if in a worker
+  if (typeof Deno !== "undefined") {
+    // Deno workers don't have a direct way to get ID, use "worker" if not main
+    if (typeof WorkerGlobalScope !== "undefined") {
+      return "worker";
+    }
+    return `pid-${Deno.pid}`;
+  }
+  // Browser main thread or fallback
+  return "main";
+}

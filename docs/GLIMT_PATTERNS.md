@@ -471,17 +471,17 @@ Based on this analysis, here's the recommended order for adopting glimt patterns
 ### High Priority (Phase 2)
 
 1. **Actor-based async instances** - ✅ IMPLEMENTED (uses gleam_otp on Erlang)
-2. **Serializer builder pattern** - JSON customization
+2. **Serializer builder pattern** - ✅ IMPLEMENTED (PR #17)
 
 ### Medium Priority (Phase 3)
 
-3. **Error result convenience functions** - Quality of life improvement
-4. **Time provider for testing** - Test support
+3. **Error result convenience functions** - ✅ IMPLEMENTED
+4. **Time provider for testing** - ✅ IMPLEMENTED
 
 ### Low Priority (Future)
 
-5. **Process ID tracking** - Debugging enhancement
-6. **Generic typed data** - Only if users request it
+5. **Process ID tracking** - ✅ IMPLEMENTED
+6. **Generic typed data** - Not planned (string metadata is cross-platform friendly)
 
 ---
 
@@ -490,11 +490,11 @@ Based on this analysis, here's the recommended order for adopting glimt patterns
 | Pattern | Priority | Status | Notes |
 |---------|----------|--------|-------|
 | Actor-based async instances | High | ✅ Implemented | Uses gleam_otp Subjects on Erlang, FFI on JS |
-| Serializer builder pattern | High | ❌ Not implemented | JSON format is fixed |
-| Error result functions | Medium | ❌ Not implemented | Manual error conversion needed |
-| Time provider | Medium | ❌ Not implemented | Uses platform.timestamp_iso8601() |
-| Process ID tracking | Low | ❌ Not implemented | Not critical |
-| Generic typed data | Low | ❌ Not implemented | String metadata is sufficient |
+| Serializer builder pattern | High | ✅ Implemented | JSON builder with add_timestamp(), add_custom(), etc. (PR #17) |
+| Error result functions | Medium | ✅ Implemented | `error_result()`, `fatal_result()` auto-extract error values |
+| Time provider | Medium | ✅ Implemented | `with_time_provider()` for deterministic testing |
+| Process ID tracking | Low | ✅ Implemented | `with_caller_id_capture()` captures PID on Erlang, thread ID on JS |
+| Generic typed data | Low | ❌ Not planned | String metadata is sufficient for cross-platform compatibility |
 
 ---
 

@@ -5,6 +5,7 @@
 
 import birch/level.{type Level}
 import gleam/list
+import gleam/option.{type Option, None}
 
 /// Metadata is a list of key-value pairs attached to a log record.
 /// Keys and values are both strings for simplicity and cross-target compatibility.
@@ -24,10 +25,15 @@ pub type LogRecord {
     message: String,
     /// Key-value metadata attached to this record
     metadata: Metadata,
+    /// Optional caller process/thread ID for debugging concurrent applications.
+    /// On Erlang: String representation of the calling process PID.
+    /// On JavaScript: "main" for main thread, or worker ID if available.
+    caller_id: Option(String),
   )
 }
 
 /// Create a new log record with the given parameters.
+/// The caller_id field defaults to None. Use `with_caller_id` to set it.
 pub fn new(
   timestamp timestamp: String,
   level level: Level,
@@ -41,10 +47,12 @@ pub fn new(
     logger_name: logger_name,
     message: message,
     metadata: metadata,
+    caller_id: None,
   )
 }
 
 /// Create a log record with empty metadata.
+/// The caller_id field defaults to None.
 pub fn new_simple(
   timestamp timestamp: String,
   level level: Level,
@@ -57,6 +65,7 @@ pub fn new_simple(
     logger_name: logger_name,
     message: message,
     metadata: [],
+    caller_id: None,
   )
 }
 
@@ -74,4 +83,15 @@ pub fn get_metadata(record: LogRecord, key: String) -> Result(String, Nil) {
       _ -> Error(Nil)
     }
   })
+}
+
+/// Set the caller ID on a log record.
+/// The caller ID identifies the process or thread that created the log.
+pub fn with_caller_id(record: LogRecord, caller_id: String) -> LogRecord {
+  LogRecord(..record, caller_id: option.Some(caller_id))
+}
+
+/// Get the caller ID from a log record, if set.
+pub fn get_caller_id(record: LogRecord) -> Option(String) {
+  record.caller_id
 }

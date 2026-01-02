@@ -9,6 +9,13 @@ import birch/internal/platform
 import birch/level.{type Level}
 import birch/record.{type Metadata}
 import gleam/list
+import gleam/option.{type Option, None, Some}
+import gleam/string
+
+/// A function that provides timestamps.
+/// Used for testing with deterministic timestamps.
+pub type TimeProvider =
+  fn() -> String
 
 /// A logger instance with configuration and context.
 pub opaque type Logger {
@@ -21,6 +28,10 @@ pub opaque type Logger {
     handlers: List(Handler),
     /// Persistent context metadata
     context: Metadata,
+    /// Optional custom time provider (defaults to platform.timestamp_iso8601)
+    time_provider: Option(TimeProvider),
+    /// Whether to capture caller process/thread ID on each log call
+    capture_caller_id: Bool,
   )
 }
 
@@ -32,13 +43,22 @@ pub fn new(name: String) -> Logger {
     min_level: level.default(),
     handlers: [console.handler()],
     context: [],
+    time_provider: None,
+    capture_caller_id: False,
   )
 }
 
 /// Create a logger with no handlers (silent by default).
 /// Useful for library loggers that consumers can configure.
 pub fn silent(name: String) -> Logger {
-  Logger(name: name, min_level: level.default(), handlers: [], context: [])
+  Logger(
+    name: name,
+    min_level: level.default(),
+    handlers: [],
+    context: [],
+    time_provider: None,
+    capture_caller_id: False,
+  )
 }
 
 /// Get the name of a logger.
@@ -82,6 +102,86 @@ pub fn get_context(logger: Logger) -> Metadata {
   logger.context
 }
 
+/// Set a custom time provider for a logger.
+///
+/// This is primarily useful for testing, allowing deterministic timestamps
+/// in test output.
+///
+/// ## Example
+///
+/// ```gleam
+/// // For testing - fixed timestamp
+/// let test_logger =
+///   logger.new("test")
+///   |> logger.with_time_provider(fn() { "2024-01-01T00:00:00.000Z" })
+///
+/// // For testing - incrementing counter
+/// let counter = atomic.new(0)
+/// let test_logger =
+///   logger.new("test")
+///   |> logger.with_time_provider(fn() {
+///     let n = atomic.add(counter, 1)
+///     "T" <> int.to_string(n)
+///   })
+/// ```
+pub fn with_time_provider(logger: Logger, provider: TimeProvider) -> Logger {
+  Logger(..logger, time_provider: Some(provider))
+}
+
+/// Clear the custom time provider, reverting to the default platform timestamp.
+pub fn without_time_provider(logger: Logger) -> Logger {
+  Logger(..logger, time_provider: None)
+}
+
+/// Enable caller ID capture for this logger.
+///
+/// When enabled, log records will include the process/thread ID of the caller.
+/// This is useful for debugging concurrent applications.
+///
+/// - On Erlang: Captures the PID (e.g., "<0.123.0>")
+/// - On JavaScript: Captures "main", "pid-N", or "worker-N"
+///
+/// Note: This has a small performance cost (~1μs per log call) due to the
+/// FFI call to get the process/thread ID.
+///
+/// ## Example
+///
+/// ```gleam
+/// let logger =
+///   logger.new("myapp")
+///   |> logger.with_caller_id_capture()
+/// ```
+pub fn with_caller_id_capture(logger: Logger) -> Logger {
+  Logger(..logger, capture_caller_id: True)
+}
+
+/// Disable caller ID capture for this logger.
+pub fn without_caller_id_capture(logger: Logger) -> Logger {
+  Logger(..logger, capture_caller_id: False)
+}
+
+/// Check if caller ID capture is enabled for this logger.
+pub fn is_caller_id_capture_enabled(logger: Logger) -> Bool {
+  logger.capture_caller_id
+}
+
+/// Get the current timestamp using the logger's time provider.
+/// Falls back to platform.timestamp_iso8601() if no custom provider is set.
+fn get_timestamp(logger: Logger) -> String {
+  case logger.time_provider {
+    Some(provider) -> provider()
+    None -> platform.timestamp_iso8601()
+  }
+}
+
+/// Get the caller ID if capture is enabled.
+fn get_optional_caller_id(logger: Logger) -> Option(String) {
+  case logger.capture_caller_id {
+    True -> Some(platform.get_caller_id())
+    False -> None
+  }
+}
+
 /// Check if a log level should be logged by this logger.
 pub fn should_log(logger: Logger, log_level: Level) -> Bool {
   level.gte(log_level, logger.min_level)
@@ -106,15 +206,20 @@ pub fn log(
       let scope_context = platform.get_scope_context()
       let merged_metadata =
         list.append(metadata, list.append(scope_context, logger.context))
-      let record =
+      let base_record =
         record.new(
-          timestamp: platform.timestamp_iso8601(),
+          timestamp: get_timestamp(logger),
           level: log_level,
           logger_name: logger.name,
           message: message,
           metadata: merged_metadata,
         )
-      handler.handle_all(logger.handlers, record)
+      // Add caller ID if capture is enabled
+      let final_record = case get_optional_caller_id(logger) {
+        Some(caller_id) -> record.with_caller_id(base_record, caller_id)
+        None -> base_record
+      }
+      handler.handle_all(logger.handlers, final_record)
     }
   }
 }
@@ -139,15 +244,20 @@ pub fn log_lazy(
       let scope_context = platform.get_scope_context()
       let merged_metadata =
         list.append(metadata, list.append(scope_context, logger.context))
-      let record =
+      let base_record =
         record.new(
-          timestamp: platform.timestamp_iso8601(),
+          timestamp: get_timestamp(logger),
           level: log_level,
           logger_name: logger.name,
           message: message_fn(),
           metadata: merged_metadata,
         )
-      handler.handle_all(logger.handlers, record)
+      // Add caller ID if capture is enabled
+      let final_record = case get_optional_caller_id(logger) {
+        Some(caller_id) -> record.with_caller_id(base_record, caller_id)
+        None -> base_record
+      }
+      handler.handle_all(logger.handlers, final_record)
     }
   }
 }
@@ -236,4 +346,68 @@ pub fn fatal_lazy(
   metadata: Metadata,
 ) -> Nil {
   log_lazy(logger, level.Fatal, message_fn, metadata)
+}
+
+// ============================================================================
+// Error Result Convenience Functions
+// ============================================================================
+
+/// Log an error message with an associated Result.
+///
+/// If the result is an Error, the error value is automatically included
+/// in the metadata under the "error" key using `string.inspect`.
+///
+/// ## Example
+///
+/// ```gleam
+/// case database.connect() {
+///   Ok(conn) -> use_connection(conn)
+///   Error(_) as result -> {
+///     logger |> log.error_result("Database connection failed", result, [])
+///   }
+/// }
+/// ```
+pub fn error_result(
+  logger: Logger,
+  message: String,
+  result: Result(a, e),
+  metadata: Metadata,
+) -> Nil {
+  let error_metadata = extract_error_metadata(result)
+  log(logger, level.Err, message, list.append(error_metadata, metadata))
+}
+
+/// Log a fatal message with an associated Result.
+///
+/// If the result is an Error, the error value is automatically included
+/// in the metadata under the "error" key using `string.inspect`.
+///
+/// ## Example
+///
+/// ```gleam
+/// case critical_init() {
+///   Ok(state) -> run(state)
+///   Error(_) as result -> {
+///     logger |> log.fatal_result("Cannot start application", result, [])
+///     panic as "Critical initialization failed"
+///   }
+/// }
+/// ```
+pub fn fatal_result(
+  logger: Logger,
+  message: String,
+  result: Result(a, e),
+  metadata: Metadata,
+) -> Nil {
+  let error_metadata = extract_error_metadata(result)
+  log(logger, level.Fatal, message, list.append(error_metadata, metadata))
+}
+
+/// Extract error metadata from a Result.
+/// Returns empty list for Ok, or [#("error", inspected_value)] for Error.
+fn extract_error_metadata(result: Result(a, e)) -> Metadata {
+  case result {
+    Ok(_) -> []
+    Error(e) -> [#("error", string.inspect(e))]
+  }
 }

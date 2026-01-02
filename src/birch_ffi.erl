@@ -5,7 +5,8 @@
          compress_file_gzip/2, safe_call/1,
          get_scope_context/0, set_scope_context/1, is_scope_context_available/0,
          random_float/0, current_time_ms/0,
-         get_actor_registry/0, set_actor_registry/1]).
+         get_actor_registry/0, set_actor_registry/1,
+         get_caller_id/0]).
 
 %% Get current timestamp in ISO 8601 format with milliseconds
 timestamp_iso8601() ->
@@ -321,3 +322,12 @@ get_actor_registry() ->
 set_actor_registry(Registry) ->
     persistent_term:put(?ACTOR_REGISTRY_KEY, Registry),
     nil.
+
+%% ============================================================================
+%% Process/Thread ID
+%% ============================================================================
+
+%% Get the current process ID as a string.
+%% Returns the string representation of self() PID (e.g., "<0.123.0>").
+get_caller_id() ->
+    list_to_binary(pid_to_list(self())).
