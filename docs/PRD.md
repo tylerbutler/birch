@@ -10,11 +10,11 @@
 
 ### 1.1 Problem Statement
 
-The Gleam ecosystem lacks a modern, production-ready logging library. The existing option (glimt) has been unmaintained since July 2023, uses outdated dependencies, supports only the Erlang target, and lacks critical production features like file output, log rotation, and rate limiting.
+The Gleam ecosystem lacks a full-featured logging library with cross-platform support. The existing option (glimt) has been unmaintained since July 2023, uses outdated dependencies, supports only the Erlang target, and lacks features like file output, log rotation, and rate limiting.
 
 ### 1.2 Vision
 
-Build a cross-platform logging library for Gleam that is simple for basic use cases, extensible for advanced needs, and production-ready out of the box. The library should feel native to Gleam's functional style while providing the reliability expected in server and application environments.
+Build a cross-platform logging library for Gleam that is simple for basic use cases and extensible for advanced needs. The library should feel native to Gleam's functional style while providing the reliability expected in server and application environments.
 
 ### 1.3 Success Criteria
 

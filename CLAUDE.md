@@ -4,7 +4,7 @@ This document provides essential context for AI assistants working with the glea
 
 ## Project Overview
 
-**gleam_log** is a modern, production-ready logging library for Gleam. It provides cross-platform support (Erlang and JavaScript targets), structured logging with metadata, multiple output handlers, and lazy evaluation for performance.
+**gleam_log** is a logging library for Gleam with cross-platform support (Erlang and JavaScript targets), structured logging with metadata, multiple output handlers, and lazy evaluation for performance.
 
 ### Key Features
 - Cross-platform: Works on both Erlang (BEAM) and JavaScript targets

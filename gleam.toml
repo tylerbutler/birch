@@ -1,6 +1,6 @@
 name = "gleam_log"
 version = "0.1.0"
-description = "A modern, production-ready logging library for Gleam"
+description = "A logging library for Gleam with cross-platform support"
 licences = ["MIT"]
 repository = { type = "github", user = "tylerbutler", repo = "gleam_log" }
 gleam = ">= 1.4.0"

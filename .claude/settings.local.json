@@ -5,7 +5,7 @@
       "Bash(deno:*)",
       "Bash(gleam:*)",
       "Bash(grep:*)",
-      "Bash(npm:*)"
+      "Bash(npm:*)",
       "Bash(npx c8:*)",
       "Skill(pr:*)",
       "WebFetch(domain:raw.githubusercontent.com)"

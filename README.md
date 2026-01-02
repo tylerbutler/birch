@@ -1,6 +1,6 @@
 # gleam_log
 
-A modern, production-ready logging library for Gleam.
+A logging library for Gleam with cross-platform support.
 
 [![Package Version](https://img.shields.io/hexpm/v/gleam_log)](https://hex.pm/packages/gleam_log)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/gleam_log/)
@@ -259,6 +259,39 @@ GitHub Actions runs on every push and PR:
 ### Code Coverage
 
 Note: Gleam currently has limited support for code coverage tools. Since Gleam compiles to Erlang source (rather than abstract format), integration with Erlang's `cover` tool is challenging. We rely on comprehensive unit and property tests instead.
+
+## Comparison with Other Logging Libraries
+
+Several logging libraries exist in the Gleam ecosystem. Here's how they compare:
+
+| Feature | gleam_log | [glight](https://hexdocs.pm/glight/) | [glogg](https://hexdocs.pm/glogg/) | [palabres](https://hexdocs.pm/palabres/) |
+|---------|-----------|--------|-------|----------|
+| Erlang target | ✅ | ✅ | ✅ | ✅ |
+| JavaScript target | ✅ | ❌ | ✅ | ✅ |
+| Console output | ✅ | ✅ | ❌ | ✅ |
+| File output | ✅ | ✅ | ❌ | ❌ |
+| JSON output | ✅ | ✅ | ✅ | ✅ |
+| File rotation | ✅ | ❌ | ❌ | ❌ |
+| Colored output | ✅ | ✅ | ❌ | ✅ |
+| Structured metadata | ✅ | ✅ | ✅ | ✅ |
+| Typed metadata values | ❌ | ❌ | ✅ | ✅ |
+| Named loggers | ✅ | ❌ | ❌ | ❌ |
+| Logger context | ✅ | ✅ | ✅ | ❌ |
+| Scoped context | ✅ | ❌ | ❌ | ❌ |
+| Lazy evaluation | ✅ | ❌ | ❌ | ❌ |
+| Custom handlers | ✅ | ❌ | ❌ | ❌ |
+| Sampling | ✅ | ❌ | ❌ | ❌ |
+| Stacktrace capture | ❌ | ❌ | ✅ | ❌ |
+| Erlang logger integration | ❌ | ✅ | ❌ | ❌ |
+| Wisp integration | ❌ | ❌ | ❌ | ✅ |
+| Zero-config startup | ✅ | ❌ | ❌ | ✅ |
+
+### When to Choose Each Library
+
+- **gleam_log**: Applications needing file rotation, scoped context propagation, lazy evaluation, or custom handler support.
+- **glight**: Erlang-only applications that want integration with Erlang's standard logger module.
+- **glogg**: Applications requiring typed metadata fields (Int, Float, Bool, Duration) or stacktrace capture.
+- **palabres**: Wisp web applications that benefit from built-in middleware integration.
 
 ## License
 

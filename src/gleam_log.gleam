@@ -1,4 +1,4 @@
-//// A modern, production-ready logging library for Gleam.
+//// A logging library for Gleam with cross-platform support.
 ////
 //// ## Quick Start
 ////
