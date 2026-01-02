@@ -284,14 +284,14 @@ Several logging libraries exist in the Gleam ecosystem. Here's how they compare:
 | Custom handlers | ✅ | ❌ | ❌ | ❌ |
 | Sampling | ✅ | ❌ | ❌ | ❌ |
 | Stacktrace capture | ❌ | ❌ | ✅ | ❌ |
-| Erlang logger integration | ❌ | ✅ | ❌ | ❌ |
+| Erlang logger integration | ✅ | ✅ | ❌ | ❌ |
 | Wisp integration | ❌ | ❌ | ❌ | ✅ |
 | Zero-config startup | ✅ | ❌ | ❌ | ✅ |
 
 ### When to Choose Each Library
 
-- **birch**: Applications needing file rotation, scoped context propagation, lazy evaluation, or custom handler support.
-- **glight**: Erlang-only applications that want integration with Erlang's standard logger module.
+- **birch**: Applications needing file rotation, scoped context propagation, lazy evaluation, custom handlers, or Erlang logger integration with cross-platform support.
+- **glight**: Erlang-only applications that want a minimal wrapper around Erlang's standard logger module.
 - **glogg**: Applications requiring typed metadata fields (Int, Float, Bool, Duration) or stacktrace capture.
 - **palabres**: Wisp web applications that benefit from built-in middleware integration.
 
