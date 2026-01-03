@@ -3,7 +3,7 @@ version = "0.1.0"
 description = "A logging library for Gleam with cross-platform support"
 licences = ["MIT"]
 repository = { type = "github", user = "tylerbutler", repo = "birch" }
-gleam = ">= 1.4.0"
+gleam = ">= 1.7.0"
 
 # Internal modules are not part of the public API
 internal_modules = ["birch/internal", "birch/internal/*"]
