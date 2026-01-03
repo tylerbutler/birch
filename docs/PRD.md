@@ -12,7 +12,7 @@ The name "birch" comes from birch trees, whose white bark gleams in the light.
 
 ### 1.1 Problem Statement
 
-The Gleam ecosystem lacks a full-featured logging library with cross-platform support. The existing option (glimt) has been unmaintained since July 2023, uses outdated dependencies, supports only the Erlang target, and lacks features like file output, log rotation, and rate limiting.
+The Gleam ecosystem lacks a full-featured logging library with cross-platform support. Existing options have limitations around maintenance, dependencies, and cross-platform support, lacking features like file output, log rotation, and rate limiting.
 
 ### 1.2 Vision
 
@@ -539,7 +539,6 @@ JavaScript lacks Erlang's process dictionary. Options:
 - "Logging in Wisp applications"
 - "Production logging setup"
 - "Writing custom handlers"
-- "Migrating from glimt"
 
 -----
 
@@ -554,24 +553,22 @@ JavaScript lacks Erlang's process dictionary. Options:
 
 -----
 
-## Appendix A: Comparison with glimt
+## Appendix A: Feature Summary
 
-|Feature                   |glimt   |This Library|
-|--------------------------|--------|------------|
-|Erlang target             |Yes     |Yes         |
-|JavaScript target         |No      |Yes         |
-|Log levels                |Yes     |Yes         |
-|Structured metadata       |Yes     |Yes         |
-|Context propagation       |Yes     |Yes         |
-|JSON output               |Yes     |Yes         |
-|Console output            |Yes     |Yes         |
-|File output               |No      |Yes         |
-|Log rotation              |No      |Yes         |
-|Async handlers            |Yes     |Yes         |
-|Sampling                  |No      |Yes         |
-|Erlang :logger integration|Yes     |Yes (optional)|
-|Maintained                |No (2023)|Yes        |
-|Modern Gleam              |No      |Yes         |
+|Feature                   |Supported|
+|--------------------------|---------|
+|Erlang target             |Yes      |
+|JavaScript target         |Yes      |
+|Log levels                |Yes      |
+|Structured metadata       |Yes      |
+|Context propagation       |Yes      |
+|JSON output               |Yes      |
+|Console output            |Yes      |
+|File output               |Yes      |
+|Log rotation              |Yes      |
+|Async handlers            |Yes      |
+|Sampling                  |Yes      |
+|Erlang :logger integration|Yes (optional)|
 
 -----
 

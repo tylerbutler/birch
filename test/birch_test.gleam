@@ -2137,3 +2137,227 @@ pub fn format_rotation_timestamp_daily_test() {
   |> string.contains("-")
   |> should.be_true
 }
+
+// ============================================================================
+// Error Result Convenience Functions Tests
+// ============================================================================
+
+pub fn logger_error_result_with_error_test() {
+  // Use null handler to verify the function runs without crashing
+  let lgr =
+    logger.new("test")
+    |> logger.with_handlers([handler.null()])
+    |> logger.with_level(level.Trace)
+
+  // Log an error result - should not crash
+  let result: Result(Int, String) = Error("connection refused")
+  logger.error_result(lgr, "Database connection failed", result, [
+    #("host", "localhost"),
+  ])
+
+  // If we get here, the test passed (no crash)
+  True |> should.be_true
+}
+
+pub fn logger_error_result_with_ok_test() {
+  // Use null handler
+  let lgr =
+    logger.new("test")
+    |> logger.with_handlers([handler.null()])
+    |> logger.with_level(level.Trace)
+
+  // Log with an Ok result (no error metadata should be added)
+  let result: Result(Int, String) = Ok(42)
+  logger.error_result(lgr, "Operation completed", result, [])
+
+  // If we get here, the test passed
+  True |> should.be_true
+}
+
+pub fn logger_fatal_result_test() {
+  // Use null handler
+  let lgr =
+    logger.new("test")
+    |> logger.with_handlers([handler.null()])
+    |> logger.with_level(level.Trace)
+
+  // Log a fatal error result
+  let result: Result(Nil, String) = Error("critical failure")
+  logger.fatal_result(lgr, "System cannot continue", result, [])
+
+  // If we get here, the test passed
+  True |> should.be_true
+}
+
+pub fn module_level_error_result_test() {
+  // Reset config and use null handler
+  log.reset_config()
+  log.configure([
+    log.config_handlers([handler.null()]),
+    log.config_level(level.Trace),
+  ])
+
+  // Use module-level error_result
+  let result: Result(String, String) = Error("file not found")
+  log.error_result("Failed to read config", result)
+
+  // Clean up
+  log.reset_config()
+
+  // If we get here, the test passed
+  True |> should.be_true
+}
+
+pub fn module_level_error_result_m_test() {
+  // Reset config and use null handler
+  log.reset_config()
+  log.configure([
+    log.config_handlers([handler.null()]),
+    log.config_level(level.Trace),
+  ])
+
+  // Use module-level error_result_m with metadata
+  let result: Result(String, String) = Error("permission denied")
+  log.error_result_m("Access denied", result, [#("path", "/etc/secrets")])
+
+  // Clean up
+  log.reset_config()
+
+  // If we get here, the test passed
+  True |> should.be_true
+}
+
+// ============================================================================
+// Time Provider Tests
+// ============================================================================
+
+pub fn logger_with_time_provider_test() {
+  // Use null handler
+  let lgr =
+    logger.new("test")
+    |> logger.with_handlers([handler.null()])
+    |> logger.with_time_provider(fn() { "2024-01-01T00:00:00.000Z" })
+
+  // Log a message
+  logger.info(lgr, "Test message", [])
+
+  // If we get here, the test passed
+  True |> should.be_true
+}
+
+pub fn logger_without_time_provider_test() {
+  // Create a logger with a time provider, then remove it
+  let lgr =
+    logger.new("test")
+    |> logger.with_time_provider(fn() { "FIXED" })
+    |> logger.without_time_provider()
+    |> logger.with_handlers([handler.null()])
+
+  // Log a message
+  logger.info(lgr, "Test message", [])
+
+  // If we get here, the test passed
+  True |> should.be_true
+}
+
+pub fn log_module_with_time_provider_test() {
+  // Use module-level API for time provider
+  let lgr =
+    log.new("test")
+    |> log.with_time_provider(fn() { "1999-12-31T23:59:59.999Z" })
+    |> log.with_handler(handler.null())
+
+  log.logger_info(lgr, "Y2K test", [])
+
+  // If we get here, the test passed
+  True |> should.be_true
+}
+
+// ============================================================================
+// Caller ID Capture Tests
+// ============================================================================
+
+pub fn logger_with_caller_id_capture_test() {
+  // Create a logger with caller ID capture enabled
+  let lgr =
+    logger.new("test")
+    |> logger.with_handlers([handler.null()])
+    |> logger.with_caller_id_capture()
+
+  // Verify capture is enabled
+  logger.is_caller_id_capture_enabled(lgr)
+  |> should.be_true
+
+  // Log a message
+  logger.info(lgr, "Test message", [])
+
+  // If we get here, the test passed
+  True |> should.be_true
+}
+
+pub fn logger_without_caller_id_capture_test() {
+  // Create a logger with caller ID capture, then disable it
+  let lgr =
+    logger.new("test")
+    |> logger.with_caller_id_capture()
+    |> logger.without_caller_id_capture()
+
+  logger.is_caller_id_capture_enabled(lgr)
+  |> should.be_false
+}
+
+pub fn record_with_caller_id_test() {
+  // Test the record.with_caller_id function directly
+  let r =
+    record.new_simple(
+      timestamp: "2024-01-01T00:00:00.000Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "Hello",
+    )
+
+  // Initially no caller ID
+  record.get_caller_id(r)
+  |> should.equal(None)
+
+  // Add caller ID
+  let r2 = record.with_caller_id(r, "<0.123.0>")
+  record.get_caller_id(r2)
+  |> should.equal(Some("<0.123.0>"))
+}
+
+pub fn log_module_with_caller_id_capture_test() {
+  // Use module-level API
+  let lgr =
+    log.new("test")
+    |> log.with_caller_id_capture()
+    |> log.with_handler(handler.null())
+
+  log.logger_info(lgr, "Test from module API", [])
+
+  // If we get here, the test passed
+  True |> should.be_true
+}
+
+// ============================================================================
+// Combined Feature Tests
+// ============================================================================
+
+pub fn logger_all_advanced_features_combined_test() {
+  // Test all advanced features together
+  let lgr =
+    log.new("combined-test")
+    |> log.with_time_provider(fn() { "2025-01-02T12:00:00.000Z" })
+    |> log.with_caller_id_capture()
+    |> log.with_handler(handler.null())
+    |> log.with_level(level.Trace)
+
+  // Log an error with result
+  let result: Result(Int, String) = Error("test error")
+  log.logger_error_result(lgr, "Combined test failed", result, [
+    #("feature", "all"),
+  ])
+
+  // If we get here, the test passed
+  True |> should.be_true
+}

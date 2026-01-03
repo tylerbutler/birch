@@ -3,8 +3,6 @@
 **Last Updated:** December 2025
 **Based on:** PRD v1.0
 
-**See Also:** [GLIMT_PATTERNS.md](./GLIMT_PATTERNS.md) - Patterns from glimt library to consider adopting
-
 ---
 
 ## Current Status Summary
@@ -160,7 +158,7 @@ Allow changing the global log level at runtime without restarting the applicatio
 **Effort:** Large
 **Dependencies:** None (can be done in parallel with 2.1)
 
-> **Pattern Reference:** See [GLIMT_PATTERNS.md](./GLIMT_PATTERNS.md#1-actor-based-async-instances) for the Actor-based pattern from glimt using gleam_otp Subjects.
+> **Pattern Reference:** Uses an OTP actor-based pattern with gleam_otp Subjects.
 
 #### Description
 
@@ -174,7 +172,7 @@ Provide non-blocking log output to prevent I/O from blocking application logic. 
 
 #### Design Decision: gleam_otp vs Custom FFI
 
-**Option A: Use gleam_otp Subject (glimt approach)**
+**Option A: Use gleam_otp Subject**
 - Pros: Battle-tested OTP patterns, natural backpressure, clean API
 - Cons: Adds gleam_otp dependency, Erlang-only for full functionality
 
@@ -749,9 +747,9 @@ just check        # Format check + tests on both targets
 
 ---
 
-## Additional Enhancements (from glimt patterns)
+## Additional Enhancements
 
-These are lower-priority enhancements inspired by patterns in the glimt library. See [GLIMT_PATTERNS.md](./GLIMT_PATTERNS.md) for detailed analysis.
+These are lower-priority enhancements for future consideration.
 
 ### E.1 JSON Serializer Builder Pattern
 

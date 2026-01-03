@@ -246,6 +246,56 @@ pub fn with_handler(lgr: Logger, handler: Handler) -> Logger {
   logger.with_handler(lgr, handler)
 }
 
+/// Set a custom time provider for a logger.
+///
+/// This is primarily useful for testing, allowing deterministic timestamps.
+///
+/// ## Example
+///
+/// ```gleam
+/// import birch as log
+///
+/// // For testing - fixed timestamp
+/// let test_logger =
+///   log.new("test")
+///   |> log.with_time_provider(fn() { "2024-01-01T00:00:00.000Z" })
+/// ```
+pub fn with_time_provider(lgr: Logger, provider: fn() -> String) -> Logger {
+  logger.with_time_provider(lgr, provider)
+}
+
+/// Clear the custom time provider, reverting to the default platform timestamp.
+pub fn without_time_provider(lgr: Logger) -> Logger {
+  logger.without_time_provider(lgr)
+}
+
+/// Enable caller ID capture for a logger.
+///
+/// When enabled, log records will include the process/thread ID of the caller.
+/// This is useful for debugging concurrent applications.
+///
+/// - On Erlang: Captures the PID (e.g., "<0.123.0>")
+/// - On JavaScript: Captures "main", "pid-N", or "worker-N"
+///
+/// ## Example
+///
+/// ```gleam
+/// import birch as log
+///
+/// // Enable caller ID capture for debugging concurrent code
+/// let logger =
+///   log.new("myapp.worker")
+///   |> log.with_caller_id_capture()
+/// ```
+pub fn with_caller_id_capture(lgr: Logger) -> Logger {
+  logger.with_caller_id_capture(lgr)
+}
+
+/// Disable caller ID capture for a logger.
+pub fn without_caller_id_capture(lgr: Logger) -> Logger {
+  logger.without_caller_id_capture(lgr)
+}
+
 // ============================================================================
 // Logger-specific Logging Functions
 // ============================================================================
@@ -415,6 +465,90 @@ pub fn info_lazy(message_fn: fn() -> String) -> Nil {
     False -> Nil
     True -> logger.info_lazy(default_logger(), message_fn, [])
   }
+}
+
+// ============================================================================
+// Error Result Convenience Functions
+// ============================================================================
+
+/// Log an error message with an associated Result using the default logger.
+///
+/// If the result is an Error, the error value is automatically included
+/// in the metadata under the "error" key.
+///
+/// ## Example
+///
+/// ```gleam
+/// import birch as log
+///
+/// case file.read("config.json") {
+///   Ok(content) -> parse_config(content)
+///   Error(_) as result -> {
+///     log.error_result("Failed to read config file", result)
+///     use_defaults()
+///   }
+/// }
+/// ```
+pub fn error_result(message: String, result: Result(a, e)) -> Nil {
+  case should_sample(level.Err) {
+    False -> Nil
+    True -> logger.error_result(default_logger(), message, result, [])
+  }
+}
+
+/// Log an error message with an associated Result and metadata.
+pub fn error_result_m(
+  message: String,
+  result: Result(a, e),
+  metadata: Metadata,
+) -> Nil {
+  case should_sample(level.Err) {
+    False -> Nil
+    True -> logger.error_result(default_logger(), message, result, metadata)
+  }
+}
+
+/// Log a fatal message with an associated Result using the default logger.
+///
+/// If the result is an Error, the error value is automatically included
+/// in the metadata under the "error" key.
+pub fn fatal_result(message: String, result: Result(a, e)) -> Nil {
+  case should_sample(level.Fatal) {
+    False -> Nil
+    True -> logger.fatal_result(default_logger(), message, result, [])
+  }
+}
+
+/// Log a fatal message with an associated Result and metadata.
+pub fn fatal_result_m(
+  message: String,
+  result: Result(a, e),
+  metadata: Metadata,
+) -> Nil {
+  case should_sample(level.Fatal) {
+    False -> Nil
+    True -> logger.fatal_result(default_logger(), message, result, metadata)
+  }
+}
+
+/// Log an error message with an associated Result using a specific logger.
+pub fn logger_error_result(
+  lgr: Logger,
+  message: String,
+  result: Result(a, e),
+  metadata: Metadata,
+) -> Nil {
+  logger.error_result(lgr, message, result, metadata)
+}
+
+/// Log a fatal message with an associated Result using a specific logger.
+pub fn logger_fatal_result(
+  lgr: Logger,
+  message: String,
+  result: Result(a, e),
+  metadata: Metadata,
+) -> Nil {
+  logger.fatal_result(lgr, message, result, metadata)
 }
 
 // ============================================================================

@@ -133,3 +133,14 @@ pub fn random_float() -> Float
 @external(erlang, "birch_ffi", "current_time_ms")
 @external(javascript, "../../birch_ffi.mjs", "current_time_ms")
 pub fn current_time_ms() -> Int
+
+// ============================================================================
+// Process/Thread ID FFI
+// ============================================================================
+
+/// Get the current process or thread identifier as a string.
+/// On Erlang: Returns the string representation of self() PID (e.g., "<0.123.0>")
+/// On JavaScript: Returns "main" for the main thread, or worker ID if in a worker
+@external(erlang, "birch_ffi", "get_caller_id")
+@external(javascript, "../../birch_ffi.mjs", "get_caller_id")
+pub fn get_caller_id() -> String
