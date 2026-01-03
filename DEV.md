@@ -1,58 +1,84 @@
 # Development Guide
 
-## Releasing
+This document covers development setup, testing, and guidelines for contributors.
 
-This project uses [Release-Please](https://github.com/googleapis/release-please) for automated releases. The release workflow is PR-based and follows conventional commits.
+## Prerequisites
 
-### How Releases Work
+Ensure you have the correct tool versions installed (see `.tool-versions`):
+- Erlang: 27.2.1
+- Gleam: 1.14.0
+- just: 1.38.0
 
-1. **Conventional Commits**: Use conventional commit messages in your PRs:
-   - `feat: add new feature` → Minor version bump (0.x.0)
-   - `fix: resolve bug` → Patch version bump (0.0.x)
-   - `feat!: breaking change` → Major version bump (x.0.0)
-   - `chore:`, `docs:`, `test:`, `ci:` → No version bump
+## Commands
 
-2. **Release PR**: After merging PRs to `main`, Release-Please automatically creates/updates a "Release PR" that:
-   - Bumps the version in `gleam.toml` and `version.txt`
-   - Updates `CHANGELOG.md` with changes since the last release
-   - Groups changes by type (Features, Bug Fixes, etc.)
-
-3. **Publishing**: When you merge the Release PR:
-   - Release-Please creates a git tag and GitHub Release
-   - The publish workflow runs tests on both Erlang and JavaScript targets
-   - If tests pass, the package is published to Hex.pm
-
-### Required GitHub Secrets
-
-Before the first release, configure these secrets in the repository settings:
-
-| Secret | Description | How to Get |
-|--------|-------------|------------|
-| `RELEASE_TOKEN` | GitHub PAT with `contents:write` and `pull-requests:write` | [Create a PAT](https://github.com/settings/tokens) |
-| `HEXPM_USER` | Your Hex.pm username | Your Hex.pm account |
-| `HEXPM_PASS` | Hex.pm API key | [Hex.pm Dashboard → Keys](https://hex.pm/dashboard/keys) |
-
-**Note**: `RELEASE_TOKEN` is required (instead of `GITHUB_TOKEN`) because GitHub Actions doesn't trigger workflows on PRs created by actions using the default token.
-
-### Manual Release (Emergency)
-
-If you need to release manually:
+This project uses [just](https://just.systems/) as a task runner. Run `just` to see all available commands.
 
 ```bash
-# Update version in gleam.toml and version.txt
-# Update CHANGELOG.md manually
-
-# Create and push a tag
-git tag v0.2.0
-git push origin v0.2.0
-
-# Create a GitHub Release from the tag
-# This will trigger the publish workflow
+just deps         # Download dependencies
+just build        # Build for Erlang target (alias: b)
+just build-js     # Build for JavaScript target
+just build-all    # Build for both targets
+just test         # Run tests on both targets (alias: t)
+just test-erlang  # Run tests on Erlang only
+just test-js      # Run tests on JavaScript only
+just format       # Format source code (alias: f)
+just format-check # Check formatting without modifying
+just check        # Run format-check + tests on both targets (alias: c)
+just check-quick  # Run format-check + Erlang tests only
+just docs         # Generate documentation (alias: d)
+just watch        # Watch and rebuild on changes (requires watchexec)
+just watch-test   # Watch and run tests on changes
 ```
 
-### Configuration Files
+> [!NOTE]
+> You can also use `gleam` commands directly (e.g., `gleam build`, `gleam test --target javascript`).
 
-- `release-please-config.json` - Release-Please configuration
-- `.release-please-manifest.json` - Tracks current version
-- `version.txt` - Version source of truth for Release-Please
-- `CHANGELOG.md` - Auto-generated changelog
+## Project Structure
+
+```
+src/
+├── birch.gleam                  # Main public API
+├── birch/
+│   ├── level.gleam              # LogLevel type
+│   ├── record.gleam             # LogRecord type and Metadata
+│   ├── logger.gleam             # Logger type with handlers and context
+│   ├── handler.gleam            # Handler interface
+│   ├── formatter.gleam          # Format functions
+│   ├── config.gleam             # Global configuration
+│   ├── sampling.gleam           # Sampling and rate limiting
+│   ├── scope.gleam              # Scoped context
+│   ├── handler/
+│   │   ├── console.gleam        # Console output with colors
+│   │   ├── json.gleam           # JSON-formatted output
+│   │   ├── file.gleam           # File output with rotation
+│   │   └── async.gleam          # Async (non-blocking) handler
+│   └── internal/                # Internal modules (not public API)
+├── birch_ffi.erl                # Erlang FFI implementation
+└── birch_ffi.mjs                # JavaScript FFI implementation
+
+test/
+├── birch_test.gleam             # Unit tests
+└── property_test.gleam          # Property-based tests (qcheck)
+```
+
+## Cross-Platform FFI
+
+When modifying platform-specific code:
+
+1. Update both `birch_ffi.erl` AND `birch_ffi.mjs`
+2. Ensure behavior is consistent across platforms
+3. Test on both Erlang and JavaScript targets
+
+## Adding a New Handler
+
+1. Create a new file in `src/birch/handler/`
+2. Implement formatting using `formatter.Formatter` type
+3. Use `handler.new()` to create the handler
+4. Add tests in `test/birch_test.gleam`
+5. Document with module-level and function doc comments
+
+## Code Style
+
+- Follow Gleam's built-in formatter (`just format`)
+- Use doc comments (`///`) for all public functions and types
+- Use `Err` instead of `Error` for the error log level (avoids Result conflict)

@@ -12,10 +12,12 @@ The name "birch" comes from birch trees, whose white bark gleams in the light.
 - **Cross-platform**: Works on both Erlang and JavaScript targets
 - **Zero-configuration startup**: Just import and start logging
 - **Structured logging**: Key-value metadata on every log message
-- **Multiple handlers**: Console, file, JSON, or custom handlers
-- **Log rotation**: Size-based rotation for file handlers
+- **Multiple handlers**: Console, file, JSON, async, or custom handlers
+- **Log rotation**: Size-based and time-based rotation for file handlers
 - **Color support**: Colored output for TTY terminals
 - **Lazy evaluation**: Avoid expensive string formatting when logs are filtered
+- **Scoped context**: Request-scoped metadata that propagates automatically
+- **Sampling**: Probabilistic sampling and rate limiting for high-volume scenarios
 
 ## Quick Start
 
@@ -40,6 +42,47 @@ Add `birch` to your `gleam.toml`:
 ```toml
 [dependencies]
 birch = ">= 0.1.0"
+```
+
+## Global Configuration
+
+Configure the default logger with custom settings:
+
+```gleam
+import birch as log
+import birch/level
+import birch/handler/console
+import birch/handler/json
+
+pub fn main() {
+  // Configure with multiple options
+  log.configure([
+    log.config_level(level.Debug),
+    log.config_handlers([console.handler(), json.handler()]),
+    log.config_context([#("app", "myapp"), #("env", "production")]),
+  ])
+
+  // All logs now include the context and go to both handlers
+  log.info("Server starting")
+}
+```
+
+### Runtime Level Changes
+
+Change the log level at runtime without reconfiguring everything:
+
+```gleam
+import birch as log
+import birch/level
+
+// Enable debug logging for troubleshooting
+log.set_level(level.Debug)
+
+// Later, reduce verbosity
+log.set_level(level.Warn)
+
+// Check current level
+let current = log.get_level()
 ```
 
 ## Named Loggers
@@ -77,6 +120,45 @@ pub fn handle_request(request_id: String) {
   logger |> log.logger_info("Request complete", [#("status", "200")])
 }
 ```
+
+## Scoped Context
+
+Automatically attach metadata to all logs within a scope:
+
+```gleam
+import birch as log
+
+pub fn handle_request(request_id: String) {
+  log.with_scope([#("request_id", request_id)], fn() {
+    // All logs in this block include request_id automatically
+    log.info("Processing request")
+    do_work()  // Logs in nested functions also include request_id
+    log.info("Request complete")
+  })
+}
+```
+
+Scopes can be nested, with inner scopes adding to outer scope context:
+
+```gleam
+log.with_scope([#("request_id", "123")], fn() {
+  log.info("Start")  // request_id=123
+
+  log.with_scope([#("step", "validation")], fn() {
+    log.info("Validating")  // request_id=123 step=validation
+  })
+
+  log.info("Done")  // request_id=123
+})
+```
+
+### Platform Support
+
+- **Erlang**: Uses process dictionary. Each process has isolated context.
+- **Node.js**: Uses AsyncLocalStorage. Context propagates across async operations.
+- **Other JS runtimes**: Falls back to stack-based storage.
+
+Check availability with `log.is_scoped_context_available()`.
 
 ## Log Levels
 
@@ -133,6 +215,26 @@ Output:
 {"timestamp":"2024-12-26T10:30:45.123Z","level":"info","logger":"myapp","message":"Request complete","method":"POST","path":"/api/users"}
 ```
 
+#### Custom JSON Format
+
+Use the builder pattern to customize JSON output:
+
+```gleam
+import birch/handler/json
+import gleam/json as j
+
+let custom_handler =
+  json.standard_builder()
+  |> json.add_custom(fn(_record) {
+    [
+      #("service", j.string("my-app")),
+      #("version", j.string("1.0.0")),
+    ]
+  })
+  |> json.build()
+  |> json.handler_with_formatter()
+```
+
 ### File Handler
 
 Write to files with optional rotation:
@@ -140,10 +242,53 @@ Write to files with optional rotation:
 ```gleam
 import birch/handler/file
 
+// Size-based rotation
 let handler = file.handler(file.FileConfig(
   path: "/var/log/myapp.log",
   rotation: file.SizeRotation(max_bytes: 10_000_000, max_files: 5),
 ))
+
+// Time-based rotation (daily)
+let handler = file.handler(file.FileConfig(
+  path: "/var/log/myapp.log",
+  rotation: file.TimeRotation(interval: file.Daily, max_files: 7),
+))
+
+// Combined rotation (size OR time)
+let handler = file.handler(file.FileConfig(
+  path: "/var/log/myapp.log",
+  rotation: file.CombinedRotation(
+    max_bytes: 50_000_000,
+    interval: file.Daily,
+    max_files: 10,
+  ),
+))
+```
+
+### Async Handler
+
+Wrap any handler for non-blocking logging:
+
+```gleam
+import birch/handler/async
+import birch/handler/console
+
+// Make console logging async
+let async_console =
+  console.handler()
+  |> async.make_async(async.default_config())
+
+// With custom configuration
+let config =
+  async.config()
+  |> async.with_queue_size(5000)
+  |> async.with_flush_interval(50)
+  |> async.with_overflow(async.DropOldest)
+
+let handler = async.make_async(console.handler(), config)
+
+// Before shutdown, ensure all logs are written
+async.flush()
 ```
 
 ### Null Handler
@@ -173,6 +318,21 @@ let my_handler = handler.new(
 )
 ```
 
+### Error Callbacks
+
+Handle errors from handlers without crashing:
+
+```gleam
+import birch/handler
+import birch/handler/file
+
+let handler =
+  file.handler(config)
+  |> handler.with_error_callback(fn(err) {
+    io.println("Handler " <> err.handler_name <> " failed: " <> err.error)
+  })
+```
+
 ## Lazy Evaluation
 
 Avoid expensive operations when logs are filtered:
@@ -184,6 +344,77 @@ import birch as log
 log.debug_lazy(fn() {
   "Expensive debug info: " <> compute_debug_info()
 })
+```
+
+## Error Result Helpers
+
+Log errors with automatic metadata extraction:
+
+```gleam
+import birch as log
+
+case file.read("config.json") {
+  Ok(content) -> parse_config(content)
+  Error(_) as result -> {
+    // Automatically includes error value in metadata
+    log.error_result("Failed to read config file", result)
+    use_defaults()
+  }
+}
+
+// With additional metadata
+log.error_result_m("Database query failed", result, [
+  #("query", "SELECT * FROM users"),
+  #("table", "users"),
+])
+```
+
+## Sampling
+
+For high-volume logging, sample messages probabilistically:
+
+```gleam
+import birch as log
+import birch/level
+import birch/sampling
+
+// Log only 10% of debug messages
+log.configure([
+  log.config_sampling(sampling.config(level.Debug, 0.1)),
+])
+
+// Debug messages above the threshold are always logged
+// Messages at or below Debug level are sampled at 10%
+```
+
+## Testing Support
+
+### Custom Time Providers
+
+Use deterministic timestamps in tests:
+
+```gleam
+import birch as log
+
+let test_logger =
+  log.new("test")
+  |> log.with_time_provider(fn() { "2024-01-01T00:00:00.000Z" })
+```
+
+### Caller ID Capture
+
+Track which process/thread created each log:
+
+```gleam
+import birch as log
+
+let logger =
+  log.new("myapp.worker")
+  |> log.with_caller_id_capture()
+
+// Log records will include:
+// - Erlang: PID like "<0.123.0>"
+// - JavaScript: "main", "pid-N", or "worker-N"
 ```
 
 ## Output Formats
@@ -218,50 +449,6 @@ pub fn do_something() {
 
 Consumers control logging by adding handlers to the logger.
 
-## Development
-
-```bash
-# Build for default target (Erlang)
-gleam build
-
-# Build for JavaScript
-gleam build --target javascript
-
-# Run tests on Erlang
-gleam test
-
-# Run tests on JavaScript
-gleam test --target javascript
-
-# Check formatting
-gleam format --check src test
-
-# Format code
-gleam format src test
-
-# Generate docs
-gleam docs build
-```
-
-### Testing
-
-This project uses:
-- **gleeunit** - Standard test runner for Gleam
-- **qcheck** - Property-based testing for more thorough test coverage
-
-Unit tests are in `test/birch_test.gleam` and property tests are in `test/property_test.gleam`.
-
-### CI/CD
-
-GitHub Actions runs on every push and PR:
-- Tests on both Erlang and JavaScript targets
-- Format checking
-- Documentation build
-
-### Code Coverage
-
-Note: Gleam currently has limited support for code coverage tools. Since Gleam compiles to Erlang source (rather than abstract format), integration with Erlang's `cover` tool is challenging. We rely on comprehensive unit and property tests instead.
-
 ## Comparison with Other Logging Libraries
 
 Several logging libraries exist in the Gleam ecosystem. Here's how they compare:
@@ -294,6 +481,10 @@ Several logging libraries exist in the Gleam ecosystem. Here's how they compare:
 - **glight**: Erlang-only applications that want a minimal wrapper around Erlang's standard logger module.
 - **glogg**: Applications requiring typed metadata fields (Int, Float, Bool, Duration) or stacktrace capture.
 - **palabres**: Wisp web applications that benefit from built-in middleware integration.
+
+## Development
+
+See [DEV.md](DEV.md) for development setup, testing, and contribution guidelines.
 
 ## License
 
