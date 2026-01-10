@@ -1,0 +1,9 @@
+# .actrc - act configuration for birch
+# https://github.com/nektos/act
+
+# Use medium-sized Ubuntu image with common tools (~500MB)
+# Alternative: nektos/act-environments-ubuntu:18.04 (larger, more tools)
+-P ubuntu-latest=catthehacker/ubuntu:act-latest
+
+# Don't use offline mode by default (pull fresh images/actions)
+--action-offline-mode=false

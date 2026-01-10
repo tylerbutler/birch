@@ -165,3 +165,68 @@ test-examples-all: test-examples test-examples-node
 
 # Test all examples on all runtimes (requires deno and bun installed)
 test-examples-all-runtimes: test-examples test-examples-node test-examples-deno test-examples-bun
+
+# ============================================================================
+# Local CI Testing with act (https://github.com/nektos/act)
+# Requires: Docker running, act installed (https://nektosact.com/installation/)
+# ============================================================================
+
+# List all CI jobs available to run locally
+ci-list:
+    act -l
+
+# Run all CI jobs locally (simulates push event)
+ci:
+    act push
+
+# Run a specific CI job locally
+ci-job job:
+    act -j {{job}}
+
+# Run CI test job for Erlang target
+ci-test-erlang:
+    act -j test --matrix target:erlang
+
+# Run CI test job for JavaScript target
+ci-test-js:
+    act -j test --matrix target:javascript
+
+# Run CI coverage job
+ci-coverage:
+    act -j coverage
+
+# Run CI integration tests (all runtimes)
+ci-integration:
+    act -j integration-test
+
+# Run CI integration test for a specific runtime (node, deno, bun)
+ci-integration-runtime runtime:
+    act -j integration-test --matrix runtime:{{runtime}}
+
+# Run CI docs job
+ci-docs:
+    act -j docs
+
+# Run CI examples job for a specific example and target
+ci-example example target="erlang":
+    act -j examples --matrix example:{{example}} --matrix target:{{target}}
+
+# Run all CI examples for Erlang target only (faster validation)
+ci-examples-erlang:
+    act -j examples --matrix target:erlang
+
+# Dry-run CI (show what would execute without running)
+ci-dry:
+    act push --dryrun
+
+# Run CI with verbose output for debugging
+ci-verbose:
+    act push --verbose
+
+# Run CI on host system without Docker (uses locally installed tools)
+ci-host:
+    act push -P ubuntu-latest=-self-hosted
+
+# Run specific CI job on host system without Docker
+ci-host-job job:
+    act -j {{job}} -P ubuntu-latest=-self-hosted
