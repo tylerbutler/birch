@@ -1,0 +1,9 @@
+name = "birch_example_04_named_loggers"
+version = "0.0.0"
+description = "birch example: named loggers for component organization"
+
+[dependencies]
+birch = { path = "../../" }
+
+[dev-dependencies]
+gleeunit = ">= 1.0.0 and < 2.0.0"

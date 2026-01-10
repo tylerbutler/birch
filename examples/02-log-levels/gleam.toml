@@ -1,0 +1,9 @@
+name = "birch_example_02_log_levels"
+version = "0.0.0"
+description = "birch example: log levels and filtering"
+
+[dependencies]
+birch = { path = "../../" }
+
+[dev-dependencies]
+gleeunit = ">= 1.0.0 and < 2.0.0"

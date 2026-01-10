@@ -1,0 +1,9 @@
+name = "birch_example_13_async_handler"
+version = "0.0.0"
+description = "birch example: async non-blocking handler"
+
+[dependencies]
+birch = { path = "../../" }
+
+[dev-dependencies]
+gleeunit = ">= 1.0.0 and < 2.0.0"

@@ -1,0 +1,9 @@
+name = "birch_example_15_testing_support"
+version = "0.0.0"
+description = "birch example: testing support utilities"
+
+[dependencies]
+birch = { path = "../../" }
+
+[dev-dependencies]
+gleeunit = ">= 1.0.0 and < 2.0.0"

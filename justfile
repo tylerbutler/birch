@@ -106,3 +106,62 @@ test-integration: test-integration-node
 
 # Run full integration test suite (all runtimes, requires deno and bun installed)
 test-integration-all: test-integration-node test-integration-deno test-integration-bun
+
+# ============================================================================
+# Examples
+# ============================================================================
+
+# Test all examples on Erlang target
+test-examples:
+    #!/usr/bin/env bash
+    set -e
+    for dir in examples/*/; do
+        echo "Testing $dir (Erlang)..."
+        (cd "$dir" && gleam deps download && gleam test)
+    done
+
+# Test all examples on Node.js (excluding BEAM-only examples)
+test-examples-node:
+    #!/usr/bin/env bash
+    set -e
+    for dir in examples/*/; do
+        if [[ "$dir" != *"16-erlang-logger"* ]]; then
+            echo "Testing $dir (Node.js)..."
+            (cd "$dir" && gleam deps download && gleam test --target javascript)
+        fi
+    done
+
+# Test all examples on Deno (excluding BEAM-only examples)
+test-examples-deno:
+    #!/usr/bin/env bash
+    set -e
+    for dir in examples/*/; do
+        if [[ "$dir" != *"16-erlang-logger"* ]]; then
+            name=$(basename "$dir")
+            echo "Testing $dir (Deno)..."
+            (cd "$dir" && gleam deps download && gleam build --target javascript && \
+                deno run --no-check --allow-read --allow-env --allow-run --allow-write "build/dev/javascript/birch_example_${name//-/_}/gleam.main.mjs")
+        fi
+    done
+
+# Test all examples on Bun (excluding BEAM-only examples)
+test-examples-bun:
+    #!/usr/bin/env bash
+    set -e
+    for dir in examples/*/; do
+        if [[ "$dir" != *"16-erlang-logger"* ]]; then
+            name=$(basename "$dir")
+            echo "Testing $dir (Bun)..."
+            (cd "$dir" && gleam deps download && gleam build --target javascript && \
+                bun run "build/dev/javascript/birch_example_${name//-/_}/gleam.main.mjs")
+        fi
+    done
+
+# Alias for Node.js (default JavaScript runtime)
+test-examples-js: test-examples-node
+
+# Test all examples on Erlang and Node.js
+test-examples-all: test-examples test-examples-node
+
+# Test all examples on all runtimes (requires deno and bun installed)
+test-examples-all-runtimes: test-examples test-examples-node test-examples-deno test-examples-bun

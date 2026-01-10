@@ -91,6 +91,92 @@ jobs:
       - name: Run integration tests
         run: just test-integration-${{ matrix.runtime }}
 
+  examples:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        example:
+          - 01-quick-start
+          - 02-log-levels
+          - 03-metadata
+          - 04-named-loggers
+          - 05-console-handler
+          - 06-json-handler
+          - 07-file-handler
+          - 08-custom-handlers
+          - 09-global-config
+          - 10-lazy-evaluation
+          - 11-error-helpers
+          - 12-scoped-context
+          - 13-async-handler
+          - 14-sampling
+          - 15-testing-support
+          - 16-erlang-logger
+          - 17-handler-errors
+        target: [erlang, node, deno, bun]
+        exclude:
+          # Erlang-only example
+          - example: 16-erlang-logger
+            target: node
+          - example: 16-erlang-logger
+            target: deno
+          - example: 16-erlang-logger
+            target: bun
+
+    name: Example ${{ matrix.example }} (${{ matrix.target }})
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup environment
+        uses: ./.github/actions/setup
+        with:
+          node: ${{ matrix.target != 'erlang' }}
+
+      - name: Setup Deno
+        if: matrix.target == 'deno'
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Setup Bun
+        if: matrix.target == 'bun'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Test example (Erlang)
+        if: matrix.target == 'erlang'
+        working-directory: examples/${{ matrix.example }}
+        run: |
+          gleam deps download
+          gleam test
+
+      - name: Test example (Node.js)
+        if: matrix.target == 'node'
+        working-directory: examples/${{ matrix.example }}
+        run: |
+          gleam deps download
+          gleam test --target javascript
+
+      - name: Test example (Deno)
+        if: matrix.target == 'deno'
+        working-directory: examples/${{ matrix.example }}
+        run: |
+          gleam deps download
+          gleam build --target javascript
+          pkg_name="birch_example_$(echo '${{ matrix.example }}' | tr '-' '_')"
+          deno run --no-check --allow-read --allow-env --allow-run --allow-write "build/dev/javascript/${pkg_name}/gleam.main.mjs"
+
+      - name: Test example (Bun)
+        if: matrix.target == 'bun'
+        working-directory: examples/${{ matrix.example }}
+        run: |
+          gleam deps download
+          gleam build --target javascript
+          pkg_name="birch_example_$(echo '${{ matrix.example }}' | tr '-' '_')"
+          bun run "build/dev/javascript/${pkg_name}/gleam.main.mjs"
+
   docs:
     runs-on: ubuntu-latest
     steps:

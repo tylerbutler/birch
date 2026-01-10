@@ -1,0 +1,9 @@
+name = "birch_example_01_quick_start"
+version = "0.0.0"
+description = "birch example: zero-config logging"
+
+[dependencies]
+birch = { path = "../../" }
+
+[dev-dependencies]
+gleeunit = ">= 1.0.0 and < 2.0.0"
