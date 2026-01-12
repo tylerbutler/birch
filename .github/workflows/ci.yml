@@ -147,35 +147,19 @@ jobs:
 
       - name: Test example (Erlang)
         if: matrix.target == 'erlang'
-        working-directory: examples/${{ matrix.example }}
-        run: |
-          gleam deps download
-          gleam test
+        run: just test-example-erlang ${{ matrix.example }}
 
       - name: Test example (Node.js)
         if: matrix.target == 'node'
-        working-directory: examples/${{ matrix.example }}
-        run: |
-          gleam deps download
-          gleam test --target javascript
+        run: just test-example-node ${{ matrix.example }}
 
       - name: Test example (Deno)
         if: matrix.target == 'deno'
-        working-directory: examples/${{ matrix.example }}
-        run: |
-          gleam deps download
-          gleam build --target javascript
-          pkg_name="birch_example_$(echo '${{ matrix.example }}' | tr '-' '_')"
-          deno run --no-check --allow-read --allow-env --allow-run --allow-write "build/dev/javascript/${pkg_name}/gleam.main.mjs"
+        run: just test-example-deno ${{ matrix.example }}
 
       - name: Test example (Bun)
         if: matrix.target == 'bun'
-        working-directory: examples/${{ matrix.example }}
-        run: |
-          gleam deps download
-          gleam build --target javascript
-          pkg_name="birch_example_$(echo '${{ matrix.example }}' | tr '-' '_')"
-          bun run "build/dev/javascript/${pkg_name}/gleam.main.mjs"
+        run: just test-example-bun ${{ matrix.example }}
 
   docs:
     runs-on: ubuntu-latest
