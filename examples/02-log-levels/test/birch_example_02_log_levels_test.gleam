@@ -2,7 +2,7 @@ import birch as log
 import birch/level
 import gleeunit
 import gleeunit/should
-import log_levels
+import birch_example_02_log_levels
 
 pub fn main() {
   gleeunit.main()
@@ -11,7 +11,7 @@ pub fn main() {
 pub fn current_level_default_test() {
   // Reset to ensure clean state
   log.reset_config()
-  log_levels.current_level()
+  birch_example_02_log_levels.current_level()
   |> should.equal(level.Info)
 }
 
@@ -19,14 +19,14 @@ pub fn would_log_at_info_test() {
   log.reset_config()
 
   // At Info level, Debug should not log
-  log_levels.would_log(level.Debug)
+  birch_example_02_log_levels.would_log(level.Debug)
   |> should.be_false()
 
   // But Info and above should
-  log_levels.would_log(level.Info)
+  birch_example_02_log_levels.would_log(level.Info)
   |> should.be_true()
 
-  log_levels.would_log(level.Err)
+  birch_example_02_log_levels.would_log(level.Err)
   |> should.be_true()
 }
 

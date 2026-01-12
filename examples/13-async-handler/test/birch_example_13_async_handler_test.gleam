@@ -1,4 +1,4 @@
-import async_handler
+import birch_example_13_async_handler
 import birch as log
 import birch/handler
 import birch/handler/async
@@ -10,7 +10,7 @@ pub fn main() {
 }
 
 pub fn create_async_file_handler_test() {
-  let h = async_handler.create_async_file_handler()
+  let h = birch_example_13_async_handler.create_async_file_handler()
 
   // Async handlers have "async:" prefix
   handler.name(h)

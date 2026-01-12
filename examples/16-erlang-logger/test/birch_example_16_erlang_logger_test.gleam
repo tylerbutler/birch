@@ -1,6 +1,6 @@
 import birch as log
 import birch/erlang_logger
-import erlang_logger as example
+import birch_example_16_erlang_logger as example
 import gleeunit
 import gleeunit/should
 
@@ -9,7 +9,7 @@ pub fn main() {
 }
 
 pub fn forward_to_logger_creates_handler_test() {
-  let handler = erlang_logger.forward_to_logger()
+  let handler = birch_example_16_erlang_logger.forward_to_logger()
 
   // Should be able to use it without error
   log.configure([log.config_handlers([handler])])
@@ -30,8 +30,8 @@ pub fn create_erlang_handler_test() {
 
 pub fn install_uninstall_handler_test() {
   // Should not crash
-  erlang_logger.install_logger_handler()
-  erlang_logger.uninstall_logger_handler()
+  birch_example_16_erlang_logger.install_logger_handler()
+  birch_example_16_erlang_logger.uninstall_logger_handler()
 
   should.be_true(True)
 }

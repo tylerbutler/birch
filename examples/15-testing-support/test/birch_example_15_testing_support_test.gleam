@@ -1,14 +1,14 @@
 import birch as log
 import gleeunit
 import gleeunit/should
-import testing_support
+import birch_example_15_testing_support
 
 pub fn main() {
   gleeunit.main()
 }
 
 pub fn test_logger_creates_logger_test() {
-  let logger = testing_support.test_logger("my-test")
+  let logger = birch_example_15_testing_support.test_logger("my-test")
 
   // Should be able to log without error
   logger |> log.logger_info("Test message", [])
@@ -16,7 +16,7 @@ pub fn test_logger_creates_logger_test() {
 }
 
 pub fn debug_logger_creates_logger_test() {
-  let logger = testing_support.debug_logger("my-debug")
+  let logger = birch_example_15_testing_support.debug_logger("my-debug")
 
   logger |> log.logger_info("Debug message", [])
   |> should.equal(Nil)
@@ -24,7 +24,7 @@ pub fn debug_logger_creates_logger_test() {
 
 pub fn silence_logging_test() {
   // Silence logging
-  testing_support.silence_logging()
+  birch_example_15_testing_support.silence_logging()
 
   // Should not crash even when silenced
   log.info("Silenced message")

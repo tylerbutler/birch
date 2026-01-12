@@ -1,7 +1,7 @@
 import birch as log
 import gleeunit
 import gleeunit/should
-import scoped_context
+import birch_example_12_scoped_context
 
 pub fn main() {
   gleeunit.main()
@@ -10,7 +10,7 @@ pub fn main() {
 pub fn with_request_context_test() {
   // The function should execute and return the result
   let result =
-    scoped_context.with_request_context("req-123", "user-456", fn() {
+    birch_example_12_scoped_context.with_request_context("req-123", "user-456", fn() {
       "work done"
     })
 
@@ -24,7 +24,7 @@ pub fn get_current_request_id_inside_scope_test() {
   log.with_scope([#("request_id", "test-req-789")], fn() {
     case log.is_scoped_context_available() {
       True -> {
-        scoped_context.get_current_request_id()
+        birch_example_12_scoped_context.get_current_request_id()
         |> should.be_ok()
         |> should.equal("test-req-789")
       }
@@ -39,12 +39,12 @@ pub fn get_current_request_id_inside_scope_test() {
 pub fn get_current_request_id_outside_scope_test() {
   // Outside a scope, the request ID should be unavailable (error)
   // This works on both platforms
-  scoped_context.get_current_request_id()
+  birch_example_12_scoped_context.get_current_request_id()
   |> should.be_error()
 }
 
 pub fn generate_request_id_test() {
-  let id = scoped_context.generate_request_id()
+  let id = birch_example_12_scoped_context.generate_request_id()
 
   // Should start with "req-"
   case id {

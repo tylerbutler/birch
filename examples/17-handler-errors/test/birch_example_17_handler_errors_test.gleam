@@ -3,7 +3,7 @@ import birch/handler
 import birch/handler/console
 import gleeunit
 import gleeunit/should
-import handler_errors as example
+import birch_example_17_handler_errors as example
 
 pub fn main() {
   gleeunit.main()

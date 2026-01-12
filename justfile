@@ -138,12 +138,11 @@ test-examples-deno:
     for dir in examples/*/; do
         if [[ "$dir" != *"16-erlang-logger"* ]]; then
             name=$(basename "$dir")
-            # Module name is the example name without the number prefix, with dashes as underscores
-            module_name=$(echo "$name" | sed 's/^[0-9]*-//' | tr '-' '_')
             pkg_name="birch_example_${name//-/_}"
             echo "Testing $dir (Deno)..."
-            (cd "$dir" && gleam deps download && gleam build --target javascript && \
-                deno eval --no-check "import { main } from './build/dev/javascript/${pkg_name}/${module_name}.mjs'; main();")
+            # gleam run generates gleam.main.mjs pointing to the app's main()
+            (cd "$dir" && gleam deps download && gleam run --target javascript > /dev/null && \
+                deno run --no-check --allow-read --allow-env --allow-write "build/dev/javascript/${pkg_name}/gleam.main.mjs")
         fi
     done
 
@@ -154,12 +153,11 @@ test-examples-bun:
     for dir in examples/*/; do
         if [[ "$dir" != *"16-erlang-logger"* ]]; then
             name=$(basename "$dir")
-            # Module name is the example name without the number prefix, with dashes as underscores
-            module_name=$(echo "$name" | sed 's/^[0-9]*-//' | tr '-' '_')
             pkg_name="birch_example_${name//-/_}"
             echo "Testing $dir (Bun)..."
-            (cd "$dir" && gleam deps download && gleam build --target javascript && \
-                bun -e "import { main } from './build/dev/javascript/${pkg_name}/${module_name}.mjs'; main();")
+            # gleam run generates gleam.main.mjs pointing to the app's main()
+            (cd "$dir" && gleam deps download && gleam run --target javascript > /dev/null && \
+                bun "build/dev/javascript/${pkg_name}/gleam.main.mjs")
         fi
     done
 
@@ -186,31 +184,25 @@ test-example-node example:
     gleam deps download
     gleam test --target javascript
 
-# Test a specific example on Deno (runs main function)
+# Test a specific example on Deno (runs main function via gleam.main.mjs)
 test-example-deno example:
     #!/usr/bin/env bash
     cd "examples/{{example}}"
     gleam deps download
-    gleam build --target javascript
-    # Package name: birch_example_<name_with_underscores>
+    # gleam run generates gleam.main.mjs pointing to the app's main()
+    gleam run --target javascript > /dev/null
     pkg_name="birch_example_$(echo '{{example}}' | tr '-' '_')"
-    # Module name: <name_without_number_prefix>
-    module_name=$(echo '{{example}}' | sed 's/^[0-9]*-//' | tr '-' '_')
-    # Import the module and call main() - the module exports main but doesn't call it
-    deno eval --no-check "import { main } from './build/dev/javascript/${pkg_name}/${module_name}.mjs'; main();"
+    deno run --no-check --allow-read --allow-env --allow-write "build/dev/javascript/${pkg_name}/gleam.main.mjs"
 
-# Test a specific example on Bun (runs main function)
+# Test a specific example on Bun (runs main function via gleam.main.mjs)
 test-example-bun example:
     #!/usr/bin/env bash
     cd "examples/{{example}}"
     gleam deps download
-    gleam build --target javascript
-    # Package name: birch_example_<name_with_underscores>
+    # gleam run generates gleam.main.mjs pointing to the app's main()
+    gleam run --target javascript > /dev/null
     pkg_name="birch_example_$(echo '{{example}}' | tr '-' '_')"
-    # Module name: <name_without_number_prefix>
-    module_name=$(echo '{{example}}' | sed 's/^[0-9]*-//' | tr '-' '_')
-    # Import the module and call main() - the module exports main but doesn't call it
-    bun -e "import { main } from './build/dev/javascript/${pkg_name}/${module_name}.mjs'; main();"
+    bun "build/dev/javascript/${pkg_name}/gleam.main.mjs"
 
 # ============================================================================
 # Local CI Testing with act (https://github.com/nektos/act)
