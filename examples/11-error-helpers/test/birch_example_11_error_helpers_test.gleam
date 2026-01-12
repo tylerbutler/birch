@@ -1,5 +1,5 @@
 import birch as log
-import birch_example_11_error_helpers
+import birch_example_11_error_helpers as error_helpers
 import gleeunit
 import gleeunit/should
 import simplifile
@@ -13,7 +13,7 @@ pub fn load_config_success_test() {
   let test_path = "/tmp/birch-test-config.txt"
   let _ = simplifile.write(test_path, "test content")
 
-  birch_example_11_error_helpers.load_config(test_path)
+  error_helpers.load_config(test_path)
   |> should.be_ok()
   |> should.equal("test content")
 
@@ -23,7 +23,7 @@ pub fn load_config_success_test() {
 }
 
 pub fn load_config_failure_test() {
-  birch_example_11_error_helpers.load_config("/nonexistent/path/config.txt")
+  error_helpers.load_config("/nonexistent/path/config.txt")
   |> should.be_error()
 
   log.reset_config()

@@ -1,6 +1,6 @@
 import birch as log
 import birch/level
-import birch_example_09_global_config
+import birch_example_09_global_config as global_config
 import gleeunit
 import gleeunit/should
 
@@ -9,7 +9,7 @@ pub fn main() {
 }
 
 pub fn configure_production_test() {
-  birch_example_09_global_config.configure_production()
+  global_config.configure_production()
 
   log.get_level()
   |> should.equal(level.Info)
@@ -18,7 +18,7 @@ pub fn configure_production_test() {
 }
 
 pub fn configure_development_test() {
-  birch_example_09_global_config.configure_development()
+  global_config.configure_development()
 
   log.get_level()
   |> should.equal(level.Debug)

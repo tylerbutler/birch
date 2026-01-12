@@ -24,41 +24,41 @@ pub fn development_sampling_test() {
 pub fn high_volume_bucket_test() {
   let bucket = example.high_volume_bucket()
 
-  birch_example_14_sampling.bucket_max_tokens(bucket)
+  sampling.bucket_max_tokens(bucket)
   |> should.equal(100)
 
-  birch_example_14_sampling.bucket_burst_size(bucket)
+  sampling.bucket_burst_size(bucket)
   |> should.equal(1000)
 }
 
 pub fn token_bucket_consume_test() {
   // Create a small bucket for testing
-  let bucket = birch_example_14_sampling.new_token_bucket(3, 10)
+  let bucket = sampling.new_token_bucket(3, 10)
 
   // First 3 consumes should succeed
-  let #(ok1, bucket1) = birch_example_14_sampling.try_consume(bucket)
+  let #(ok1, bucket1) = sampling.try_consume(bucket)
   should.be_true(ok1)
 
-  let #(ok2, bucket2) = birch_example_14_sampling.try_consume(bucket1)
+  let #(ok2, bucket2) = sampling.try_consume(bucket1)
   should.be_true(ok2)
 
-  let #(ok3, bucket3) = birch_example_14_sampling.try_consume(bucket2)
+  let #(ok3, bucket3) = sampling.try_consume(bucket2)
   should.be_true(ok3)
 
   // Fourth should fail (bucket empty, not enough time to refill)
-  let #(ok4, _bucket4) = birch_example_14_sampling.try_consume(bucket3)
+  let #(ok4, _bucket4) = sampling.try_consume(bucket3)
   should.be_false(ok4)
 }
 
 pub fn sampling_always_logs_above_threshold_test() {
-  let config = birch_example_14_sampling.config(level.Debug, 0.0)
+  let config = sampling.config(level.Debug, 0.0)
   // 0% of debug
 
   // Info should always be logged (above Debug)
-  birch_example_14_sampling.should_sample(config, level.Info)
+  sampling.should_sample(config, level.Info)
   |> should.be_true()
 
   // Warn should always be logged
-  birch_example_14_sampling.should_sample(config, level.Warn)
+  sampling.should_sample(config, level.Warn)
   |> should.be_true()
 }

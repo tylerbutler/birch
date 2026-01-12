@@ -1,7 +1,7 @@
 import birch as log
 import gleeunit
 import gleeunit/should
-import birch_example_10_lazy_evaluation
+import birch_example_10_lazy_evaluation as lazy_evaluation
 
 pub fn main() {
   gleeunit.main()
@@ -11,7 +11,7 @@ pub fn log_large_data_test() {
   log.reset_config()
 
   // Should not crash
-  birch_example_10_lazy_evaluation.log_large_data(["a", "b", "c"])
+  lazy_evaluation.log_large_data(["a", "b", "c"])
   |> should.equal(Nil)
 }
 
