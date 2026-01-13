@@ -1,0 +1,9 @@
+name = "birch_example_14_sampling"
+version = "0.0.0"
+description = "birch example: log sampling and rate limiting"
+
+[dependencies]
+birch = { path = "../../" }
+
+[dev-dependencies]
+gleeunit = ">= 1.0.0 and < 2.0.0"

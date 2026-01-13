@@ -1,0 +1,10 @@
+name = "birch_example_08_custom_handlers"
+version = "0.0.0"
+description = "birch example: creating custom handlers"
+
+[dependencies]
+birch = { path = "../../" }
+gleam_stdlib = ">= 0.44.0"
+
+[dev-dependencies]
+gleeunit = ">= 1.0.0 and < 2.0.0"

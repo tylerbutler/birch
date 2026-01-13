@@ -1,0 +1,10 @@
+name = "birch_example_16_erlang_logger"
+version = "0.0.0"
+description = "birch example: Erlang OTP logger integration"
+target = "erlang"
+
+[dependencies]
+birch = { path = "../../" }
+
+[dev-dependencies]
+gleeunit = ">= 1.0.0 and < 2.0.0"

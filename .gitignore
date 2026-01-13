@@ -10,3 +10,6 @@ node_modules/
 
 # Coverage
 /coverage/
+
+# act artifacts
+.act/

@@ -106,3 +106,165 @@ test-integration: test-integration-node
 
 # Run full integration test suite (all runtimes, requires deno and bun installed)
 test-integration-all: test-integration-node test-integration-deno test-integration-bun
+
+# ============================================================================
+# Examples
+# ============================================================================
+
+# Test all examples on Erlang target
+test-examples:
+    #!/usr/bin/env bash
+    set -e
+    for dir in examples/*/; do
+        echo "Testing $dir (Erlang)..."
+        (cd "$dir" && gleam deps download && gleam test)
+    done
+
+# Test all examples on Node.js (excluding BEAM-only examples)
+test-examples-node:
+    #!/usr/bin/env bash
+    set -e
+    for dir in examples/*/; do
+        if [[ "$dir" != *"16-erlang-logger"* ]]; then
+            echo "Testing $dir (Node.js)..."
+            (cd "$dir" && gleam deps download && gleam test --target javascript)
+        fi
+    done
+
+# Test all examples on Deno (excluding BEAM-only examples)
+test-examples-deno:
+    #!/usr/bin/env bash
+    set -e
+    for dir in examples/*/; do
+        if [[ "$dir" != *"16-erlang-logger"* ]]; then
+            name=$(basename "$dir")
+            pkg_name="birch_example_${name//-/_}"
+            echo "Testing $dir (Deno)..."
+            # gleam run generates gleam.main.mjs pointing to the app's main()
+            (cd "$dir" && gleam deps download && gleam run --target javascript > /dev/null && \
+                deno run --no-check --allow-read --allow-env --allow-write "build/dev/javascript/${pkg_name}/gleam.main.mjs")
+        fi
+    done
+
+# Test all examples on Bun (excluding BEAM-only examples)
+test-examples-bun:
+    #!/usr/bin/env bash
+    set -e
+    for dir in examples/*/; do
+        if [[ "$dir" != *"16-erlang-logger"* ]]; then
+            name=$(basename "$dir")
+            pkg_name="birch_example_${name//-/_}"
+            echo "Testing $dir (Bun)..."
+            # gleam run generates gleam.main.mjs pointing to the app's main()
+            (cd "$dir" && gleam deps download && gleam run --target javascript > /dev/null && \
+                bun "build/dev/javascript/${pkg_name}/gleam.main.mjs")
+        fi
+    done
+
+# Alias for Node.js (default JavaScript runtime)
+test-examples-js: test-examples-node
+
+# Test all examples on Erlang and Node.js
+test-examples-all: test-examples test-examples-node
+
+# Test all examples on all runtimes (requires deno and bun installed)
+test-examples-all-runtimes: test-examples test-examples-node test-examples-deno test-examples-bun
+
+# Test a specific example on Erlang target
+test-example-erlang example:
+    #!/usr/bin/env bash
+    cd "examples/{{example}}"
+    gleam deps download
+    gleam test
+
+# Test a specific example on Node.js (via gleam test)
+test-example-node example:
+    #!/usr/bin/env bash
+    cd "examples/{{example}}"
+    gleam deps download
+    gleam test --target javascript
+
+# Test a specific example on Deno (runs main function via gleam.main.mjs)
+test-example-deno example:
+    #!/usr/bin/env bash
+    cd "examples/{{example}}"
+    gleam deps download
+    # gleam run generates gleam.main.mjs pointing to the app's main()
+    gleam run --target javascript > /dev/null
+    pkg_name="birch_example_$(echo '{{example}}' | tr '-' '_')"
+    deno run --no-check --allow-read --allow-env --allow-write "build/dev/javascript/${pkg_name}/gleam.main.mjs"
+
+# Test a specific example on Bun (runs main function via gleam.main.mjs)
+test-example-bun example:
+    #!/usr/bin/env bash
+    cd "examples/{{example}}"
+    gleam deps download
+    # gleam run generates gleam.main.mjs pointing to the app's main()
+    gleam run --target javascript > /dev/null
+    pkg_name="birch_example_$(echo '{{example}}' | tr '-' '_')"
+    bun "build/dev/javascript/${pkg_name}/gleam.main.mjs"
+
+# ============================================================================
+# Local CI Testing with act (https://github.com/nektos/act)
+# Requires: Docker running, act installed (https://nektosact.com/installation/)
+# ============================================================================
+
+# List all CI jobs available to run locally
+ci-list:
+    act -l
+
+# Run all CI jobs locally (simulates push event)
+ci:
+    act push
+
+# Run a specific CI job locally
+ci-job job:
+    act -j {{job}}
+
+# Run CI test job for Erlang target
+ci-test-erlang:
+    act -j test --matrix target:erlang
+
+# Run CI test job for JavaScript target
+ci-test-js:
+    act -j test --matrix target:javascript
+
+# Run CI coverage job
+ci-coverage:
+    act -j coverage
+
+# Run CI integration tests (all runtimes)
+ci-integration:
+    act -j integration-test
+
+# Run CI integration test for a specific runtime (node, deno, bun)
+ci-integration-runtime runtime:
+    act -j integration-test --matrix runtime:{{runtime}}
+
+# Run CI docs job
+ci-docs:
+    act -j docs
+
+# Run CI examples job for a specific example and target
+ci-example example target="erlang":
+    act -j examples --matrix example:{{example}} --matrix target:{{target}}
+
+# Run all CI examples for Erlang target only (faster validation)
+ci-examples-erlang:
+    act -j examples --matrix target:erlang
+
+# Dry-run CI (show what would execute without running)
+ci-dry:
+    act push --dryrun
+
+# Run CI with verbose output for debugging
+ci-verbose:
+    act push --verbose
+
+# Run CI on host system without Docker (uses locally installed tools)
+ci-host:
+    act push -P ubuntu-latest=-self-hosted
+
+# Run specific CI job on host system without Docker
+ci-host-job job:
+    act -j {{job}} -P ubuntu-latest=-self-hosted

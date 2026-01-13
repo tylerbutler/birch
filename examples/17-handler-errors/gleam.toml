@@ -1,0 +1,9 @@
+name = "birch_example_17_handler_errors"
+version = "0.0.0"
+description = "birch example: handler error callbacks and graceful degradation"
+
+[dependencies]
+birch = { path = "../../" }
+
+[dev-dependencies]
+gleeunit = ">= 1.0.0 and < 2.0.0"

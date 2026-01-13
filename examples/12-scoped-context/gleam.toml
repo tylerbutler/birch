@@ -1,0 +1,10 @@
+name = "birch_example_12_scoped_context"
+version = "0.0.0"
+description = "birch example: request-scoped context"
+
+[dependencies]
+birch = { path = "../../" }
+gleam_stdlib = ">= 0.44.0"
+
+[dev-dependencies]
+gleeunit = ">= 1.0.0 and < 2.0.0"
