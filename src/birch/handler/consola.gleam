@@ -210,7 +210,9 @@ fn format_box(message: String, title: String, use_color: Bool) -> String {
 }
 
 fn find_max_width(lines: List(String), min_width: Int) -> Int {
-  list.fold(lines, min_width, fn(acc, line) { int.max(acc, string.length(line)) })
+  list.fold(lines, min_width, fn(acc, line) {
+    int.max(acc, string.length(line))
+  })
 }
 
 /// Write a boxed message directly to stdout.
@@ -388,7 +390,13 @@ fn format_styled_message(
 
   case use_color {
     True ->
-      color <> icon_part <> bold <> label <> reset <> " " <> message
+      color
+      <> icon_part
+      <> bold
+      <> label
+      <> reset
+      <> " "
+      <> message
       <> metadata_part
     False -> icon_part <> label <> " " <> message <> metadata_part
   }
