@@ -2,6 +2,7 @@ import birch as log
 import birch/formatter
 import birch/handler
 import birch/handler/async
+import birch/handler/consola
 import birch/handler/file
 import birch/handler/json
 import birch/level
@@ -2360,4 +2361,282 @@ pub fn logger_all_advanced_features_combined_test() {
 
   // If we get here, the test passed
   True |> should.be_true
+}
+
+// ============================================================================
+// Consola Handler Tests
+// ============================================================================
+
+pub fn consola_handler_creation_test() {
+  let h = consola.handler()
+  handler.name(h)
+  |> should.equal("consola")
+}
+
+pub fn consola_handler_with_config_test() {
+  let config =
+    consola.ConsolaConfig(
+      color: False,
+      icons: True,
+      timestamps: True,
+      target: handler.Stdout,
+    )
+  let h = consola.handler_with_config(config)
+  handler.name(h)
+  |> should.equal("consola")
+}
+
+pub fn consola_default_config_test() {
+  let config = consola.default_config()
+  config.color
+  |> should.be_true
+
+  config.icons
+  |> should.be_true
+
+  config.timestamps
+  |> should.be_false
+
+  config.target
+  |> should.equal(handler.Stdout)
+}
+
+pub fn consola_handler_stderr_test() {
+  let config =
+    consola.ConsolaConfig(
+      color: True,
+      icons: True,
+      timestamps: False,
+      target: handler.Stderr,
+    )
+  let h = consola.handler_with_config(config)
+  handler.name(h)
+  |> should.equal("consola")
+}
+
+pub fn consola_handler_handles_log_record_test() {
+  // Create a consola handler with a null-like write function
+  // to verify it doesn't crash when handling records
+  let h = consola.handler()
+
+  let r =
+    record.new(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "myapp.http",
+      message: "Request received",
+      metadata: [#("user_id", "123")],
+    )
+
+  // This should not crash
+  handler.handle(h, r)
+}
+
+// ============================================================================
+// Consola Box Output Tests
+// ============================================================================
+
+pub fn consola_box_simple_test() {
+  let boxed = consola.box("Hello, World!")
+
+  // Should contain box drawing characters
+  boxed
+  |> string.contains("╭")
+  |> should.be_true
+
+  boxed
+  |> string.contains("╰")
+  |> should.be_true
+
+  boxed
+  |> string.contains("│")
+  |> should.be_true
+
+  // Should contain the message
+  boxed
+  |> string.contains("Hello, World!")
+  |> should.be_true
+}
+
+pub fn consola_box_with_title_test() {
+  let boxed = consola.box_with_title("Content here", "My Title")
+
+  // Should contain the title
+  boxed
+  |> string.contains("My Title")
+  |> should.be_true
+
+  // Should contain the content
+  boxed
+  |> string.contains("Content here")
+  |> should.be_true
+}
+
+pub fn consola_box_multiline_test() {
+  let boxed = consola.box("Line 1\nLine 2\nLine 3")
+
+  // Should contain all lines
+  boxed
+  |> string.contains("Line 1")
+  |> should.be_true
+
+  boxed
+  |> string.contains("Line 2")
+  |> should.be_true
+
+  boxed
+  |> string.contains("Line 3")
+  |> should.be_true
+}
+
+pub fn consola_box_colored_explicit_test() {
+  // Test with colors explicitly disabled
+  let boxed_no_color = consola.box_colored("Test", "", False)
+
+  // Should not contain ANSI escape codes
+  boxed_no_color
+  |> string.contains("\u{001b}")
+  |> should.be_false
+
+  // Test with colors explicitly enabled
+  let boxed_color = consola.box_colored("Test", "", True)
+
+  // Should contain ANSI escape codes
+  boxed_color
+  |> string.contains("\u{001b}")
+  |> should.be_true
+}
+
+pub fn consola_write_box_test() {
+  // Just verify it doesn't crash
+  consola.write_box("Test message")
+}
+
+pub fn consola_write_box_with_title_test() {
+  // Just verify it doesn't crash
+  consola.write_box_with_title("Test message", "Title")
+}
+
+// ============================================================================
+// Consola Grouping Tests
+// ============================================================================
+
+pub fn consola_with_group_returns_result_test() {
+  // with_group should return the result of the work function
+  let result = consola.with_group("Test Group", fn() { 42 })
+
+  result
+  |> should.equal(42)
+}
+
+pub fn consola_with_group_string_result_test() {
+  let result = consola.with_group("String Group", fn() { "hello" })
+
+  result
+  |> should.equal("hello")
+}
+
+pub fn consola_indented_handler_creation_test() {
+  let h = consola.indented_handler(1)
+  handler.name(h)
+  |> should.equal("consola")
+}
+
+pub fn consola_indented_handler_with_config_test() {
+  let config =
+    consola.ConsolaConfig(
+      color: False,
+      icons: True,
+      timestamps: False,
+      target: handler.Stdout,
+    )
+  let h = consola.indented_handler_with_config(2, config)
+  handler.name(h)
+  |> should.equal("consola")
+}
+
+pub fn consola_indented_handler_handles_records_test() {
+  let h = consola.indented_handler(1)
+
+  let r =
+    record.new_simple(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "Indented message",
+    )
+
+  // Should not crash
+  handler.handle(h, r)
+}
+
+// ============================================================================
+// Consola Semantic Log Type Tests
+// ============================================================================
+
+pub fn consola_log_style_type_test() {
+  // Test that LogStyle variants exist
+  let _success = consola.Success
+  let _start = consola.Start
+  let _ready = consola.Ready
+  let _fail = consola.Fail
+
+  // If we get here, the types exist
+  True |> should.be_true
+}
+
+pub fn consola_write_success_test() {
+  // Just verify it doesn't crash
+  consola.write_success("Operation completed successfully")
+}
+
+pub fn consola_write_start_test() {
+  // Just verify it doesn't crash
+  consola.write_start("Starting operation...")
+}
+
+pub fn consola_write_ready_test() {
+  // Just verify it doesn't crash
+  consola.write_ready("System ready")
+}
+
+pub fn consola_write_fail_test() {
+  // Just verify it doesn't crash
+  consola.write_fail("Operation failed")
+}
+
+pub fn consola_success_with_logger_test() {
+  let lgr =
+    logger.new("test")
+    |> logger.with_handlers([handler.null()])
+
+  // Should not crash
+  consola.success(lgr, "Build completed!", [])
+}
+
+pub fn consola_start_with_logger_test() {
+  let lgr =
+    logger.new("test")
+    |> logger.with_handlers([handler.null()])
+
+  // Should not crash
+  consola.start(lgr, "Building project...", [])
+}
+
+pub fn consola_ready_with_logger_test() {
+  let lgr =
+    logger.new("test")
+    |> logger.with_handlers([handler.null()])
+
+  // Should not crash
+  consola.ready(lgr, "Server listening on port 3000", [#("port", "3000")])
+}
+
+pub fn consola_fail_with_logger_test() {
+  let lgr =
+    logger.new("test")
+    |> logger.with_handlers([handler.null()])
+
+  // Should not crash
+  consola.fail(lgr, "Could not connect to cache", [#("host", "localhost")])
 }
