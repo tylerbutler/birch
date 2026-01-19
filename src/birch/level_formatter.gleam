@@ -96,13 +96,14 @@ fn format_label(
     }
     True, False -> {
       let color = level_color(lvl)
-      color <> bold <> label <> reset
+      let formatted = color <> bold <> label <> reset
+      pad_formatted(formatted, label)
     }
     False, True -> {
       let icon = level_icon(lvl)
       icon <> " " <> label
     }
-    False, False -> label
+    False, False -> pad_level(label)
   }
 }
 
@@ -140,9 +141,23 @@ fn format_badge(lvl: level.Level, use_color: Bool) -> String {
   case use_color {
     True -> {
       let color = level_color(lvl)
-      color <> bold <> "[" <> label <> "]" <> reset
+      let formatted = color <> bold <> "[" <> label <> "]" <> reset
+      pad_formatted(formatted, label)
     }
-    False -> "[" <> label <> "]"
+    False -> {
+      let badge = "[" <> label <> "]"
+      pad_badge(badge, label)
+    }
+  }
+}
+
+/// Pad a badge string to account for 7-character alignment ([ERROR] is longest).
+fn pad_badge(badge: String, original_label: String) -> String {
+  case string.length(original_label) {
+    5 -> badge
+    4 -> badge <> " "
+    3 -> badge <> "  "
+    _ -> badge
   }
 }
 

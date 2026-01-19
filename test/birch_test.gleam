@@ -2814,10 +2814,10 @@ pub fn level_formatter_badge_all_levels_test() {
   |> should.equal("[DEBUG]")
 
   level_formatter.format_level(formatter, level.Info, False)
-  |> should.equal("[INFO]")
+  |> should.equal("[INFO] ")
 
   level_formatter.format_level(formatter, level.Warn, False)
-  |> should.equal("[WARN]")
+  |> should.equal("[WARN] ")
 
   level_formatter.format_level(formatter, level.Err, False)
   |> should.equal("[ERROR]")
