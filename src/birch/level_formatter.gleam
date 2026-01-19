@@ -7,7 +7,7 @@
 //// ## Available Styles
 ////
 //// - **Label style**: `ℹ info`, `⚠ warn`, `✖ error` - icons with lowercase labels
-//// - **Badge style**: `[INFO]`, `[WARN]`, `[ERROR]` - uppercase in brackets with background colors
+//// - **Badge style**: `[INFO]`, `[WARN]`, `[ERROR]` - uppercase in brackets with bold foreground colors
 //// - **Simple style**: `INFO`, `WARN`, `ERROR` - uppercase labels only
 //// - **Custom**: Create your own formatting function
 
@@ -35,20 +35,11 @@ const red = "\u{001b}[31m"
 
 const magenta = "\u{001b}[35m"
 
-const black = "\u{001b}[30m"
-
 const white = "\u{001b}[97m"
 
 const blue = "\u{001b}[34m"
 
 const bright_red = "\u{001b}[91m"
-
-// Background colors
-const bg_gray = "\u{001b}[100m"
-
-const bg_cyan = "\u{001b}[46m"
-
-const bg_yellow = "\u{001b}[43m"
 
 const bg_red = "\u{001b}[41m"
 
@@ -136,7 +127,7 @@ pub fn default_badge_config() -> BadgeConfig {
 /// Create a badge-style formatter with default settings.
 /// Output: "[INFO]", "[WARN]", "[ERROR]", etc.
 ///
-/// With colors enabled, displays as colored background with contrasting text.
+/// With colors enabled, displays with bold foreground colors based on severity.
 /// This style provides high visual prominence, especially for errors.
 pub fn badge_formatter() -> LevelFormatter {
   badge_formatter_with_config(default_badge_config())
@@ -152,9 +143,8 @@ fn format_badge(lvl: level.Level, use_color: Bool) -> String {
 
   case use_color {
     True -> {
-      let bg_color = level_bg_color(lvl)
-      let text_color = level_badge_text_color(lvl)
-      bg_color <> text_color <> "[" <> label <> "]" <> reset
+      let color = level_color(lvl)
+      color <> bold <> "[" <> label <> "]" <> reset
     }
     False -> "[" <> label <> "]"
   }
@@ -293,30 +283,6 @@ pub fn level_label_upper(lvl: level.Level) -> String {
     level.Warn -> "WARN"
     level.Err -> "ERROR"
     level.Fatal -> "FATAL"
-  }
-}
-
-/// Get the background color for a log level (for badge style).
-fn level_bg_color(lvl: level.Level) -> String {
-  case lvl {
-    level.Trace -> bg_gray
-    level.Debug -> bg_gray
-    level.Info -> bg_cyan
-    level.Warn -> bg_yellow
-    level.Err -> bg_red
-    level.Fatal -> bg_red
-  }
-}
-
-/// Get the text color for badge style (for contrast against background).
-fn level_badge_text_color(lvl: level.Level) -> String {
-  case lvl {
-    level.Trace -> white
-    level.Debug -> white
-    level.Info -> black
-    level.Warn -> black
-    level.Err -> white
-    level.Fatal -> white
   }
 }
 
