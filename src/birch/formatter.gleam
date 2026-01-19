@@ -7,6 +7,15 @@ import birch/record.{type LogRecord}
 import gleam/list
 import gleam/string
 
+/// Format metadata, excluding internal keys (prefixed with _).
+/// Internal keys are used by the logging system for features like
+/// semantic log styles and grouping, and should not be shown to users.
+pub fn format_metadata_visible(metadata: record.Metadata) -> String {
+  metadata
+  |> list.filter(fn(pair) { !string.starts_with(pair.0, "_") })
+  |> format_metadata()
+}
+
 /// A formatter is a function that converts a LogRecord to a string.
 pub type Formatter =
   fn(LogRecord) -> String

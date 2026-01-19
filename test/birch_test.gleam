@@ -2,10 +2,11 @@ import birch as log
 import birch/formatter
 import birch/handler
 import birch/handler/async
-import birch/handler/consola
+import birch/handler/console
 import birch/handler/file
 import birch/handler/json
 import birch/level
+import birch/level_formatter
 import birch/logger
 import birch/record
 import birch/sampling
@@ -2364,30 +2365,52 @@ pub fn logger_all_advanced_features_combined_test() {
 }
 
 // ============================================================================
-// Consola Handler Tests
+// Console Handler Tests (Unified)
 // ============================================================================
 
-pub fn consola_handler_creation_test() {
-  let h = consola.handler()
+pub fn console_handler_creation_test() {
+  let h = console.handler()
   handler.name(h)
-  |> should.equal("consola")
+  |> should.equal("console")
 }
 
-pub fn consola_handler_with_config_test() {
+pub fn console_fancy_handler_creation_test() {
+  let h = console.fancy_handler()
+  handler.name(h)
+  |> should.equal("console")
+}
+
+pub fn console_handler_with_config_test() {
   let config =
-    consola.ConsolaConfig(
+    console.ConsoleConfig(
       color: False,
       timestamps: True,
       target: handler.Stdout,
-      level_formatter: consola.label_formatter(),
+      level_formatter: level_formatter.label_formatter(),
+      style: console.Fancy,
     )
-  let h = consola.handler_with_config(config)
+  let h = console.handler_with_config(config)
   handler.name(h)
-  |> should.equal("consola")
+  |> should.equal("console")
 }
 
-pub fn consola_default_config_test() {
-  let config = consola.default_config()
+pub fn console_default_config_test() {
+  let config = console.default_config()
+  config.color
+  |> should.be_true
+
+  config.timestamps
+  |> should.be_true
+
+  config.target
+  |> should.equal(handler.Stdout)
+
+  config.style
+  |> should.equal(console.Simple)
+}
+
+pub fn console_default_fancy_config_test() {
+  let config = console.default_fancy_config()
   config.color
   |> should.be_true
 
@@ -2396,25 +2419,29 @@ pub fn consola_default_config_test() {
 
   config.target
   |> should.equal(handler.Stdout)
+
+  config.style
+  |> should.equal(console.Fancy)
 }
 
-pub fn consola_handler_stderr_test() {
+pub fn console_handler_stderr_test() {
   let config =
-    consola.ConsolaConfig(
+    console.ConsoleConfig(
       color: True,
       timestamps: False,
       target: handler.Stderr,
-      level_formatter: consola.label_formatter(),
+      level_formatter: level_formatter.label_formatter(),
+      style: console.Fancy,
     )
-  let h = consola.handler_with_config(config)
+  let h = console.handler_with_config(config)
   handler.name(h)
-  |> should.equal("consola")
+  |> should.equal("console")
 }
 
-pub fn consola_handler_handles_log_record_test() {
-  // Create a consola handler with a null-like write function
+pub fn console_handler_handles_log_record_test() {
+  // Create a console handler with a null-like write function
   // to verify it doesn't crash when handling records
-  let h = consola.handler()
+  let h = console.handler()
 
   let r =
     record.new(
@@ -2430,11 +2457,11 @@ pub fn consola_handler_handles_log_record_test() {
 }
 
 // ============================================================================
-// Consola Box Output Tests
+// Console Box Output Tests
 // ============================================================================
 
-pub fn consola_box_simple_test() {
-  let boxed = consola.box("Hello, World!")
+pub fn console_box_simple_test() {
+  let boxed = console.box("Hello, World!")
 
   // Should contain box drawing characters
   boxed
@@ -2455,8 +2482,8 @@ pub fn consola_box_simple_test() {
   |> should.be_true
 }
 
-pub fn consola_box_with_title_test() {
-  let boxed = consola.box_with_title("Content here", "My Title")
+pub fn console_box_with_title_test() {
+  let boxed = console.box_with_title("Content here", "My Title")
 
   // Should contain the title
   boxed
@@ -2469,8 +2496,8 @@ pub fn consola_box_with_title_test() {
   |> should.be_true
 }
 
-pub fn consola_box_multiline_test() {
-  let boxed = consola.box("Line 1\nLine 2\nLine 3")
+pub fn console_box_multiline_test() {
+  let boxed = console.box("Line 1\nLine 2\nLine 3")
 
   // Should contain all lines
   boxed
@@ -2486,9 +2513,9 @@ pub fn consola_box_multiline_test() {
   |> should.be_true
 }
 
-pub fn consola_box_colored_explicit_test() {
+pub fn console_box_colored_explicit_test() {
   // Test with colors explicitly disabled
-  let boxed_no_color = consola.box_colored("Test", "", False)
+  let boxed_no_color = console.box_colored("Test", "", False)
 
   // Should not contain ANSI escape codes
   boxed_no_color
@@ -2496,7 +2523,7 @@ pub fn consola_box_colored_explicit_test() {
   |> should.be_false
 
   // Test with colors explicitly enabled
-  let boxed_color = consola.box_colored("Test", "", True)
+  let boxed_color = console.box_colored("Test", "", True)
 
   // Should contain ANSI escape codes
   boxed_color
@@ -2504,56 +2531,57 @@ pub fn consola_box_colored_explicit_test() {
   |> should.be_true
 }
 
-pub fn consola_write_box_test() {
+pub fn console_write_box_test() {
   // Just verify it doesn't crash
-  consola.write_box("Test message")
+  console.write_box("Test message")
 }
 
-pub fn consola_write_box_with_title_test() {
+pub fn console_write_box_with_title_test() {
   // Just verify it doesn't crash
-  consola.write_box_with_title("Test message", "Title")
+  console.write_box_with_title("Test message", "Title")
 }
 
 // ============================================================================
-// Consola Grouping Tests
+// Console Grouping Tests
 // ============================================================================
 
-pub fn consola_with_group_returns_result_test() {
+pub fn console_with_group_returns_result_test() {
   // with_group should return the result of the work function
-  let result = consola.with_group("Test Group", fn() { 42 })
+  let result = console.with_group("Test Group", fn() { 42 })
 
   result
   |> should.equal(42)
 }
 
-pub fn consola_with_group_string_result_test() {
-  let result = consola.with_group("String Group", fn() { "hello" })
+pub fn console_with_group_string_result_test() {
+  let result = console.with_group("String Group", fn() { "hello" })
 
   result
   |> should.equal("hello")
 }
 
-pub fn consola_indented_handler_creation_test() {
-  let h = consola.indented_handler(1)
+pub fn console_indented_handler_creation_test() {
+  let h = console.indented_handler(1)
   handler.name(h)
-  |> should.equal("consola")
+  |> should.equal("console")
 }
 
-pub fn consola_indented_handler_with_config_test() {
+pub fn console_indented_handler_with_config_test() {
   let config =
-    consola.ConsolaConfig(
+    console.ConsoleConfig(
       color: False,
       timestamps: False,
       target: handler.Stdout,
-      level_formatter: consola.label_formatter(),
+      level_formatter: level_formatter.label_formatter(),
+      style: console.Fancy,
     )
-  let h = consola.indented_handler_with_config(2, config)
+  let h = console.indented_handler_with_config(2, config)
   handler.name(h)
-  |> should.equal("consola")
+  |> should.equal("console")
 }
 
-pub fn consola_indented_handler_handles_records_test() {
-  let h = consola.indented_handler(1)
+pub fn console_indented_handler_handles_records_test() {
+  let h = console.indented_handler(1)
 
   let r =
     record.new_simple(
@@ -2568,83 +2596,67 @@ pub fn consola_indented_handler_handles_records_test() {
 }
 
 // ============================================================================
-// Consola Semantic Log Type Tests
+// Console Semantic Log Type Tests
 // ============================================================================
 
-pub fn consola_log_style_type_test() {
+pub fn console_log_style_type_test() {
   // Test that LogStyle variants exist
-  let _success = consola.Success
-  let _start = consola.Start
-  let _ready = consola.Ready
-  let _fail = consola.Fail
+  let _success = console.Success
+  let _start = console.Start
+  let _ready = console.Ready
+  let _fail = console.Fail
 
   // If we get here, the types exist
   True |> should.be_true
 }
 
-pub fn consola_write_success_test() {
+pub fn console_write_success_test() {
   // Just verify it doesn't crash
-  consola.write_success("Operation completed successfully")
+  console.write_success("Operation completed successfully")
 }
 
-pub fn consola_write_start_test() {
+pub fn console_write_start_test() {
   // Just verify it doesn't crash
-  consola.write_start("Starting operation...")
+  console.write_start("Starting operation...")
 }
 
-pub fn consola_write_ready_test() {
+pub fn console_write_ready_test() {
   // Just verify it doesn't crash
-  consola.write_ready("System ready")
+  console.write_ready("System ready")
 }
 
-pub fn consola_write_fail_test() {
+pub fn console_write_fail_test() {
   // Just verify it doesn't crash
-  consola.write_fail("Operation failed")
+  console.write_fail("Operation failed")
 }
 
-pub fn consola_success_with_logger_test() {
-  let lgr =
-    logger.new("test")
-    |> logger.with_handlers([handler.null()])
-
+pub fn console_success_with_metadata_test() {
   // Should not crash
-  consola.success(lgr, "Build completed!", [])
+  console.success("Build completed!", [#("duration", "5s")])
 }
 
-pub fn consola_start_with_logger_test() {
-  let lgr =
-    logger.new("test")
-    |> logger.with_handlers([handler.null()])
-
+pub fn console_start_with_metadata_test() {
   // Should not crash
-  consola.start(lgr, "Building project...", [])
+  console.start("Building project...", [#("target", "release")])
 }
 
-pub fn consola_ready_with_logger_test() {
-  let lgr =
-    logger.new("test")
-    |> logger.with_handlers([handler.null()])
-
+pub fn console_ready_with_metadata_test() {
   // Should not crash
-  consola.ready(lgr, "Server listening on port 3000", [#("port", "3000")])
+  console.ready("Server listening on port 3000", [#("port", "3000")])
 }
 
-pub fn consola_fail_with_logger_test() {
-  let lgr =
-    logger.new("test")
-    |> logger.with_handlers([handler.null()])
-
+pub fn console_fail_with_metadata_test() {
   // Should not crash
-  consola.fail(lgr, "Could not connect to cache", [#("host", "localhost")])
+  console.fail("Could not connect to cache", [#("host", "localhost")])
 }
 
 // ============================================================================
-// Consola Level Formatter Tests
+// Level Formatter Tests
 // ============================================================================
 
-pub fn consola_label_formatter_with_color_test() {
-  let formatter = consola.label_formatter()
-  let result = consola.format_level(formatter, level.Info, True)
+pub fn level_formatter_label_with_color_test() {
+  let formatter = level_formatter.label_formatter()
+  let result = level_formatter.format_level(formatter, level.Info, True)
 
   // Should contain the icon
   result
@@ -2662,9 +2674,9 @@ pub fn consola_label_formatter_with_color_test() {
   |> should.be_true
 }
 
-pub fn consola_label_formatter_without_color_test() {
-  let formatter = consola.label_formatter()
-  let result = consola.format_level(formatter, level.Warn, False)
+pub fn level_formatter_label_without_color_test() {
+  let formatter = level_formatter.label_formatter()
+  let result = level_formatter.format_level(formatter, level.Warn, False)
 
   // Should contain icon and label
   result
@@ -2681,10 +2693,12 @@ pub fn consola_label_formatter_without_color_test() {
   |> should.be_false
 }
 
-pub fn consola_label_formatter_no_icons_test() {
+pub fn level_formatter_label_no_icons_test() {
   let formatter =
-    consola.label_formatter_with_config(consola.LabelConfig(icons: False))
-  let result = consola.format_level(formatter, level.Info, False)
+    level_formatter.label_formatter_with_config(level_formatter.LabelConfig(
+      icons: False,
+    ))
+  let result = level_formatter.format_level(formatter, level.Info, False)
 
   // Should NOT contain icon
   result
@@ -2697,9 +2711,9 @@ pub fn consola_label_formatter_no_icons_test() {
   |> should.be_true
 }
 
-pub fn consola_badge_formatter_with_color_test() {
-  let formatter = consola.badge_formatter()
-  let result = consola.format_level(formatter, level.Err, True)
+pub fn level_formatter_badge_with_color_test() {
+  let formatter = level_formatter.badge_formatter()
+  let result = level_formatter.format_level(formatter, level.Err, True)
 
   // Should contain uppercase label in brackets
   result
@@ -2712,9 +2726,9 @@ pub fn consola_badge_formatter_with_color_test() {
   |> should.be_true
 }
 
-pub fn consola_badge_formatter_without_color_test() {
-  let formatter = consola.badge_formatter()
-  let result = consola.format_level(formatter, level.Info, False)
+pub fn level_formatter_badge_without_color_test() {
+  let formatter = level_formatter.badge_formatter()
+  let result = level_formatter.format_level(formatter, level.Info, False)
 
   // Should contain uppercase label in brackets
   result
@@ -2727,52 +2741,66 @@ pub fn consola_badge_formatter_without_color_test() {
   |> should.be_false
 }
 
-pub fn consola_badge_formatter_all_levels_test() {
-  let formatter = consola.badge_formatter()
+pub fn level_formatter_badge_all_levels_test() {
+  let formatter = level_formatter.badge_formatter()
 
-  consola.format_level(formatter, level.Trace, False)
+  level_formatter.format_level(formatter, level.Trace, False)
   |> should.equal("[TRACE]")
 
-  consola.format_level(formatter, level.Debug, False)
+  level_formatter.format_level(formatter, level.Debug, False)
   |> should.equal("[DEBUG]")
 
-  consola.format_level(formatter, level.Info, False)
+  level_formatter.format_level(formatter, level.Info, False)
   |> should.equal("[INFO]")
 
-  consola.format_level(formatter, level.Warn, False)
+  level_formatter.format_level(formatter, level.Warn, False)
   |> should.equal("[WARN]")
 
-  consola.format_level(formatter, level.Err, False)
+  level_formatter.format_level(formatter, level.Err, False)
   |> should.equal("[ERROR]")
 
-  consola.format_level(formatter, level.Fatal, False)
+  level_formatter.format_level(formatter, level.Fatal, False)
   |> should.equal("[FATAL]")
 }
 
-pub fn consola_with_badge_style_test() {
-  let config = consola.default_config() |> consola.with_badge_style
-  let h = consola.handler_with_config(config)
-  handler.name(h)
-  |> should.equal("consola")
+pub fn level_formatter_simple_test() {
+  let formatter = level_formatter.simple_formatter()
+
+  // Simple formatter produces padded uppercase labels
+  level_formatter.format_level(formatter, level.Info, False)
+  |> should.equal("INFO ")
+
+  level_formatter.format_level(formatter, level.Warn, False)
+  |> should.equal("WARN ")
+
+  level_formatter.format_level(formatter, level.Err, False)
+  |> should.equal("ERROR")
 }
 
-pub fn consola_with_label_style_test() {
-  let config = consola.default_config() |> consola.with_label_style
-  let h = consola.handler_with_config(config)
+pub fn console_with_badge_style_test() {
+  let config = console.default_fancy_config() |> console.with_badge_style
+  let h = console.handler_with_config(config)
   handler.name(h)
-  |> should.equal("consola")
+  |> should.equal("console")
 }
 
-pub fn consola_with_label_style_no_icons_test() {
-  let config = consola.default_config() |> consola.with_label_style_no_icons
-  let h = consola.handler_with_config(config)
+pub fn console_with_label_style_test() {
+  let config = console.default_config() |> console.with_label_style
+  let h = console.handler_with_config(config)
   handler.name(h)
-  |> should.equal("consola")
+  |> should.equal("console")
 }
 
-pub fn consola_custom_level_formatter_test() {
+pub fn console_with_label_style_no_icons_test() {
+  let config = console.default_config() |> console.with_label_style_no_icons
+  let h = console.handler_with_config(config)
+  handler.name(h)
+  |> should.equal("console")
+}
+
+pub fn level_formatter_custom_test() {
   let custom_formatter =
-    consola.custom_level_formatter(fn(lvl, _use_color) {
+    level_formatter.custom_level_formatter(fn(lvl, _use_color) {
       case lvl {
         level.Info -> "INFO:"
         level.Warn -> "WARNING:"
@@ -2781,28 +2809,28 @@ pub fn consola_custom_level_formatter_test() {
       }
     })
 
-  consola.format_level(custom_formatter, level.Info, False)
+  level_formatter.format_level(custom_formatter, level.Info, False)
   |> should.equal("INFO:")
 
-  consola.format_level(custom_formatter, level.Warn, False)
+  level_formatter.format_level(custom_formatter, level.Warn, False)
   |> should.equal("WARNING:")
 
-  consola.format_level(custom_formatter, level.Err, False)
+  level_formatter.format_level(custom_formatter, level.Err, False)
   |> should.equal("ERROR:")
 
-  consola.format_level(custom_formatter, level.Debug, False)
+  level_formatter.format_level(custom_formatter, level.Debug, False)
   |> should.equal("LOG:")
 }
 
-pub fn consola_with_level_formatter_test() {
+pub fn console_with_level_formatter_test() {
   let custom_formatter =
-    consola.custom_level_formatter(fn(_lvl, _use_color) { "CUSTOM" })
+    level_formatter.custom_level_formatter(fn(_lvl, _use_color) { "CUSTOM" })
 
   let config =
-    consola.default_config()
-    |> consola.with_level_formatter(custom_formatter)
+    console.default_config()
+    |> console.with_level_formatter(custom_formatter)
 
-  let h = consola.handler_with_config(config)
+  let h = console.handler_with_config(config)
   handler.name(h)
-  |> should.equal("consola")
+  |> should.equal("console")
 }
