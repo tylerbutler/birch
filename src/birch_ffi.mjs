@@ -495,11 +495,30 @@ export function get_scope_context() {
     scopeContextState.asyncLocalStorage
   ) {
     const store = scopeContextState.asyncLocalStorage.getStore();
-    return store !== undefined ? store : toList([]);
+    return store !== undefined ? store.context : toList([]);
   }
   // Fallback: return top of stack or empty list
   const stack = scopeContextState.fallbackContextStack;
-  return stack.length > 0 ? stack[stack.length - 1] : toList([]);
+  return stack.length > 0 ? stack[stack.length - 1].context : toList([]);
+}
+
+/**
+ * Get the current scope depth (nesting level).
+ * @returns {number} Current depth (0 if no scope active)
+ */
+export function get_scope_depth() {
+  initScopeContext();
+
+  if (
+    scopeContextState.asyncLocalStorageAvailable &&
+    scopeContextState.asyncLocalStorage
+  ) {
+    const store = scopeContextState.asyncLocalStorage.getStore();
+    return store !== undefined ? store.depth : 0;
+  }
+  // Fallback: return top of stack depth or 0
+  const stack = scopeContextState.fallbackContextStack;
+  return stack.length > 0 ? stack[stack.length - 1].depth : 0;
 }
 
 /**
@@ -521,7 +540,29 @@ export function set_scope_context(context) {
   // (This is used when restoring - we want to reset to previous state)
   // Check if context is empty by checking if it has a head
   const isEmpty = !context || context.head === undefined;
-  scopeContextState.fallbackContextStack = isEmpty ? [] : [context];
+  scopeContextState.fallbackContextStack = isEmpty ? [] : [{ context, depth: 0 }];
+  return undefined;
+}
+
+/**
+ * Set the scope depth (used internally for fallback only).
+ * @param {number} depth - Depth to set
+ */
+export function set_scope_depth(depth) {
+  initScopeContext();
+
+  if (
+    scopeContextState.asyncLocalStorageAvailable &&
+    scopeContextState.asyncLocalStorage
+  ) {
+    // For AsyncLocalStorage, depth is managed in run_with_scope
+    // This is for fallback only
+  }
+  // Fallback: update depth in top of stack
+  const stack = scopeContextState.fallbackContextStack;
+  if (stack.length > 0) {
+    stack[stack.length - 1].depth = depth;
+  }
   return undefined;
 }
 
@@ -552,26 +593,27 @@ export function run_with_scope(context, callback) {
     scopeContextState.asyncLocalStorageAvailable &&
     scopeContextState.asyncLocalStorage
   ) {
-    // Get current context and merge
-    const currentContext =
-      scopeContextState.asyncLocalStorage.getStore() || toList([]);
-    const mergedContext = mergeGleamLists(context, currentContext);
+    // Get current store (contains context and depth)
+    const currentStore = scopeContextState.asyncLocalStorage.getStore() || { context: toList([]), depth: 0 };
+    const mergedContext = mergeGleamLists(context, currentStore.context);
+    const newStore = { context: mergedContext, depth: currentStore.depth + 1 };
 
-    // Use run() for proper scoping - context is automatically restored after
-    return scopeContextState.asyncLocalStorage.run(mergedContext, callback);
+    // Use run() for proper scoping - store is automatically restored after
+    return scopeContextState.asyncLocalStorage.run(newStore, callback);
   }
 
   // Fallback for non-Node.js environments: use stack-based approach
   const stack = scopeContextState.fallbackContextStack;
-  const currentContext = stack.length > 0 ? stack[stack.length - 1] : toList([]);
-  const mergedContext = mergeGleamLists(context, currentContext);
+  const currentStore = stack.length > 0 ? stack[stack.length - 1] : { context: toList([]), depth: 0 };
+  const mergedContext = mergeGleamLists(context, currentStore.context);
+  const newStore = { context: mergedContext, depth: currentStore.depth + 1 };
 
-  // Push new context onto stack
-  stack.push(mergedContext);
+  // Push new store onto stack
+  stack.push(newStore);
   try {
     return callback();
   } finally {
-    // Pop context from stack
+    // Pop store from stack
     stack.pop();
   }
 }

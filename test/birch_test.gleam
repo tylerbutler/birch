@@ -10,6 +10,7 @@ import birch/level_formatter
 import birch/logger
 import birch/record
 import birch/sampling
+import birch/scope
 import gleam/json as gleam_json
 import gleam/list
 import gleam/option.{None, Some}
@@ -2388,6 +2389,7 @@ pub fn console_handler_with_config_test() {
       target: handler.Stdout,
       level_formatter: level_formatter.label_formatter(),
       style: console.Fancy,
+      auto_indent_from_scopes: False,
     )
   let h = console.handler_with_config(config)
   handler.name(h)
@@ -2432,6 +2434,7 @@ pub fn console_handler_stderr_test() {
       target: handler.Stderr,
       level_formatter: level_formatter.label_formatter(),
       style: console.Fancy,
+      auto_indent_from_scopes: False,
     )
   let h = console.handler_with_config(config)
   handler.name(h)
@@ -2574,6 +2577,7 @@ pub fn console_indented_handler_with_config_test() {
       target: handler.Stdout,
       level_formatter: level_formatter.label_formatter(),
       style: console.Fancy,
+      auto_indent_from_scopes: False,
     )
   let h = console.indented_handler_with_config(2, config)
   handler.name(h)
@@ -2593,6 +2597,52 @@ pub fn console_indented_handler_handles_records_test() {
 
   // Should not crash
   handler.handle(h, r)
+}
+
+pub fn console_auto_indent_from_scopes_test() {
+  // Test that auto-indent configuration option works
+  let config =
+    console.default_fancy_config()
+    |> console.with_auto_indent_from_scopes()
+
+  config.auto_indent_from_scopes
+  |> should.be_true()
+
+  let config_disabled =
+    config
+    |> console.without_auto_indent_from_scopes()
+
+  config_disabled.auto_indent_from_scopes
+  |> should.be_false()
+}
+
+pub fn scope_depth_tracking_test() {
+  // Test that scope depth is tracked correctly
+  // Outside any scope, depth should be 0
+  scope.get_depth()
+  |> should.equal(0)
+
+  // Inside one scope, depth should be 1
+  scope.with_scope([#("key1", "value1")], fn() {
+    scope.get_depth()
+    |> should.equal(1)
+
+    // Inside nested scope, depth should be 2
+    scope.with_scope([#("key2", "value2")], fn() {
+      scope.get_depth()
+      |> should.equal(2)
+      Nil
+    })
+
+    // Back to depth 1 after inner scope exits
+    scope.get_depth()
+    |> should.equal(1)
+    Nil
+  })
+
+  // Back to depth 0 after all scopes exit
+  scope.get_depth()
+  |> should.equal(0)
 }
 
 // ============================================================================

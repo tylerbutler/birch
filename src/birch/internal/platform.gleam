@@ -111,6 +111,18 @@ pub fn get_scope_context() -> Metadata
 @external(javascript, "../../birch_ffi.mjs", "set_scope_context")
 pub fn set_scope_context(context: Metadata) -> Nil
 
+/// Get the current scope depth (nesting level).
+/// Returns 0 if no scope is active.
+@external(erlang, "birch_ffi", "get_scope_depth")
+@external(javascript, "../../birch_ffi.mjs", "get_scope_depth")
+pub fn get_scope_depth() -> Int
+
+/// Set the current scope depth.
+/// Used internally by scope management.
+@external(erlang, "birch_ffi", "set_scope_depth")
+@external(javascript, "../../birch_ffi.mjs", "set_scope_depth")
+pub fn set_scope_depth(depth: Int) -> Nil
+
 /// Check if scoped context is available on the current platform.
 /// Returns True on Erlang (process dictionary) and Node.js (AsyncLocalStorage).
 /// Returns False on other JavaScript runtimes.

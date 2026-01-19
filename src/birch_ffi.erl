@@ -4,6 +4,7 @@
          start_async_writer/5, async_send/2, flush_async_writers/0, flush_async_writer/1,
          compress_file_gzip/2, safe_call/1,
          get_scope_context/0, set_scope_context/1, is_scope_context_available/0,
+         get_scope_depth/0, set_scope_depth/1,
          random_float/0, current_time_ms/0,
          get_actor_registry/0, set_actor_registry/1,
          get_caller_id/0]).
@@ -270,6 +271,8 @@ format_error(exit, Reason) ->
 
 %% Key for scope context in process dictionary
 -define(SCOPE_CONTEXT_KEY, birch_scope_context).
+%% Key for scope depth in process dictionary
+-define(SCOPE_DEPTH_KEY, birch_scope_depth).
 
 %% Get the current scope context from the process dictionary.
 %% Returns a list of {Key, Value} tuples (Gleam Metadata format).
@@ -282,6 +285,19 @@ get_scope_context() ->
 %% Set the scope context in the process dictionary.
 set_scope_context(Context) ->
     erlang:put(?SCOPE_CONTEXT_KEY, Context),
+    nil.
+
+%% Get the current scope depth (nesting level).
+%% Returns 0 if no scope is active.
+get_scope_depth() ->
+    case erlang:get(?SCOPE_DEPTH_KEY) of
+        undefined -> 0;
+        Depth -> Depth
+    end.
+
+%% Set the scope depth.
+set_scope_depth(Depth) ->
+    erlang:put(?SCOPE_DEPTH_KEY, Depth),
     nil.
 
 %% Scoped context is always available on Erlang (uses process dictionary).

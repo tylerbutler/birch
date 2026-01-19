@@ -55,20 +55,24 @@ import gleam/list
 @external(javascript, "../birch_ffi.mjs", "run_with_scope")
 pub fn with_scope(context: Metadata, work: fn() -> a) -> a {
   // Erlang implementation: use process dictionary
-  // Get current scope context (may be empty or from outer scope)
+  // Get current scope context and depth (may be empty or from outer scope)
   let current_context = platform.get_scope_context()
+  let current_depth = platform.get_scope_depth()
 
   // Merge new context with current (new values prepended for shadowing)
   let merged_context = list.append(context, current_context)
+  let new_depth = current_depth + 1
 
-  // Set the new scope context
+  // Set the new scope context and depth
   platform.set_scope_context(merged_context)
+  platform.set_scope_depth(new_depth)
 
   // Execute the work function
   let result = work()
 
-  // Restore the previous context
+  // Restore the previous context and depth
   platform.set_scope_context(current_context)
+  platform.set_scope_depth(current_depth)
 
   result
 }
@@ -81,6 +85,16 @@ pub fn with_scope(context: Metadata, work: fn() -> a) -> a {
 /// Returns an empty list if called outside of any scope.
 pub fn get_context() -> Metadata {
   platform.get_scope_context()
+}
+
+/// Get the current scope depth (nesting level).
+///
+/// Returns 0 if no scope is active, 1 for one level of nesting, etc.
+///
+/// This can be used to determine visual indentation level or to track
+/// how deeply nested the current execution context is.
+pub fn get_depth() -> Int {
+  platform.get_scope_depth()
 }
 
 /// Check if scoped context is available on the current platform.

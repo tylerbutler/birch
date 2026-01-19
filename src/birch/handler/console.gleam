@@ -32,6 +32,8 @@ pub type ConsoleConfig {
     level_formatter: LevelFormatter,
     /// Presentation style
     style: ConsoleStyle,
+    /// Whether to automatically indent based on scope depth
+    auto_indent_from_scopes: Bool,
   )
 }
 
@@ -63,6 +65,7 @@ pub fn default_config() -> ConsoleConfig {
     target: Stdout,
     level_formatter: level_formatter.simple_formatter(),
     style: Simple,
+    auto_indent_from_scopes: False,
   )
 }
 
@@ -74,6 +77,7 @@ pub fn default_fancy_config() -> ConsoleConfig {
     target: Stdout,
     level_formatter: level_formatter.label_formatter(),
     style: Fancy,
+    auto_indent_from_scopes: False,
   )
 }
 
@@ -134,6 +138,17 @@ pub fn without_color(config: ConsoleConfig) -> ConsoleConfig {
   ConsoleConfig(..config, color: False)
 }
 
+/// Enable automatic indentation based on scope depth.
+/// When enabled, logs will be automatically indented by 2 spaces per scope level.
+pub fn with_auto_indent_from_scopes(config: ConsoleConfig) -> ConsoleConfig {
+  ConsoleConfig(..config, auto_indent_from_scopes: True)
+}
+
+/// Disable automatic indentation from scopes.
+pub fn without_auto_indent_from_scopes(config: ConsoleConfig) -> ConsoleConfig {
+  ConsoleConfig(..config, auto_indent_from_scopes: False)
+}
+
 /// Set output target to stdout.
 pub fn with_stdout(config: ConsoleConfig) -> ConsoleConfig {
   ConsoleConfig(..config, target: Stdout)
@@ -182,8 +197,19 @@ pub fn handler_with_config(config: ConsoleConfig) -> Handler {
 
   let format_fn = case config.style {
     Simple ->
-      format_simple(use_color, config.timestamps, config.level_formatter)
-    Fancy -> format_fancy(use_color, config.timestamps, config.level_formatter)
+      format_simple(
+        use_color,
+        config.timestamps,
+        config.level_formatter,
+        config.auto_indent_from_scopes,
+      )
+    Fancy ->
+      format_fancy(
+        use_color,
+        config.timestamps,
+        config.level_formatter,
+        config.auto_indent_from_scopes,
+      )
   }
 
   handler.new(name: "console", write: write_fn, format: format_fn)
@@ -205,9 +231,17 @@ fn format_simple(
   use_color: Bool,
   show_timestamp: Bool,
   level_fmt: LevelFormatter,
+  auto_indent: Bool,
 ) -> formatter.Formatter {
   fn(record: LogRecord) -> String {
-    format_record_simple(record, use_color, show_timestamp, level_fmt)
+    let base = format_record_simple(record, use_color, show_timestamp, level_fmt)
+    case auto_indent {
+      False -> base
+      True -> {
+        let depth = platform.get_scope_depth()
+        string.repeat("  ", depth) <> base
+      }
+    }
   }
 }
 
@@ -268,9 +302,17 @@ fn format_fancy(
   use_color: Bool,
   show_timestamp: Bool,
   level_fmt: LevelFormatter,
+  auto_indent: Bool,
 ) -> formatter.Formatter {
   fn(record: LogRecord) -> String {
-    format_record_fancy(record, use_color, show_timestamp, level_fmt)
+    let base = format_record_fancy(record, use_color, show_timestamp, level_fmt)
+    case auto_indent {
+      False -> base
+      True -> {
+        let depth = platform.get_scope_depth()
+        string.repeat("  ", depth) <> base
+      }
+    }
   }
 }
 

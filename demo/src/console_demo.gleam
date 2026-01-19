@@ -124,8 +124,14 @@ pub fn main() {
   ])
 
   log.info_m("Request received", [#("method", "GET"), #("path", "/api/users")])
-  log.warn_m("Slow query detected", [#("duration_ms", "1523"), #("table", "users")])
-  log.error_m("Connection failed", [#("host", "db.example.com"), #("port", "5432")])
+  log.warn_m("Slow query detected", [
+    #("duration_ms", "1523"),
+    #("table", "users"),
+  ])
+  log.error_m("Connection failed", [
+    #("host", "db.example.com"),
+    #("port", "5432"),
+  ])
 
   // =========================================================================
   // Named Loggers
@@ -164,7 +170,10 @@ pub fn main() {
 
   console.write_box("Hello, World!")
 
-  console.write_box_with_title("This is a message\nwith multiple lines\nof content", "Notice")
+  console.write_box_with_title(
+    "This is a message\nwith multiple lines\nof content",
+    "Notice",
+  )
 
   // =========================================================================
   // Grouping
@@ -233,6 +242,44 @@ pub fn main() {
   log.info("This has no ANSI color codes")
   log.warn("Safe for piping to files")
   log.error("Or processing with other tools")
+
+  // =========================================================================
+  // Auto-Indent from Scopes
+  // =========================================================================
+  print_header("AUTO-INDENT FROM SCOPES")
+
+  let auto_indent_config =
+    console.default_fancy_config()
+    |> console.with_auto_indent_from_scopes()
+
+  log.configure([
+    log.config_handlers([console.handler_with_config(auto_indent_config)]),
+    log.config_level(level.Info),
+  ])
+
+  log.info("Outside any scope - no indentation")
+
+  log.with_scope([#("request_id", "req-123")], fn() {
+    log.info("Level 1 scope - indented once")
+
+    log.with_scope([#("step", "validation")], fn() {
+      log.info("Level 2 scope - indented twice")
+      log.warn("Warnings are also indented at level 2")
+
+      log.with_scope([#("substep", "schema_check")], fn() {
+        log.info("Level 3 scope - indented three times")
+        Nil
+      })
+
+      log.info("Back to level 2")
+      Nil
+    })
+
+    log.info("Back to level 1")
+    Nil
+  })
+
+  log.info("Back outside scope - no indentation")
 
   // Reset
   log.reset_config()
