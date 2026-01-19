@@ -2377,9 +2377,9 @@ pub fn consola_handler_with_config_test() {
   let config =
     consola.ConsolaConfig(
       color: False,
-      icons: True,
       timestamps: True,
       target: handler.Stdout,
+      level_formatter: consola.label_formatter(),
     )
   let h = consola.handler_with_config(config)
   handler.name(h)
@@ -2389,9 +2389,6 @@ pub fn consola_handler_with_config_test() {
 pub fn consola_default_config_test() {
   let config = consola.default_config()
   config.color
-  |> should.be_true
-
-  config.icons
   |> should.be_true
 
   config.timestamps
@@ -2405,9 +2402,9 @@ pub fn consola_handler_stderr_test() {
   let config =
     consola.ConsolaConfig(
       color: True,
-      icons: True,
       timestamps: False,
       target: handler.Stderr,
+      level_formatter: consola.label_formatter(),
     )
   let h = consola.handler_with_config(config)
   handler.name(h)
@@ -2546,9 +2543,9 @@ pub fn consola_indented_handler_with_config_test() {
   let config =
     consola.ConsolaConfig(
       color: False,
-      icons: True,
       timestamps: False,
       target: handler.Stdout,
+      level_formatter: consola.label_formatter(),
     )
   let h = consola.indented_handler_with_config(2, config)
   handler.name(h)
@@ -2639,4 +2636,173 @@ pub fn consola_fail_with_logger_test() {
 
   // Should not crash
   consola.fail(lgr, "Could not connect to cache", [#("host", "localhost")])
+}
+
+// ============================================================================
+// Consola Level Formatter Tests
+// ============================================================================
+
+pub fn consola_label_formatter_with_color_test() {
+  let formatter = consola.label_formatter()
+  let result = consola.format_level(formatter, level.Info, True)
+
+  // Should contain the icon
+  result
+  |> string.contains("ℹ")
+  |> should.be_true
+
+  // Should contain the label
+  result
+  |> string.contains("info")
+  |> should.be_true
+
+  // Should contain ANSI codes (color enabled)
+  result
+  |> string.contains("\u{001b}")
+  |> should.be_true
+}
+
+pub fn consola_label_formatter_without_color_test() {
+  let formatter = consola.label_formatter()
+  let result = consola.format_level(formatter, level.Warn, False)
+
+  // Should contain icon and label
+  result
+  |> string.contains("⚠")
+  |> should.be_true
+
+  result
+  |> string.contains("warn")
+  |> should.be_true
+
+  // Should NOT contain ANSI codes
+  result
+  |> string.contains("\u{001b}")
+  |> should.be_false
+}
+
+pub fn consola_label_formatter_no_icons_test() {
+  let formatter =
+    consola.label_formatter_with_config(consola.LabelConfig(icons: False))
+  let result = consola.format_level(formatter, level.Info, False)
+
+  // Should NOT contain icon
+  result
+  |> string.contains("ℹ")
+  |> should.be_false
+
+  // Should contain label
+  result
+  |> string.contains("info")
+  |> should.be_true
+}
+
+pub fn consola_badge_formatter_with_color_test() {
+  let formatter = consola.badge_formatter()
+  let result = consola.format_level(formatter, level.Err, True)
+
+  // Should contain uppercase label in brackets
+  result
+  |> string.contains("[ERROR]")
+  |> should.be_true
+
+  // Should contain ANSI codes (color enabled)
+  result
+  |> string.contains("\u{001b}")
+  |> should.be_true
+}
+
+pub fn consola_badge_formatter_without_color_test() {
+  let formatter = consola.badge_formatter()
+  let result = consola.format_level(formatter, level.Info, False)
+
+  // Should contain uppercase label in brackets
+  result
+  |> string.contains("[INFO]")
+  |> should.be_true
+
+  // Should NOT contain ANSI codes
+  result
+  |> string.contains("\u{001b}")
+  |> should.be_false
+}
+
+pub fn consola_badge_formatter_all_levels_test() {
+  let formatter = consola.badge_formatter()
+
+  consola.format_level(formatter, level.Trace, False)
+  |> should.equal("[TRACE]")
+
+  consola.format_level(formatter, level.Debug, False)
+  |> should.equal("[DEBUG]")
+
+  consola.format_level(formatter, level.Info, False)
+  |> should.equal("[INFO]")
+
+  consola.format_level(formatter, level.Warn, False)
+  |> should.equal("[WARN]")
+
+  consola.format_level(formatter, level.Err, False)
+  |> should.equal("[ERROR]")
+
+  consola.format_level(formatter, level.Fatal, False)
+  |> should.equal("[FATAL]")
+}
+
+pub fn consola_with_badge_style_test() {
+  let config = consola.default_config() |> consola.with_badge_style
+  let h = consola.handler_with_config(config)
+  handler.name(h)
+  |> should.equal("consola")
+}
+
+pub fn consola_with_label_style_test() {
+  let config = consola.default_config() |> consola.with_label_style
+  let h = consola.handler_with_config(config)
+  handler.name(h)
+  |> should.equal("consola")
+}
+
+pub fn consola_with_label_style_no_icons_test() {
+  let config = consola.default_config() |> consola.with_label_style_no_icons
+  let h = consola.handler_with_config(config)
+  handler.name(h)
+  |> should.equal("consola")
+}
+
+pub fn consola_custom_level_formatter_test() {
+  let custom_formatter =
+    consola.custom_level_formatter(fn(lvl, _use_color) {
+      case lvl {
+        level.Info -> "INFO:"
+        level.Warn -> "WARNING:"
+        level.Err -> "ERROR:"
+        _ -> "LOG:"
+      }
+    })
+
+  consola.format_level(custom_formatter, level.Info, False)
+  |> should.equal("INFO:")
+
+  consola.format_level(custom_formatter, level.Warn, False)
+  |> should.equal("WARNING:")
+
+  consola.format_level(custom_formatter, level.Err, False)
+  |> should.equal("ERROR:")
+
+  consola.format_level(custom_formatter, level.Debug, False)
+  |> should.equal("LOG:")
+}
+
+pub fn consola_with_level_formatter_test() {
+  let custom_formatter =
+    consola.custom_level_formatter(fn(_lvl, _use_color) { "CUSTOM" })
+
+  let config =
+    consola.default_config()
+    |> consola.with_level_formatter(custom_formatter)
+
+  let h = consola.handler_with_config(config)
+  handler.name(h)
+  |> should.equal("consola")
 }

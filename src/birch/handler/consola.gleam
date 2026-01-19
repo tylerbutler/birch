@@ -14,17 +14,174 @@ import gleam/int
 import gleam/list
 import gleam/string
 
+// ============================================================================
+// Level Formatter
+// ============================================================================
+
+/// An opaque level formatter that encapsulates formatting logic and configuration.
+/// Use the provided constructor functions to create formatters.
+pub opaque type LevelFormatter {
+  LevelFormatter(format: fn(level.Level, Bool) -> String)
+}
+
+/// Configuration for label-style level formatting.
+pub type LabelConfig {
+  LabelConfig(
+    /// Whether to show icons (e.g., ℹ, ⚠, ✖)
+    icons: Bool,
+  )
+}
+
+/// Default label configuration with icons enabled.
+pub fn default_label_config() -> LabelConfig {
+  LabelConfig(icons: True)
+}
+
+/// Create a label-style formatter with default settings.
+/// Output: "ℹ info", "⚠ warn", "✖ error", etc.
+///
+/// With colors enabled, the icon and label are colored based on severity.
+pub fn label_formatter() -> LevelFormatter {
+  label_formatter_with_config(default_label_config())
+}
+
+/// Create a label-style formatter with custom configuration.
+pub fn label_formatter_with_config(config: LabelConfig) -> LevelFormatter {
+  LevelFormatter(format: fn(lvl, use_color) {
+    format_label(lvl, config, use_color)
+  })
+}
+
+/// Configuration for badge-style level formatting.
+pub type BadgeConfig {
+  BadgeConfig
+}
+
+/// Default badge configuration.
+pub fn default_badge_config() -> BadgeConfig {
+  BadgeConfig
+}
+
+/// Create a badge-style formatter with default settings.
+/// Output: " INFO ", " WARN ", " ERROR ", etc.
+///
+/// With colors enabled, displays as colored background with contrasting text.
+/// This style provides high visual prominence, especially for errors.
+pub fn badge_formatter() -> LevelFormatter {
+  badge_formatter_with_config(default_badge_config())
+}
+
+/// Create a badge-style formatter with custom configuration.
+pub fn badge_formatter_with_config(_config: BadgeConfig) -> LevelFormatter {
+  LevelFormatter(format: fn(lvl, use_color) { format_badge(lvl, use_color) })
+}
+
+/// Create a custom level formatter from a formatting function.
+/// The function receives the log level and whether colors are enabled.
+pub fn custom_level_formatter(
+  format: fn(level.Level, Bool) -> String,
+) -> LevelFormatter {
+  LevelFormatter(format: format)
+}
+
+/// Apply a level formatter to format a log level.
+pub fn format_level(
+  formatter: LevelFormatter,
+  lvl: level.Level,
+  use_color: Bool,
+) -> String {
+  formatter.format(lvl, use_color)
+}
+
+fn format_label(
+  lvl: level.Level,
+  config: LabelConfig,
+  use_color: Bool,
+) -> String {
+  let label = level_label(lvl)
+
+  case use_color, config.icons {
+    True, True -> {
+      let color = level_color(lvl)
+      let icon = level_icon(lvl)
+      color <> icon <> " " <> bold <> label <> reset
+    }
+    True, False -> {
+      let color = level_color(lvl)
+      color <> bold <> label <> reset
+    }
+    False, True -> {
+      let icon = level_icon(lvl)
+      icon <> " " <> label
+    }
+    False, False -> label
+  }
+}
+
+fn format_badge(lvl: level.Level, use_color: Bool) -> String {
+  let label = level_label_upper(lvl)
+
+  case use_color {
+    True -> {
+      let bg_color = level_bg_color(lvl)
+      let text_color = level_badge_text_color(lvl)
+      bg_color <> text_color <> "[" <> label <> "]" <> reset
+    }
+    False -> "[" <> label <> "]"
+  }
+}
+
+/// Get the uppercase label for a log level (for badge style).
+fn level_label_upper(lvl: level.Level) -> String {
+  case lvl {
+    level.Trace -> "TRACE"
+    level.Debug -> "DEBUG"
+    level.Info -> "INFO"
+    level.Warn -> "WARN"
+    level.Err -> "ERROR"
+    level.Fatal -> "FATAL"
+  }
+}
+
+/// Get the background color for a log level (for badge style).
+fn level_bg_color(lvl: level.Level) -> String {
+  case lvl {
+    level.Trace -> bg_gray
+    level.Debug -> bg_gray
+    level.Info -> bg_cyan
+    level.Warn -> bg_yellow
+    level.Err -> bg_red
+    level.Fatal -> bg_red
+  }
+}
+
+/// Get the text color for badge style (for contrast against background).
+fn level_badge_text_color(lvl: level.Level) -> String {
+  case lvl {
+    level.Trace -> white
+    level.Debug -> white
+    level.Info -> black
+    level.Warn -> black
+    level.Err -> white
+    level.Fatal -> white
+  }
+}
+
+// ============================================================================
+// Configuration
+// ============================================================================
+
 /// Configuration for the consola handler.
 pub type ConsolaConfig {
   ConsolaConfig(
     /// Whether to use colors (if terminal supports it)
     color: Bool,
-    /// Whether to show icons
-    icons: Bool,
     /// Whether to show timestamps
     timestamps: Bool,
     /// Output target (stdout or stderr)
     target: handler.OutputTarget,
+    /// How to format log levels
+    level_formatter: LevelFormatter,
   )
 }
 
@@ -40,9 +197,40 @@ pub type LogStyle {
   Fail
 }
 
-/// Default consola configuration.
+/// Default consola configuration with label-style formatting.
 pub fn default_config() -> ConsolaConfig {
-  ConsolaConfig(color: True, icons: True, timestamps: False, target: Stdout)
+  ConsolaConfig(
+    color: True,
+    timestamps: False,
+    target: Stdout,
+    level_formatter: label_formatter(),
+  )
+}
+
+/// Set the level formatter for a configuration.
+pub fn with_level_formatter(
+  config: ConsolaConfig,
+  formatter: LevelFormatter,
+) -> ConsolaConfig {
+  ConsolaConfig(..config, level_formatter: formatter)
+}
+
+/// Use badge-style level formatting.
+pub fn with_badge_style(config: ConsolaConfig) -> ConsolaConfig {
+  ConsolaConfig(..config, level_formatter: badge_formatter())
+}
+
+/// Use label-style level formatting (default).
+pub fn with_label_style(config: ConsolaConfig) -> ConsolaConfig {
+  ConsolaConfig(..config, level_formatter: label_formatter())
+}
+
+/// Use label-style formatting without icons.
+pub fn with_label_style_no_icons(config: ConsolaConfig) -> ConsolaConfig {
+  ConsolaConfig(
+    ..config,
+    level_formatter: label_formatter_with_config(LabelConfig(icons: False)),
+  )
 }
 
 /// Create a consola handler with default settings.
@@ -53,7 +241,6 @@ pub fn handler() -> Handler {
 /// Create a consola handler with custom configuration.
 pub fn handler_with_config(config: ConsolaConfig) -> Handler {
   let use_color = config.color && platform.is_stdout_tty()
-  let use_icons = config.icons
 
   let write_fn = case config.target {
     Stdout -> platform.write_stdout
@@ -61,7 +248,8 @@ pub fn handler_with_config(config: ConsolaConfig) -> Handler {
     handler.StdoutWithStderr -> platform.write_stdout
   }
 
-  let format_fn = format_consola(use_color, use_icons, config.timestamps)
+  let format_fn =
+    format_consola(use_color, config.timestamps, config.level_formatter)
 
   handler.new(name: "consola", write: write_fn, format: format_fn)
 }
@@ -89,9 +277,18 @@ const red = "\u{001b}[31m"
 
 const magenta = "\u{001b}[35m"
 
-const bg_red = "\u{001b}[41m"
+const black = "\u{001b}[30m"
 
 const white = "\u{001b}[97m"
+
+// Background colors
+const bg_gray = "\u{001b}[100m"
+
+const bg_cyan = "\u{001b}[46m"
+
+const bg_yellow = "\u{001b}[43m"
+
+const bg_red = "\u{001b}[41m"
 
 // ============================================================================
 // Box Output
@@ -276,7 +473,6 @@ pub fn indented_handler_with_config(
   config: ConsolaConfig,
 ) -> Handler {
   let use_color = config.color && platform.is_stdout_tty()
-  let use_icons = config.icons
 
   let write_fn = case config.target {
     Stdout -> platform.write_stdout
@@ -286,22 +482,24 @@ pub fn indented_handler_with_config(
 
   let indent = string.repeat("  ", indent_level)
   let format_fn =
-    format_consola_indented(use_color, use_icons, config.timestamps, indent)
+    format_consola_indented(
+      use_color,
+      config.timestamps,
+      config.level_formatter,
+      indent,
+    )
 
   handler.new(name: "consola", write: write_fn, format: format_fn)
 }
 
 fn format_consola_indented(
   use_color: Bool,
-  use_icons: Bool,
   show_timestamp: Bool,
+  level_fmt: LevelFormatter,
   indent: String,
 ) -> formatter.Formatter {
   fn(record: LogRecord) -> String {
-    let base = case use_color {
-      True -> format_colored(record, use_icons, show_timestamp)
-      False -> format_plain(record, use_icons, show_timestamp)
-    }
+    let base = format_record(record, use_color, show_timestamp, level_fmt)
     indent <> base
   }
 }
@@ -484,91 +682,44 @@ fn level_label(lvl: level.Level) -> String {
 /// Create a formatter with the given options.
 fn format_consola(
   use_color: Bool,
-  use_icons: Bool,
   show_timestamp: Bool,
+  level_fmt: LevelFormatter,
 ) -> formatter.Formatter {
   fn(record: LogRecord) -> String {
-    case use_color {
-      True -> format_colored(record, use_icons, show_timestamp)
-      False -> format_plain(record, use_icons, show_timestamp)
-    }
+    format_record(record, use_color, show_timestamp, level_fmt)
   }
 }
 
-/// Format with ANSI colors.
-fn format_colored(
+/// Format a log record with the given settings.
+fn format_record(
   record: LogRecord,
-  use_icons: Bool,
+  use_color: Bool,
   show_timestamp: Bool,
+  level_fmt: LevelFormatter,
 ) -> String {
-  let color = level_color(record.level)
-  let label = level_label(record.level)
+  let level_part = format_level(level_fmt, record.level, use_color)
 
-  let icon_part = case use_icons {
-    True -> level_icon(record.level) <> " "
-    False -> ""
+  let timestamp_part = case show_timestamp, use_color {
+    True, True -> dim <> record.timestamp <> reset <> " "
+    True, False -> record.timestamp <> " "
+    False, _ -> ""
   }
 
-  let timestamp_part = case show_timestamp {
-    True -> dim <> record.timestamp <> reset <> " "
-    False -> ""
-  }
-
-  let scope_part = case record.logger_name {
-    "" -> ""
-    name -> dim <> "[" <> name <> "]" <> reset <> " "
+  let scope_part = case record.logger_name, use_color {
+    "", _ -> ""
+    name, True -> dim <> "[" <> name <> "]" <> reset <> " "
+    name, False -> "[" <> name <> "] "
   }
 
   let metadata_str = formatter.format_metadata(record.metadata)
-  let metadata_part = case metadata_str {
-    "" -> ""
-    m -> " " <> dim <> m <> reset
+  let metadata_part = case metadata_str, use_color {
+    "", _ -> ""
+    m, True -> " " <> dim <> m <> reset
+    m, False -> " " <> m
   }
 
   timestamp_part
-  <> color
-  <> icon_part
-  <> bold
-  <> label
-  <> reset
-  <> " "
-  <> scope_part
-  <> record.message
-  <> metadata_part
-}
-
-/// Format without colors (for non-TTY output).
-fn format_plain(
-  record: LogRecord,
-  use_icons: Bool,
-  show_timestamp: Bool,
-) -> String {
-  let label = level_label(record.level)
-
-  let icon_part = case use_icons {
-    True -> level_icon(record.level) <> " "
-    False -> ""
-  }
-
-  let timestamp_part = case show_timestamp {
-    True -> record.timestamp <> " "
-    False -> ""
-  }
-
-  let scope_part = case record.logger_name {
-    "" -> ""
-    name -> "[" <> name <> "] "
-  }
-
-  let metadata_str = formatter.format_metadata(record.metadata)
-  let metadata_part = case metadata_str {
-    "" -> ""
-    m -> " " <> m
-  }
-
-  timestamp_part
-  <> icon_part
-  <> label
+  <> level_part
   <> " "
   <> scope_part
   <> record.message
