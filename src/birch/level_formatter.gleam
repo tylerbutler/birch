@@ -160,14 +160,26 @@ pub fn simple_formatter() -> LevelFormatter {
 }
 
 fn format_simple(lvl: level.Level, use_color: Bool) -> String {
-  let label = level_label_upper(lvl) |> pad_level
+  let label = level_label_upper(lvl)
 
   case use_color {
     True -> {
       let color = simple_level_color(lvl)
-      color <> label <> reset
+      let formatted = color <> label <> reset
+      pad_formatted(formatted, label)
     }
-    False -> label
+    False -> pad_level(label)
+  }
+}
+
+/// Pad a formatted level string (with ANSI codes) to account for 5-character alignment.
+/// This adds padding AFTER the reset code to avoid padding inside the colored region.
+fn pad_formatted(formatted: String, original_label: String) -> String {
+  case string.length(original_label) {
+    5 -> formatted
+    4 -> formatted <> " "
+    3 -> formatted <> "  "
+    _ -> formatted
   }
 }
 
