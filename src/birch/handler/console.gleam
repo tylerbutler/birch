@@ -253,7 +253,7 @@ fn format_record_simple(
   level_fmt: LevelFormatter,
 ) -> String {
   let level_part =
-    level_formatter.format_level(level_fmt, record.level, use_color)
+    level_formatter.format_level_padded(level_fmt, record.level, use_color)
 
   let timestamp_part = case show_timestamp, use_color {
     True, True ->
@@ -327,7 +327,7 @@ fn format_record_fancy(
   let reset = level_formatter.ansi_reset()
 
   let level_part =
-    level_formatter.format_level(level_fmt, record.level, use_color)
+    level_formatter.format_level_padded(level_fmt, record.level, use_color)
 
   let timestamp_part = case show_timestamp, use_color {
     True, True -> dim <> record.timestamp <> reset <> " "

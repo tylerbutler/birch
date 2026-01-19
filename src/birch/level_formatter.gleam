@@ -46,7 +46,11 @@ const bright_red = "\u{001b}[91m"
 /// An opaque level formatter that encapsulates formatting logic and configuration.
 /// Use the provided constructor functions to create formatters.
 pub opaque type LevelFormatter {
-  LevelFormatter(format: fn(level.Level, Bool) -> String)
+  LevelFormatter(
+    format: fn(level.Level, Bool) -> String,
+    /// The target width for padding this formatter's output
+    target_width: Int,
+  )
 }
 
 // ============================================================================
@@ -76,9 +80,14 @@ pub fn label_formatter() -> LevelFormatter {
 
 /// Create a label-style formatter with custom configuration.
 pub fn label_formatter_with_config(config: LabelConfig) -> LevelFormatter {
-  LevelFormatter(format: fn(lvl, use_color) {
-    format_label(lvl, config, use_color)
-  })
+  LevelFormatter(
+    format: fn(lvl, use_color) { format_label(lvl, config, use_color) },
+    // Label width: "trace" = 5, "error" = 5 (but icons add 2 chars: "ℹ info" = 6)
+    target_width: case config.icons {
+      True -> 6
+      False -> 5
+    },
+  )
 }
 
 fn format_label(
@@ -96,14 +105,13 @@ fn format_label(
     }
     True, False -> {
       let color = level_color(lvl)
-      let formatted = color <> bold <> label <> reset
-      pad_formatted(formatted, label)
+      color <> bold <> label <> reset
     }
     False, True -> {
       let icon = level_icon(lvl)
       icon <> " " <> label
     }
-    False, False -> pad_level(label)
+    False, False -> label
   }
 }
 
@@ -132,7 +140,11 @@ pub fn badge_formatter() -> LevelFormatter {
 
 /// Create a badge-style formatter with custom configuration.
 pub fn badge_formatter_with_config(_config: BadgeConfig) -> LevelFormatter {
-  LevelFormatter(format: fn(lvl, use_color) { format_badge(lvl, use_color) })
+  LevelFormatter(
+    format: fn(lvl, use_color) { format_badge(lvl, use_color) },
+    // Badge width: "[TRACE]" = 7, "[ERROR]" = 7
+    target_width: 7,
+  )
 }
 
 fn format_badge(lvl: level.Level, use_color: Bool) -> String {
@@ -141,23 +153,9 @@ fn format_badge(lvl: level.Level, use_color: Bool) -> String {
   case use_color {
     True -> {
       let color = level_color(lvl)
-      let formatted = color <> bold <> "[" <> label <> "]" <> reset
-      pad_formatted(formatted, label)
+      color <> bold <> "[" <> label <> "]" <> reset
     }
-    False -> {
-      let badge = "[" <> label <> "]"
-      pad_badge(badge, label)
-    }
-  }
-}
-
-/// Pad a badge string to account for 7-character alignment ([ERROR] is longest).
-fn pad_badge(badge: String, original_label: String) -> String {
-  case string.length(original_label) {
-    5 -> badge
-    4 -> badge <> " "
-    3 -> badge <> "  "
-    _ -> badge
+    False -> "[" <> label <> "]"
   }
 }
 
@@ -171,7 +169,11 @@ fn pad_badge(badge: String, original_label: String) -> String {
 /// With colors enabled, the level is colored based on severity.
 /// This matches the style used by the original console handler.
 pub fn simple_formatter() -> LevelFormatter {
-  LevelFormatter(format: fn(lvl, use_color) { format_simple(lvl, use_color) })
+  LevelFormatter(
+    format: fn(lvl, use_color) { format_simple(lvl, use_color) },
+    // Simple width: "TRACE" = 5, "ERROR" = 5
+    target_width: 5,
+  )
 }
 
 fn format_simple(lvl: level.Level, use_color: Bool) -> String {
@@ -180,31 +182,9 @@ fn format_simple(lvl: level.Level, use_color: Bool) -> String {
   case use_color {
     True -> {
       let color = simple_level_color(lvl)
-      let formatted = color <> label <> reset
-      pad_formatted(formatted, label)
+      color <> label <> reset
     }
-    False -> pad_level(label)
-  }
-}
-
-/// Pad a formatted level string (with ANSI codes) to account for 5-character alignment.
-/// This adds padding AFTER the reset code to avoid padding inside the colored region.
-fn pad_formatted(formatted: String, original_label: String) -> String {
-  case string.length(original_label) {
-    5 -> formatted
-    4 -> formatted <> " "
-    3 -> formatted <> "  "
-    _ -> formatted
-  }
-}
-
-/// Pad a level string to 5 characters for alignment.
-fn pad_level(level_str: String) -> String {
-  case string.length(level_str) {
-    5 -> level_str
-    4 -> level_str <> " "
-    3 -> level_str <> "  "
-    _ -> level_str
+    False -> label
   }
 }
 
@@ -215,6 +195,8 @@ fn pad_level(level_str: String) -> String {
 /// Create a custom level formatter from a formatting function.
 /// The function receives the log level and whether colors are enabled.
 ///
+/// You should also specify the target width for padding.
+///
 /// ## Example
 ///
 /// ```gleam
@@ -224,12 +206,13 @@ fn pad_level(level_str: String) -> String {
 ///     level.Warn -> "WARNING:"
 ///     _ -> "LOG:"
 ///   }
-/// })
+/// }, 8)  // "WARNING:" is 8 characters
 /// ```
 pub fn custom_level_formatter(
   format: fn(level.Level, Bool) -> String,
+  target_width: Int,
 ) -> LevelFormatter {
-  LevelFormatter(format: format)
+  LevelFormatter(format: format, target_width: target_width)
 }
 
 // ============================================================================
@@ -243,6 +226,23 @@ pub fn format_level(
   use_color: Bool,
 ) -> String {
   formatter.format(lvl, use_color)
+}
+
+/// Apply a level formatter and pad the result to the formatter's target width.
+/// This is a convenience function for layout formatters.
+pub fn format_level_padded(
+  formatter: LevelFormatter,
+  lvl: level.Level,
+  use_color: Bool,
+) -> String {
+  formatter.format(lvl, use_color)
+  |> pad_to_width(formatter.target_width)
+}
+
+/// Get the target width for a level formatter.
+/// This is useful if you need to apply custom padding logic.
+pub fn get_target_width(formatter: LevelFormatter) -> Int {
+  formatter.target_width
 }
 
 // ============================================================================
@@ -306,6 +306,75 @@ pub fn level_label_upper(lvl: level.Level) -> String {
     level.Warn -> "WARN"
     level.Err -> "ERROR"
     level.Fatal -> "FATAL"
+  }
+}
+
+// ============================================================================
+// Padding Helpers (for use by layout formatters)
+// ============================================================================
+
+/// Pad a formatted level string to a fixed width.
+/// Use this in layout formatters to ensure consistent alignment.
+///
+/// The width should be chosen based on the longest possible level output
+/// for the given formatter style:
+/// - Simple style (uppercase): 5 characters ("TRACE", "DEBUG", "ERROR", "FATAL")
+/// - Badge style: 7 characters ("[TRACE]", "[DEBUG]", "[ERROR]", "[FATAL]")
+/// - Label style (lowercase): 5 characters ("trace", "debug", "error", "fatal")
+///
+/// This function intelligently handles both plain text and ANSI-formatted strings
+/// by padding AFTER any ANSI reset codes to keep coloring clean.
+pub fn pad_to_width(formatted: String, target_width: Int) -> String {
+  // Check if the string contains ANSI codes by looking for reset code
+  case string.contains(formatted, reset) {
+    True -> {
+      // Find the visual length by removing ANSI codes
+      let visual_length = calculate_visual_length(formatted)
+      let padding_needed = target_width - visual_length
+      case padding_needed > 0 {
+        True -> formatted <> string.repeat(" ", padding_needed)
+        False -> formatted
+      }
+    }
+    False -> {
+      // Plain text - simple padding
+      let padding_needed = target_width - string.length(formatted)
+      case padding_needed > 0 {
+        True -> formatted <> string.repeat(" ", padding_needed)
+        False -> formatted
+      }
+    }
+  }
+}
+
+/// Calculate the visual length of a string, excluding ANSI escape codes.
+/// This is a simplified calculation that counts visible characters.
+fn calculate_visual_length(s: String) -> Int {
+  // For our formatters, we know the structure:
+  // - Simple: "\u{001b}[XXm" + label + "\u{001b}[0m"
+  // - Badge: "\u{001b}[XXm\u{001b}[1m[" + label + "]\u{001b}[0m"
+  // - Label: "\u{001b}[XXm\u{001b}[1m" + label + "\u{001b}[0m"
+  //
+  // We can estimate by: total length - (ANSI overhead)
+  // Each color code is typically 5-6 chars, reset is 4 chars, bold is 4 chars
+  //
+  // For now, use a simple heuristic: count characters that aren't part of escape sequences
+  let without_reset = string.replace(s, reset, "")
+  let without_bold = string.replace(without_reset, bold, "")
+
+  // Remove color codes (they all start with \u{001b}[ and end with m)
+  // This is approximate but works for our use case
+  let chars = string.to_graphemes(without_bold)
+  count_visible_chars(chars, False, 0)
+}
+
+fn count_visible_chars(chars: List(String), in_escape: Bool, count: Int) -> Int {
+  case chars {
+    [] -> count
+    ["\u{001b}", ..rest] -> count_visible_chars(rest, True, count)
+    ["m", ..rest] if in_escape -> count_visible_chars(rest, False, count)
+    [_, ..rest] if in_escape -> count_visible_chars(rest, True, count)
+    [_, ..rest] -> count_visible_chars(rest, False, count + 1)
   }
 }
 

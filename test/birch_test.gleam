@@ -2814,10 +2814,10 @@ pub fn level_formatter_badge_all_levels_test() {
   |> should.equal("[DEBUG]")
 
   level_formatter.format_level(formatter, level.Info, False)
-  |> should.equal("[INFO] ")
+  |> should.equal("[INFO]")
 
   level_formatter.format_level(formatter, level.Warn, False)
-  |> should.equal("[WARN] ")
+  |> should.equal("[WARN]")
 
   level_formatter.format_level(formatter, level.Err, False)
   |> should.equal("[ERROR]")
@@ -2829,12 +2829,12 @@ pub fn level_formatter_badge_all_levels_test() {
 pub fn level_formatter_simple_test() {
   let formatter = level_formatter.simple_formatter()
 
-  // Simple formatter produces padded uppercase labels
+  // Simple formatter produces uppercase labels (no padding - that's done by layout)
   level_formatter.format_level(formatter, level.Info, False)
-  |> should.equal("INFO ")
+  |> should.equal("INFO")
 
   level_formatter.format_level(formatter, level.Warn, False)
-  |> should.equal("WARN ")
+  |> should.equal("WARN")
 
   level_formatter.format_level(formatter, level.Err, False)
   |> should.equal("ERROR")
@@ -2863,14 +2863,17 @@ pub fn console_with_label_style_no_icons_test() {
 
 pub fn level_formatter_custom_test() {
   let custom_formatter =
-    level_formatter.custom_level_formatter(fn(lvl, _use_color) {
-      case lvl {
-        level.Info -> "INFO:"
-        level.Warn -> "WARNING:"
-        level.Err -> "ERROR:"
-        _ -> "LOG:"
-      }
-    })
+    level_formatter.custom_level_formatter(
+      fn(lvl, _use_color) {
+        case lvl {
+          level.Info -> "INFO:"
+          level.Warn -> "WARNING:"
+          level.Err -> "ERROR:"
+          _ -> "LOG:"
+        }
+      },
+      8,
+    )
 
   level_formatter.format_level(custom_formatter, level.Info, False)
   |> should.equal("INFO:")
@@ -2887,7 +2890,10 @@ pub fn level_formatter_custom_test() {
 
 pub fn console_with_level_formatter_test() {
   let custom_formatter =
-    level_formatter.custom_level_formatter(fn(_lvl, _use_color) { "CUSTOM" })
+    level_formatter.custom_level_formatter(
+      fn(_lvl, _use_color) { "CUSTOM" },
+      6,
+    )
 
   let config =
     console.default_config()

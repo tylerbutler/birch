@@ -198,16 +198,20 @@ pub fn main() {
   print_header("CUSTOM LEVEL FORMATTER")
 
   let emoji_formatter =
-    level_formatter.custom_level_formatter(fn(lvl, _use_color) {
-      case lvl {
-        level.Trace -> "🔍"
-        level.Debug -> "🐛"
-        level.Info -> "💡"
-        level.Warn -> "⚠️ "
-        level.Err -> "🔥"
-        level.Fatal -> "💀"
-      }
-    })
+    level_formatter.custom_level_formatter(
+      fn(lvl, _use_color) {
+        case lvl {
+          level.Trace -> "🔍"
+          level.Debug -> "🐛"
+          level.Info -> "💡"
+          level.Warn -> "⚠️ "
+          level.Err -> "🔥"
+          level.Fatal -> "💀"
+        }
+      },
+      3,
+    )
+    // Width 3: "⚠️ " is 3 chars (emoji + space + space)
 
   let custom_config =
     console.default_fancy_config()
