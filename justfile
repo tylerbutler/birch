@@ -108,6 +108,18 @@ test-integration: test-integration-node
 test-integration-all: test-integration-node test-integration-deno test-integration-bun
 
 # ============================================================================
+# Demo
+# ============================================================================
+
+# Run the console handler demo showcasing all presentation options
+demo:
+    cd demo && gleam run
+
+# Run the console handler demo on JavaScript target
+demo-js:
+    cd demo && gleam run --target javascript
+
+# ============================================================================
 # Examples
 # ============================================================================
 
