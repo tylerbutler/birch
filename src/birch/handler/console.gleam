@@ -234,7 +234,8 @@ fn format_simple(
   auto_indent: Bool,
 ) -> formatter.Formatter {
   fn(record: LogRecord) -> String {
-    let base = format_record_simple(record, use_color, show_timestamp, level_fmt)
+    let base =
+      format_record_simple(record, use_color, show_timestamp, level_fmt)
     case auto_indent {
       False -> base
       True -> {
@@ -370,12 +371,15 @@ fn format_metadata_visible(metadata: record.Metadata, use_color: Bool) -> String
   }
 
   // Filter out internal keys
-  let visible_metadata = list.filter(metadata, fn(pair) {
-    !string.starts_with(pair.0, "_")
-  })
+  let visible_metadata =
+    list.filter(metadata, fn(pair) { !string.starts_with(pair.0, "_") })
 
   // Format with bold highlighting for scope keys
-  formatter.format_metadata_with_bold(visible_metadata, highlight_keys, use_color)
+  formatter.format_metadata_with_bold(
+    visible_metadata,
+    highlight_keys,
+    use_color,
+  )
 }
 
 // ============================================================================

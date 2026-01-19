@@ -65,7 +65,8 @@ pub fn with_scope(context: Metadata, work: fn() -> a) -> a {
   let highlight_keys_value = string.join(new_keys, ",")
 
   // Add _scope_highlight_keys to mark which keys to highlight from this scope level
-  let context_with_highlight = list.append(context, [#("_scope_highlight_keys", highlight_keys_value)])
+  let context_with_highlight =
+    list.append(context, [#("_scope_highlight_keys", highlight_keys_value)])
 
   // Merge new context with current (new values prepended for shadowing)
   let merged_context = list.append(context_with_highlight, current_context)

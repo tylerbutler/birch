@@ -2890,10 +2890,7 @@ pub fn level_formatter_custom_test() {
 
 pub fn console_with_level_formatter_test() {
   let custom_formatter =
-    level_formatter.custom_level_formatter(
-      fn(_lvl, _use_color) { "CUSTOM" },
-      6,
-    )
+    level_formatter.custom_level_formatter(fn(_lvl, _use_color) { "CUSTOM" }, 6)
 
   let config =
     console.default_config()
