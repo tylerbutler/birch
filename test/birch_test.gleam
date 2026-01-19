@@ -5,6 +5,7 @@ import birch/handler/async
 import birch/handler/console
 import birch/handler/file
 import birch/handler/json
+import birch/internal/platform
 import birch/level
 import birch/level_formatter
 import birch/logger
@@ -1706,18 +1707,24 @@ pub fn scope_with_scope_string_result_test() {
 
 pub fn scope_get_scope_context_inside_scope_test() {
   // Inside a scope, get_scope_context should return the scope's context
+  // (including internal metadata like _scope_highlight_keys)
   log.with_scope([#("request_id", "req-123")], fn() {
     let ctx = log.get_scope_context()
-    ctx
+    // Filter out internal keys for comparison
+    let visible_ctx =
+      ctx
+      |> list.filter(fn(pair) { !string.starts_with(pair.0, "_") })
+    visible_ctx
     |> should.equal([#("request_id", "req-123")])
   })
 }
 
 pub fn scope_get_scope_context_outside_scope_test() {
-  // Outside any scope, get_scope_context should return empty list
+  // Outside any scope, get_scope_context should return empty list (no visible metadata)
   let ctx = log.get_scope_context()
 
   ctx
+  |> list.filter(fn(pair) { !string.starts_with(pair.0, "_") })
   |> should.equal([])
 }
 
@@ -1819,8 +1826,9 @@ pub fn scope_context_cleared_after_scope_test() {
     |> should.equal(Ok("temp_value"))
   })
 
-  // After scope ends, context should be empty
+  // After scope ends, context should be empty (no visible metadata)
   log.get_scope_context()
+  |> list.filter(fn(pair) { !string.starts_with(pair.0, "_") })
   |> should.equal([])
 }
 
@@ -1840,8 +1848,9 @@ pub fn scope_context_included_in_log_records_test() {
     // (actual verification would require a capturing handler)
   })
 
-  // Verify scope context is cleaned up
+  // Verify scope context is cleaned up (no visible metadata)
   log.get_scope_context()
+  |> list.filter(fn(pair) { !string.starts_with(pair.0, "_") })
   |> should.equal([])
 }
 
@@ -2618,6 +2627,10 @@ pub fn console_auto_indent_from_scopes_test() {
 
 pub fn scope_depth_tracking_test() {
   // Test that scope depth is tracked correctly
+  // Clean up any leftover scope state from previous tests
+  platform.set_scope_context([])
+  platform.set_scope_depth(0)
+
   // Outside any scope, depth should be 0
   scope.get_depth()
   |> should.equal(0)

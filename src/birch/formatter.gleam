@@ -82,6 +82,25 @@ pub fn format_metadata(metadata: record.Metadata) -> String {
   |> string.join(" ")
 }
 
+/// Format metadata with specific keys bolded.
+/// Keys in the bold_keys list will be wrapped in ANSI bold codes.
+pub fn format_metadata_with_bold(
+  metadata: record.Metadata,
+  bold_keys: List(String),
+  use_color: Bool,
+) -> String {
+  metadata
+  |> list.map(fn(pair) {
+    let #(key, value) = pair
+    let formatted_kv = key <> "=" <> escape_value(value)
+    case use_color && list.contains(bold_keys, key) {
+      True -> "\u{001b}[1m" <> formatted_kv <> "\u{001b}[22m"
+      False -> formatted_kv
+    }
+  })
+  |> string.join(" ")
+}
+
 /// Escape a value if it contains spaces or special characters.
 fn escape_value(value: String) -> String {
   case string.contains(value, " ") || string.contains(value, "=") {

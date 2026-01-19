@@ -589,14 +589,33 @@ function mergeGleamLists(newContext, currentContext) {
 export function run_with_scope(context, callback) {
   initScopeContext();
 
+  // Extract keys from the new context being added
+  const newKeys = gleamListToArray(context).map(pair => {
+    // Each pair is a tuple with [0] = key, [1] = value
+    return pair[0];
+  });
+
+  // Create _scope_highlight_keys metadata entry
+  const highlightKeysValue = newKeys.join(",");
+  const highlightKeysPair = ["_scope_highlight_keys", highlightKeysValue];
+
+  // Add _scope_highlight_keys to the context
+  const contextWithHighlight = toList([...gleamListToArray(context), highlightKeysPair]);
+
   if (
     scopeContextState.asyncLocalStorageAvailable &&
     scopeContextState.asyncLocalStorage
   ) {
     // Get current store (contains context and depth)
-    const currentStore = scopeContextState.asyncLocalStorage.getStore() || { context: toList([]), depth: 0 };
-    const mergedContext = mergeGleamLists(context, currentStore.context);
-    const newStore = { context: mergedContext, depth: currentStore.depth + 1 };
+    const currentStore = scopeContextState.asyncLocalStorage.getStore() || {
+      context: toList([]),
+      depth: 0
+    };
+    const mergedContext = mergeGleamLists(contextWithHighlight, currentStore.context);
+    const newStore = {
+      context: mergedContext,
+      depth: currentStore.depth + 1
+    };
 
     // Use run() for proper scoping - store is automatically restored after
     return scopeContextState.asyncLocalStorage.run(newStore, callback);
@@ -604,9 +623,15 @@ export function run_with_scope(context, callback) {
 
   // Fallback for non-Node.js environments: use stack-based approach
   const stack = scopeContextState.fallbackContextStack;
-  const currentStore = stack.length > 0 ? stack[stack.length - 1] : { context: toList([]), depth: 0 };
-  const mergedContext = mergeGleamLists(context, currentStore.context);
-  const newStore = { context: mergedContext, depth: currentStore.depth + 1 };
+  const currentStore = stack.length > 0 ? stack[stack.length - 1] : {
+    context: toList([]),
+    depth: 0
+  };
+  const mergedContext = mergeGleamLists(contextWithHighlight, currentStore.context);
+  const newStore = {
+    context: mergedContext,
+    depth: currentStore.depth + 1
+  };
 
   // Push new store onto stack
   stack.push(newStore);

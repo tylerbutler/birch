@@ -265,7 +265,7 @@ fn format_record_simple(
     False, _ -> ""
   }
 
-  let metadata_str = format_metadata_visible(record.metadata)
+  let metadata_str = format_metadata_visible(record.metadata, use_color)
 
   case metadata_str {
     "" ->
@@ -341,7 +341,7 @@ fn format_record_fancy(
     name, False -> "[" <> name <> "] "
   }
 
-  let metadata_str = format_metadata_visible(record.metadata)
+  let metadata_str = format_metadata_visible(record.metadata, use_color)
   let metadata_part = case metadata_str, use_color {
     "", _ -> ""
     m, True -> " " <> dim <> m <> reset
@@ -361,10 +361,21 @@ fn format_record_fancy(
 // ============================================================================
 
 /// Format metadata, excluding internal keys (prefixed with _).
-fn format_metadata_visible(metadata: record.Metadata) -> String {
-  metadata
-  |> list.filter(fn(pair) { !string.starts_with(pair.0, "_") })
-  |> formatter.format_metadata()
+/// Bolds keys listed in _scope_highlight_keys if use_color is true.
+fn format_metadata_visible(metadata: record.Metadata, use_color: Bool) -> String {
+  // Extract the highlight keys from _scope_highlight_keys metadata
+  let highlight_keys = case list.key_find(metadata, "_scope_highlight_keys") {
+    Ok(keys_str) -> string.split(keys_str, ",")
+    Error(_) -> []
+  }
+
+  // Filter out internal keys
+  let visible_metadata = list.filter(metadata, fn(pair) {
+    !string.starts_with(pair.0, "_")
+  })
+
+  // Format with bold highlighting for scope keys
+  formatter.format_metadata_with_bold(visible_metadata, highlight_keys, use_color)
 }
 
 // ============================================================================
