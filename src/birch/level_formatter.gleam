@@ -35,13 +35,9 @@ const red = "\u{001b}[31m"
 
 const magenta = "\u{001b}[35m"
 
-const white = "\u{001b}[97m"
-
 const blue = "\u{001b}[34m"
 
 const bright_red = "\u{001b}[91m"
-
-const bg_red = "\u{001b}[41m"
 
 // ============================================================================
 // Level Formatter Type
@@ -246,7 +242,7 @@ pub fn level_color(lvl: level.Level) -> String {
     level.Info -> cyan
     level.Warn -> yellow
     level.Err -> red
-    level.Fatal -> bg_red <> white
+    level.Fatal -> bright_red
   }
 }
 
