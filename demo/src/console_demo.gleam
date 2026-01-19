@@ -25,6 +25,7 @@ pub fn main() {
   log.info("Info level message")
   log.warn("Warning level message")
   log.error("Error level message")
+  log.fatal("Fatal level message")
 
   // =========================================================================
   // Simple Style without timestamps
@@ -57,6 +58,7 @@ pub fn main() {
   log.info("Info level message")
   log.warn("Warning level message")
   log.error("Error level message")
+  log.fatal("Fatal level message")
 
   // =========================================================================
   // Fancy Style with timestamps
@@ -92,6 +94,7 @@ pub fn main() {
   log.info("Info with badge")
   log.warn("Warning with badge")
   log.error("Error with badge")
+  log.fatal("Fatal with badge")
 
   // =========================================================================
   // Label Style without icons
@@ -211,6 +214,7 @@ pub fn main() {
   log.info("Info with emoji")
   log.warn("Warning with emoji")
   log.error("Error with emoji")
+  log.fatal("Fatal with emoji")
 
   // =========================================================================
   // No Colors (for piping/redirection)
