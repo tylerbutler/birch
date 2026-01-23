@@ -40,10 +40,9 @@ fn demo_no_colors() {
   log.info("--- Console Handler Without Colors ---")
 
   let no_color_handler =
-    console.handler_with_config(console.ConsoleConfig(
-      color: False,
-      target: handler.Stdout,
-    ))
+    console.default_config()
+    |> console.without_color()
+    |> console.handler_with_config()
 
   log.configure([log.config_handlers([no_color_handler])])
 
@@ -57,10 +56,9 @@ fn demo_stderr() {
   log.info("--- Console Handler to stderr ---")
 
   let stderr_handler =
-    console.handler_with_config(console.ConsoleConfig(
-      color: True,
-      target: handler.Stderr,
-    ))
+    console.default_config()
+    |> console.with_stderr()
+    |> console.handler_with_config()
 
   log.configure([log.config_handlers([stderr_handler])])
 
@@ -74,13 +72,15 @@ pub fn create_custom_console_handler(
   use_colors: Bool,
   use_stderr: Bool,
 ) -> handler.Handler {
-  let target = case use_stderr {
-    True -> handler.Stderr
-    False -> handler.Stdout
+  let config = case use_colors {
+    True -> console.default_config() |> console.with_color()
+    False -> console.default_config() |> console.without_color()
   }
 
-  console.handler_with_config(console.ConsoleConfig(
-    color: use_colors,
-    target: target,
-  ))
+  let config = case use_stderr {
+    True -> config |> console.with_stderr()
+    False -> config |> console.with_stdout()
+  }
+
+  console.handler_with_config(config)
 }
