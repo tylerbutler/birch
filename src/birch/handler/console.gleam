@@ -268,30 +268,23 @@ fn format_record_simple(
 
   let metadata_str = format_metadata_visible(record.metadata, use_color)
 
-  case metadata_str {
-    "" ->
-      timestamp_part
-      <> level_part
-      <> " | "
-      <> record.logger_name
-      <> " | "
-      <> record.message
-    _ ->
-      timestamp_part
-      <> level_part
-      <> " | "
-      <> record.logger_name
-      <> " | "
-      <> record.message
-      <> " | "
+  let metadata_part = case metadata_str {
+    "" -> ""
+    m ->
+      " | "
       <> case use_color {
-        True ->
-          level_formatter.ansi_cyan()
-          <> metadata_str
-          <> level_formatter.ansi_reset()
-        False -> metadata_str
+        True -> level_formatter.ansi_cyan() <> m <> level_formatter.ansi_reset()
+        False -> m
       }
   }
+
+  timestamp_part
+  <> level_part
+  <> " | "
+  <> record.logger_name
+  <> " | "
+  <> record.message
+  <> metadata_part
 }
 
 // ============================================================================
@@ -499,9 +492,9 @@ fn format_box(message: String, title: String, use_color: Bool) -> String {
 }
 
 fn find_max_width(lines: List(String), min_width: Int) -> Int {
-  list.fold(lines, min_width, fn(acc, line) {
-    int.max(acc, string.length(line))
-  })
+  lines
+  |> list.map(string.length)
+  |> list.fold(min_width, int.max)
 }
 
 /// Write a boxed message directly to stdout.
@@ -543,8 +536,7 @@ pub fn with_group(title: String, work: fn() -> a) -> a {
     False -> "▸"
   }
   platform.write_stdout(arrow <> " " <> title)
-  let result = work()
-  result
+  work()
 }
 
 /// Create a handler that indents output by the specified level.

@@ -325,25 +325,16 @@ pub fn level_label_upper(lvl: level.Level) -> String {
 /// This function intelligently handles both plain text and ANSI-formatted strings
 /// by padding AFTER any ANSI reset codes to keep coloring clean.
 pub fn pad_to_width(formatted: String, target_width: Int) -> String {
-  // Check if the string contains ANSI codes by looking for reset code
-  case string.contains(formatted, reset) {
-    True -> {
-      // Find the visual length by removing ANSI codes
-      let visual_length = calculate_visual_length(formatted)
-      let padding_needed = target_width - visual_length
-      case padding_needed > 0 {
-        True -> formatted <> string.repeat(" ", padding_needed)
-        False -> formatted
-      }
-    }
-    False -> {
-      // Plain text - simple padding
-      let padding_needed = target_width - string.length(formatted)
-      case padding_needed > 0 {
-        True -> formatted <> string.repeat(" ", padding_needed)
-        False -> formatted
-      }
-    }
+  // Calculate visual length - either by removing ANSI codes or using string length
+  let visual_length = case string.contains(formatted, reset) {
+    True -> calculate_visual_length(formatted)
+    False -> string.length(formatted)
+  }
+
+  let padding_needed = target_width - visual_length
+  case padding_needed > 0 {
+    True -> formatted <> string.repeat(" ", padding_needed)
+    False -> formatted
   }
 }
 

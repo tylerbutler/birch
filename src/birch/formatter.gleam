@@ -30,26 +30,19 @@ pub fn human_readable(record: LogRecord) -> String {
   let level_str = level.to_string(record.level) |> pad_level
   let metadata_str = format_metadata(record.metadata)
 
-  case metadata_str {
-    "" ->
-      record.timestamp
-      <> " | "
-      <> level_str
-      <> " | "
-      <> record.logger_name
-      <> " | "
-      <> record.message
-    _ ->
-      record.timestamp
-      <> " | "
-      <> level_str
-      <> " | "
-      <> record.logger_name
-      <> " | "
-      <> record.message
-      <> " | "
-      <> metadata_str
+  let metadata_part = case metadata_str {
+    "" -> ""
+    m -> " | " <> m
   }
+
+  record.timestamp
+  <> " | "
+  <> level_str
+  <> " | "
+  <> record.logger_name
+  <> " | "
+  <> record.message
+  <> metadata_part
 }
 
 /// Format a log record as a simple message with level prefix.
