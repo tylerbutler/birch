@@ -4,6 +4,8 @@ description = "birch example: named loggers for component organization"
 
 [dependencies]
 birch = { path = "../../" }
+birl = ">= 1.7.0 and < 2.0.0"
+gleam_stdlib = ">= 0.44.0 and < 0.68.0"
 
 [dev-dependencies]
 gleeunit = ">= 1.0.0 and < 2.0.0"
