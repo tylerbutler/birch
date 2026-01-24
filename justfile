@@ -23,6 +23,17 @@ build-js:
 # Build for all targets
 build-all: build build-js
 
+# Build with warnings as errors (Erlang target)
+build-strict:
+    gleam build --warnings-as-errors
+
+# Build with warnings as errors (JavaScript target)
+build-strict-js:
+    gleam build --target javascript --warnings-as-errors
+
+# Build with warnings as errors (all targets)
+build-strict-all: build-strict build-strict-js
+
 # Run tests on Erlang target
 test-erlang:
     gleam test

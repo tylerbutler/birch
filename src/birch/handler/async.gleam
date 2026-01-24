@@ -206,7 +206,8 @@ pub fn flush_handler(name: String) -> Nil {
 /// Call this during application shutdown.
 pub fn shutdown_all() -> Nil {
   let registry = get_actor_registry()
-  dict.each(registry, fn(_name, actor) { async_actor.shutdown(actor) })
+  let Nil =
+    dict.each(registry, fn(_name, actor) { async_actor.shutdown(actor) })
   set_actor_registry(dict.new())
 }
 

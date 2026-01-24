@@ -27,8 +27,8 @@ jobs:
       - name: Check formatting
         run: just format-check
 
-      - name: Build
-        run: just ${{ matrix.target == 'javascript' && 'build-js' || 'build' }}
+      - name: Build (warnings as errors)
+        run: just ${{ matrix.target == 'javascript' && 'build-strict-js' || 'build-strict' }}
 
       - name: Run tests
         run: just ${{ matrix.target == 'javascript' && 'test-js' || 'test-erlang' }}
@@ -85,8 +85,8 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Build for JavaScript
-        run: just build-js
+      - name: Build for JavaScript (warnings as errors)
+        run: just build-strict-js
 
       - name: Run integration tests
         run: just test-integration-${{ matrix.runtime }}
