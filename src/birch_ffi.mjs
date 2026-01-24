@@ -1,4 +1,7 @@
 // JavaScript FFI for birch
+//
+// Note: write_stdout, write_stderr, and random_float have been removed.
+// Use gleam/io.println, io.println_error, and gleam/float.random() instead.
 
 // Import Gleam's Result constructors and List helpers from the prelude
 import { Ok, Error, toList } from "./gleam.mjs";
@@ -9,46 +12,6 @@ import { Ok, Error, toList } from "./gleam.mjs";
  */
 export function timestamp_iso8601() {
   return new Date().toISOString();
-}
-
-/**
- * Write a string to stdout with newline.
- * Works in Node.js, Deno, and Bun.
- * @param {string} message
- */
-export function write_stdout(message) {
-  // Node.js and Bun
-  if (typeof process !== "undefined" && process.stdout) {
-    process.stdout.write(message + "\n");
-  }
-  // Deno
-  else if (typeof Deno !== "undefined") {
-    Deno.stdout.writeSync(new TextEncoder().encode(message + "\n"));
-  }
-  // Browser fallback
-  else {
-    console.log(message);
-  }
-}
-
-/**
- * Write a string to stderr with newline.
- * Works in Node.js, Deno, and Bun.
- * @param {string} message
- */
-export function write_stderr(message) {
-  // Node.js and Bun
-  if (typeof process !== "undefined" && process.stderr) {
-    process.stderr.write(message + "\n");
-  }
-  // Deno
-  else if (typeof Deno !== "undefined") {
-    Deno.stderr.writeSync(new TextEncoder().encode(message + "\n"));
-  }
-  // Browser fallback
-  else {
-    console.error(message);
-  }
 }
 
 /**
@@ -586,17 +549,8 @@ export function is_scope_context_available() {
 }
 
 // ============================================================================
-// Sampling FFI
+// Time FFI
 // ============================================================================
-
-/**
- * Generate a random float between 0.0 (inclusive) and 1.0 (exclusive).
- * @returns {number}
- */
-export function random_float() {
-  // TODO: use a better random
-  return Math.random();
-}
 
 /**
  * Get the current time in milliseconds since epoch.

@@ -11,6 +11,7 @@ import birch/level
 import birch/logger.{type Logger}
 import birch/record.{type LogRecord}
 import gleam/int
+import gleam/io
 import gleam/list
 import gleam/string
 
@@ -56,9 +57,9 @@ pub fn handler_with_config(config: ConsolaConfig) -> Handler {
   let use_icons = config.icons
 
   let write_fn = case config.target {
-    Stdout -> platform.write_stdout
-    Stderr -> platform.write_stderr
-    handler.StdoutWithStderr -> platform.write_stdout
+    Stdout -> io.println
+    Stderr -> io.println_error
+    handler.StdoutWithStderr -> io.println
   }
 
   let format_fn = format_consola(use_color, use_icons, config.timestamps)
@@ -217,12 +218,12 @@ fn find_max_width(lines: List(String), min_width: Int) -> Int {
 
 /// Write a boxed message directly to stdout.
 pub fn write_box(message: String) -> Nil {
-  platform.write_stdout(box(message))
+  io.println(box(message))
 }
 
 /// Write a boxed message with title directly to stdout.
 pub fn write_box_with_title(message: String, title: String) -> Nil {
-  platform.write_stdout(box_with_title(message, title))
+  io.println(box_with_title(message, title))
 }
 
 // ============================================================================
@@ -253,7 +254,7 @@ pub fn with_group(title: String, work: fn() -> a) -> a {
     True -> cyan <> "▸" <> reset
     False -> "▸"
   }
-  platform.write_stdout(arrow <> " " <> title)
+  io.println(arrow <> " " <> title)
   let result = work()
   result
 }
@@ -279,9 +280,9 @@ pub fn indented_handler_with_config(
   let use_icons = config.icons
 
   let write_fn = case config.target {
-    Stdout -> platform.write_stdout
-    Stderr -> platform.write_stderr
-    handler.StdoutWithStderr -> platform.write_stdout
+    Stdout -> io.println
+    Stderr -> io.println_error
+    handler.StdoutWithStderr -> io.println
   }
 
   let indent = string.repeat("  ", indent_level)
@@ -298,11 +299,7 @@ fn format_consola_indented(
   indent: String,
 ) -> formatter.Formatter {
   fn(record: LogRecord) -> String {
-    let base = case use_color {
-      True -> format_colored(record, use_icons, show_timestamp)
-      False -> format_plain(record, use_icons, show_timestamp)
-    }
-    indent <> base
+    indent <> format_record(record, use_color, use_icons, show_timestamp)
   }
 }
 
@@ -363,7 +360,7 @@ fn log_styled(
   let use_color = platform.is_stdout_tty()
   let formatted = format_styled_message(style, message, metadata, use_color)
   // Write directly since we're bypassing normal log flow for styling
-  platform.write_stdout(formatted)
+  io.println(formatted)
   // Also log through logger at Info level for any other handlers
   logger.info(lgr, message, metadata)
 }
@@ -438,7 +435,7 @@ pub fn write_fail(message: String) -> Nil {
 fn write_styled(style: LogStyle, message: String) -> Nil {
   let use_color = platform.is_stdout_tty()
   let formatted = format_styled_message(style, message, [], use_color)
-  platform.write_stdout(formatted)
+  io.println(formatted)
 }
 
 // ============================================================================
@@ -488,87 +485,53 @@ fn format_consola(
   show_timestamp: Bool,
 ) -> formatter.Formatter {
   fn(record: LogRecord) -> String {
-    case use_color {
-      True -> format_colored(record, use_icons, show_timestamp)
-      False -> format_plain(record, use_icons, show_timestamp)
+    format_record(record, use_color, use_icons, show_timestamp)
+  }
+}
+
+/// Format a log record with configurable color support.
+fn format_record(
+  record: LogRecord,
+  use_color: Bool,
+  use_icons: Bool,
+  show_timestamp: Bool,
+) -> String {
+  let label = level_label(record.level)
+
+  let icon_part = case use_icons {
+    True -> level_icon(record.level) <> " "
+    False -> ""
+  }
+
+  let timestamp_part = case show_timestamp, use_color {
+    True, True -> dim <> record.timestamp <> reset <> " "
+    True, False -> record.timestamp <> " "
+    False, _ -> ""
+  }
+
+  let scope_part = case record.logger_name, use_color {
+    "", _ -> ""
+    name, True -> dim <> "[" <> name <> "]" <> reset <> " "
+    name, False -> "[" <> name <> "] "
+  }
+
+  let metadata_str = formatter.format_metadata(record.metadata)
+  let metadata_part = case metadata_str, use_color {
+    "", _ -> ""
+    m, True -> " " <> dim <> m <> reset
+    m, False -> " " <> m
+  }
+
+  let label_part = case use_color {
+    True -> {
+      let color = level_color(record.level)
+      color <> icon_part <> bold <> label <> reset
     }
-  }
-}
-
-/// Format with ANSI colors.
-fn format_colored(
-  record: LogRecord,
-  use_icons: Bool,
-  show_timestamp: Bool,
-) -> String {
-  let color = level_color(record.level)
-  let label = level_label(record.level)
-
-  let icon_part = case use_icons {
-    True -> level_icon(record.level) <> " "
-    False -> ""
-  }
-
-  let timestamp_part = case show_timestamp {
-    True -> dim <> record.timestamp <> reset <> " "
-    False -> ""
-  }
-
-  let scope_part = case record.logger_name {
-    "" -> ""
-    name -> dim <> "[" <> name <> "]" <> reset <> " "
-  }
-
-  let metadata_str = formatter.format_metadata(record.metadata)
-  let metadata_part = case metadata_str {
-    "" -> ""
-    m -> " " <> dim <> m <> reset
+    False -> icon_part <> label
   }
 
   timestamp_part
-  <> color
-  <> icon_part
-  <> bold
-  <> label
-  <> reset
-  <> " "
-  <> scope_part
-  <> record.message
-  <> metadata_part
-}
-
-/// Format without colors (for non-TTY output).
-fn format_plain(
-  record: LogRecord,
-  use_icons: Bool,
-  show_timestamp: Bool,
-) -> String {
-  let label = level_label(record.level)
-
-  let icon_part = case use_icons {
-    True -> level_icon(record.level) <> " "
-    False -> ""
-  }
-
-  let timestamp_part = case show_timestamp {
-    True -> record.timestamp <> " "
-    False -> ""
-  }
-
-  let scope_part = case record.logger_name {
-    "" -> ""
-    name -> "[" <> name <> "] "
-  }
-
-  let metadata_str = formatter.format_metadata(record.metadata)
-  let metadata_part = case metadata_str {
-    "" -> ""
-    m -> " " <> m
-  }
-
-  timestamp_part
-  <> icon_part
-  <> label
+  <> label_part
   <> " "
   <> scope_part
   <> record.message
