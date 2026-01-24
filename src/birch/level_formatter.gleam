@@ -417,3 +417,8 @@ pub fn ansi_red() -> String {
 pub fn ansi_magenta() -> String {
   magenta
 }
+
+/// Get the ANSI blue color code.
+pub fn ansi_blue() -> String {
+  blue
+}

@@ -512,9 +512,44 @@ pub fn write_box_with_title(message: String, title: String) -> Nil {
 // Grouping
 // ============================================================================
 
+/// Get a color based on a simple hash of the input string.
+/// Uses 256-color palette if terminal supports it, otherwise falls back to 6 basic colors.
+fn hash_color(text: String) -> String {
+  let hash =
+    text
+    |> string.to_utf_codepoints
+    |> list.fold(0, fn(acc, cp) { acc + string.utf_codepoint_to_int(cp) })
+
+  let color_depth = platform.get_color_depth()
+
+  case color_depth >= 256 {
+    True -> {
+      // Use 256-color palette - pick from a range of nice, readable colors
+      // We use colors 38-218 (avoiding the very dark and very light ones)
+      // These are the 6x6x6 color cube (16-231) minus the extremes
+      let color_index = { hash % 180 } + 38
+      "\u{001b}[38;5;" <> int.to_string(color_index) <> "m"
+    }
+    False -> {
+      // Fall back to basic 6-color palette
+      case hash % 6 {
+        0 -> level_formatter.ansi_cyan()
+        1 -> level_formatter.ansi_green()
+        2 -> level_formatter.ansi_yellow()
+        3 -> level_formatter.ansi_magenta()
+        4 -> level_formatter.ansi_blue()
+        _ -> level_formatter.ansi_red()
+      }
+    }
+  }
+}
+
 /// Execute a function within a named group, with all log output indented.
 /// The group title is printed before the content, and indentation is applied
 /// to all output within the scope.
+///
+/// The title is displayed in bold with a unique color based on its hash,
+/// making it easy to distinguish different groups visually.
 ///
 /// Example:
 /// ```gleam
@@ -532,11 +567,16 @@ pub fn write_box_with_title(message: String, title: String) -> Nil {
 /// ```
 pub fn with_group(title: String, work: fn() -> a) -> a {
   let use_color = platform.is_stdout_tty()
-  let arrow = case use_color {
-    True -> level_formatter.ansi_cyan() <> "▸" <> level_formatter.ansi_reset()
-    False -> "▸"
+  let #(arrow, styled_title) = case use_color {
+    True -> {
+      let color = hash_color(title)
+      let reset = level_formatter.ansi_reset()
+      let bold = level_formatter.ansi_bold()
+      #(color <> "▸" <> reset, bold <> color <> title <> reset)
+    }
+    False -> #("▸", title)
   }
-  io.println(arrow <> " " <> title)
+  io.println(arrow <> " " <> styled_title)
   work()
 }
 

@@ -191,6 +191,7 @@ pub fn main() {
   // =========================================================================
   print_header("GROUPING")
 
+  // Each group gets a unique color based on its name hash
   console.with_group("Building components", fn() {
     let indented =
       logger.new("build")
@@ -199,6 +200,41 @@ pub fn main() {
 
     logger.info(indented, "Compiling sources...", [])
     logger.info(indented, "Linking...", [])
+    logger.info(indented, "Done!", [])
+    Nil
+  })
+
+  console.with_group("Running tests", fn() {
+    let indented =
+      logger.new("test")
+      |> logger.with_handlers([console.indented_handler(1)])
+      |> logger.with_level(level.Debug)
+
+    logger.info(indented, "Unit tests...", [])
+    logger.info(indented, "Integration tests...", [])
+    logger.info(indented, "All tests passed!", [])
+    Nil
+  })
+
+  console.with_group("Deploying application", fn() {
+    let indented =
+      logger.new("deploy")
+      |> logger.with_handlers([console.indented_handler(1)])
+      |> logger.with_level(level.Debug)
+
+    logger.info(indented, "Uploading artifacts...", [])
+    logger.info(indented, "Updating configuration...", [])
+    logger.info(indented, "Deployment complete!", [])
+    Nil
+  })
+
+  console.with_group("Cleanup", fn() {
+    let indented =
+      logger.new("cleanup")
+      |> logger.with_handlers([console.indented_handler(1)])
+      |> logger.with_level(level.Debug)
+
+    logger.info(indented, "Removing temp files...", [])
     logger.info(indented, "Done!", [])
     Nil
   })

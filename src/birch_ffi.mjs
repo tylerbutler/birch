@@ -31,6 +31,54 @@ export function is_stdout_tty() {
   return false;
 }
 
+/**
+ * Get terminal color depth (number of colors supported).
+ * @returns {number} 16777216 for truecolor, 256 for 256-color, 16 for basic, 0 for none
+ */
+export function get_color_depth() {
+  if (!is_stdout_tty()) {
+    return 0;
+  }
+
+  // Node.js and Bun
+  if (typeof process !== "undefined" && process.env) {
+    const colorTerm = process.env.COLORTERM;
+    const term = process.env.TERM || "";
+
+    // Check for truecolor support
+    if (colorTerm === "truecolor" || colorTerm === "24bit") {
+      return 16777216;
+    }
+
+    // Check for 256-color support
+    if (term.includes("256color") || term.includes("256")) {
+      return 256;
+    }
+
+    // Basic 16 colors
+    return 16;
+  }
+
+  // Deno
+  if (typeof Deno !== "undefined" && Deno.env) {
+    const colorTerm = Deno.env.get("COLORTERM");
+    const term = Deno.env.get("TERM") || "";
+
+    if (colorTerm === "truecolor" || colorTerm === "24bit") {
+      return 16777216;
+    }
+
+    if (term.includes("256color") || term.includes("256")) {
+      return 256;
+    }
+
+    return 16;
+  }
+
+  // Browser - no terminal colors
+  return 0;
+}
+
 // ============================================================================
 // Global Configuration Storage
 // ============================================================================

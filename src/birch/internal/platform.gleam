@@ -19,6 +19,12 @@ pub fn timestamp_iso8601() -> String
 @external(javascript, "../../birch_ffi.mjs", "is_stdout_tty")
 pub fn is_stdout_tty() -> Bool
 
+/// Get terminal color depth (number of colors supported).
+/// Returns 16777216 for truecolor, 256 for 256-color, 16 for basic, 0 for none.
+@external(erlang, "birch_ffi", "get_color_depth")
+@external(javascript, "../../birch_ffi.mjs", "get_color_depth")
+pub fn get_color_depth() -> Int
+
 // ============================================================================
 // Async Handler FFI
 // ============================================================================
