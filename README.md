@@ -6,6 +6,7 @@ The name "birch" comes from birch trees, whose white bark gleams in the light.
 
 [![Package Version](https://img.shields.io/hexpm/v/birch)](https://hex.pm/packages/birch)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/birch/)
+[![codecov](https://codecov.io/gh/tylerbutler/birch/graph/badge.svg)](https://codecov.io/gh/tylerbutler/birch)
 
 ## Features
 
