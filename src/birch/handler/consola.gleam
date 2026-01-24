@@ -298,11 +298,7 @@ fn format_consola_indented(
   indent: String,
 ) -> formatter.Formatter {
   fn(record: LogRecord) -> String {
-    let base = case use_color {
-      True -> format_colored(record, use_icons, show_timestamp)
-      False -> format_plain(record, use_icons, show_timestamp)
-    }
-    indent <> base
+    indent <> format_record(record, use_color, use_icons, show_timestamp)
   }
 }
 
@@ -488,87 +484,53 @@ fn format_consola(
   show_timestamp: Bool,
 ) -> formatter.Formatter {
   fn(record: LogRecord) -> String {
-    case use_color {
-      True -> format_colored(record, use_icons, show_timestamp)
-      False -> format_plain(record, use_icons, show_timestamp)
+    format_record(record, use_color, use_icons, show_timestamp)
+  }
+}
+
+/// Format a log record with configurable color support.
+fn format_record(
+  record: LogRecord,
+  use_color: Bool,
+  use_icons: Bool,
+  show_timestamp: Bool,
+) -> String {
+  let label = level_label(record.level)
+
+  let icon_part = case use_icons {
+    True -> level_icon(record.level) <> " "
+    False -> ""
+  }
+
+  let timestamp_part = case show_timestamp, use_color {
+    True, True -> dim <> record.timestamp <> reset <> " "
+    True, False -> record.timestamp <> " "
+    False, _ -> ""
+  }
+
+  let scope_part = case record.logger_name, use_color {
+    "", _ -> ""
+    name, True -> dim <> "[" <> name <> "]" <> reset <> " "
+    name, False -> "[" <> name <> "] "
+  }
+
+  let metadata_str = formatter.format_metadata(record.metadata)
+  let metadata_part = case metadata_str, use_color {
+    "", _ -> ""
+    m, True -> " " <> dim <> m <> reset
+    m, False -> " " <> m
+  }
+
+  let label_part = case use_color {
+    True -> {
+      let color = level_color(record.level)
+      color <> icon_part <> bold <> label <> reset
     }
-  }
-}
-
-/// Format with ANSI colors.
-fn format_colored(
-  record: LogRecord,
-  use_icons: Bool,
-  show_timestamp: Bool,
-) -> String {
-  let color = level_color(record.level)
-  let label = level_label(record.level)
-
-  let icon_part = case use_icons {
-    True -> level_icon(record.level) <> " "
-    False -> ""
-  }
-
-  let timestamp_part = case show_timestamp {
-    True -> dim <> record.timestamp <> reset <> " "
-    False -> ""
-  }
-
-  let scope_part = case record.logger_name {
-    "" -> ""
-    name -> dim <> "[" <> name <> "]" <> reset <> " "
-  }
-
-  let metadata_str = formatter.format_metadata(record.metadata)
-  let metadata_part = case metadata_str {
-    "" -> ""
-    m -> " " <> dim <> m <> reset
+    False -> icon_part <> label
   }
 
   timestamp_part
-  <> color
-  <> icon_part
-  <> bold
-  <> label
-  <> reset
-  <> " "
-  <> scope_part
-  <> record.message
-  <> metadata_part
-}
-
-/// Format without colors (for non-TTY output).
-fn format_plain(
-  record: LogRecord,
-  use_icons: Bool,
-  show_timestamp: Bool,
-) -> String {
-  let label = level_label(record.level)
-
-  let icon_part = case use_icons {
-    True -> level_icon(record.level) <> " "
-    False -> ""
-  }
-
-  let timestamp_part = case show_timestamp {
-    True -> record.timestamp <> " "
-    False -> ""
-  }
-
-  let scope_part = case record.logger_name {
-    "" -> ""
-    name -> "[" <> name <> "] "
-  }
-
-  let metadata_str = formatter.format_metadata(record.metadata)
-  let metadata_part = case metadata_str {
-    "" -> ""
-    m -> " " <> m
-  }
-
-  timestamp_part
-  <> icon_part
-  <> label
+  <> label_part
   <> " "
   <> scope_part
   <> record.message

@@ -187,6 +187,36 @@ pub fn should_log(logger: Logger, log_level: Level) -> Bool {
   level.gte(log_level, logger.min_level)
 }
 
+/// Merge metadata from call, scope, and logger context.
+/// Priority: call metadata > scope context > logger context.
+fn merge_metadata(logger: Logger, call_metadata: Metadata) -> Metadata {
+  let scope_context = platform.get_scope_context()
+  list.append(call_metadata, list.append(scope_context, logger.context))
+}
+
+/// Create a log record and dispatch it to handlers.
+fn emit_record(
+  logger: Logger,
+  log_level: Level,
+  message: String,
+  metadata: Metadata,
+) -> Nil {
+  let merged_metadata = merge_metadata(logger, metadata)
+  let base_record =
+    record.new(
+      timestamp: get_timestamp(logger),
+      level: log_level,
+      logger_name: logger.name,
+      message: message,
+      metadata: merged_metadata,
+    )
+  let final_record = case get_optional_caller_id(logger) {
+    Some(caller_id) -> record.with_caller_id(base_record, caller_id)
+    None -> base_record
+  }
+  handler.handle_all(logger.handlers, final_record)
+}
+
 /// Log a message at the specified level.
 ///
 /// Metadata is merged with the following priority (first wins):
@@ -201,26 +231,7 @@ pub fn log(
 ) -> Nil {
   case should_log(logger, log_level) {
     False -> Nil
-    True -> {
-      // Merge metadata: call > scope > logger (first in list = highest priority)
-      let scope_context = platform.get_scope_context()
-      let merged_metadata =
-        list.append(metadata, list.append(scope_context, logger.context))
-      let base_record =
-        record.new(
-          timestamp: get_timestamp(logger),
-          level: log_level,
-          logger_name: logger.name,
-          message: message,
-          metadata: merged_metadata,
-        )
-      // Add caller ID if capture is enabled
-      let final_record = case get_optional_caller_id(logger) {
-        Some(caller_id) -> record.with_caller_id(base_record, caller_id)
-        None -> base_record
-      }
-      handler.handle_all(logger.handlers, final_record)
-    }
+    True -> emit_record(logger, log_level, message, metadata)
   }
 }
 
@@ -239,26 +250,7 @@ pub fn log_lazy(
 ) -> Nil {
   case should_log(logger, log_level) {
     False -> Nil
-    True -> {
-      // Merge metadata: call > scope > logger (first in list = highest priority)
-      let scope_context = platform.get_scope_context()
-      let merged_metadata =
-        list.append(metadata, list.append(scope_context, logger.context))
-      let base_record =
-        record.new(
-          timestamp: get_timestamp(logger),
-          level: log_level,
-          logger_name: logger.name,
-          message: message_fn(),
-          metadata: merged_metadata,
-        )
-      // Add caller ID if capture is enabled
-      let final_record = case get_optional_caller_id(logger) {
-        Some(caller_id) -> record.with_caller_id(base_record, caller_id)
-        None -> base_record
-      }
-      handler.handle_all(logger.handlers, final_record)
-    }
+    True -> emit_record(logger, log_level, message_fn(), metadata)
   }
 }
 

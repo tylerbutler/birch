@@ -272,15 +272,10 @@ fn cleanup_old_rotated_files(base_path: String, max_files: Int) -> Nil {
 
 /// Get the filename from a path.
 fn get_filename(path: String) -> String {
-  case string.split(path, "/") {
-    [] -> path
-    parts -> {
-      case list.last(parts) {
-        Ok(name) -> name
-        Error(_) -> path
-      }
-    }
-  }
+  path
+  |> string.split("/")
+  |> list.last
+  |> result.unwrap(path)
 }
 
 /// Shift rotated files: .N -> .N+1 for N from max down to 1
@@ -313,13 +308,10 @@ fn ensure_parent_dir(path: String) -> Result(Nil, Nil) {
 
 /// Get the parent directory of a path.
 fn get_parent_dir(path: String) -> String {
-  case string.split(path, "/") {
-    [] -> ""
-    parts -> {
-      let without_last = list.take(parts, list.length(parts) - 1)
-      string.join(without_last, "/")
-    }
-  }
+  let parts = string.split(path, "/")
+  parts
+  |> list.take(list.length(parts) - 1)
+  |> string.join("/")
 }
 
 // ============================================================================

@@ -70,7 +70,7 @@ fn format_with_color(record: LogRecord) -> String {
   let color = level_color(record.level)
   let level_str =
     color_code(color)
-    <> pad_level(level.to_string(record.level))
+    <> formatter.pad_level(level.to_string(record.level))
     <> color_code(Reset)
 
   let metadata_str = formatter.format_metadata(record.metadata)
@@ -125,18 +125,5 @@ fn color_code(color: Color) -> String {
     Cyan -> "\u{001b}[36m"
     Gray -> "\u{001b}[90m"
     BrightRed -> "\u{001b}[91m"
-  }
-}
-
-/// Pad a level string to 5 characters for alignment.
-fn pad_level(level_str: String) -> String {
-  case level_str {
-    "TRACE" -> "TRACE"
-    "DEBUG" -> "DEBUG"
-    "INFO" -> "INFO "
-    "WARN" -> "WARN "
-    "ERROR" -> "ERROR"
-    "FATAL" -> "FATAL"
-    _ -> level_str
   }
 }

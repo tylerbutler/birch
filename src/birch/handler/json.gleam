@@ -200,7 +200,6 @@ pub fn handler_stderr() -> Handler {
 /// Format a log record as a JSON string using the default format.
 /// This is equivalent to using `standard_builder() |> build()`.
 pub fn format_json(record: LogRecord) -> String {
-  // Build the base JSON object
   let base_fields = [
     #("timestamp", json.string(record.timestamp)),
     #("level", json.string(level.to_string_lowercase(record.level))),
@@ -208,14 +207,9 @@ pub fn format_json(record: LogRecord) -> String {
     #("message", json.string(record.message)),
   ]
 
-  // Add metadata fields
   let metadata_fields =
-    list.map(record.metadata, fn(pair) {
-      let #(key, value) = pair
-      #(key, json.string(value))
-    })
+    list.map(record.metadata, fn(pair) { #(pair.0, json.string(pair.1)) })
 
-  // Combine and encode
   list.append(base_fields, metadata_fields)
   |> json.object
   |> json.to_string
