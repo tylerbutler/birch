@@ -18,6 +18,7 @@ node_modules/
 _gleam_artefacts/
 **/examples/**/build/
 
-# Example manifests - not committed to allow fresh dependency resolution
-# and avoid lockfile conflicts with birch's transitive dependencies
+# Manifest (lockfile) - not committed for libraries to allow fresh
+# dependency resolution for consumers
+manifest.toml
 **/examples/**/manifest.toml
