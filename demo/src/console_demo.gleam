@@ -40,8 +40,12 @@ pub fn main() {
     log.config_level(level.Trace),
   ])
 
-  log.info("Info without timestamp")
-  log.warn("Warning without timestamp")
+  log.trace("Trace level message")
+  log.debug("Debug level message")
+  log.info("Info level message")
+  log.warn("Warning level message")
+  log.error("Error level message")
+  log.fatal("Fatal level message")
 
   // =========================================================================
   // Fancy Style (compact with icons)
@@ -73,8 +77,12 @@ pub fn main() {
     log.config_level(level.Trace),
   ])
 
-  log.info("Info with timestamp")
-  log.warn("Warning with timestamp")
+  log.trace("Trace level message")
+  log.debug("Debug level message")
+  log.info("Info level message")
+  log.warn("Warning level message")
+  log.error("Error level message")
+  log.fatal("Fatal level message")
 
   // =========================================================================
   // Badge Style
@@ -109,9 +117,12 @@ pub fn main() {
     log.config_level(level.Trace),
   ])
 
-  log.info("Info without icon")
-  log.warn("Warning without icon")
-  log.error("Error without icon")
+  log.trace("Trace level message")
+  log.debug("Debug level message")
+  log.info("Info level message")
+  log.warn("Warning level message")
+  log.error("Error level message")
+  log.fatal("Fatal level message")
 
   // =========================================================================
   // With Metadata
@@ -211,7 +222,7 @@ pub fn main() {
       },
       3,
     )
-    // Width 3: "⚠️ " is 3 chars (emoji + space + space)
+  // Width 3: "⚠️ " is 3 chars (emoji + space + space)
 
   let custom_config =
     console.default_fancy_config()
@@ -240,12 +251,15 @@ pub fn main() {
 
   log.configure([
     log.config_handlers([console.handler_with_config(no_color_config)]),
-    log.config_level(level.Info),
+    log.config_level(level.Trace),
   ])
 
-  log.info("This has no ANSI color codes")
-  log.warn("Safe for piping to files")
-  log.error("Or processing with other tools")
+  log.trace("Trace level message")
+  log.debug("Debug level message")
+  log.info("Info level message")
+  log.warn("Warning level message")
+  log.error("Error level message")
+  log.fatal("Fatal level message")
 
   // =========================================================================
   // Auto-Indent from Scopes
