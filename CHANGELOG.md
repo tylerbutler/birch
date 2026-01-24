@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.1](https://github.com/tylerbutler/birch/compare/v0.1.0...v0.1.1) (2026-01-24)
+
+
+### Features
+
+* **claude:** add FFI validation hook ([4e98959](https://github.com/tylerbutler/birch/commit/4e989597820807208ad4d9c2d254a3dcaa4308ee))
+* **examples:** add 17 comprehensive example applications ([#27](https://github.com/tylerbutler/birch/issues/27)) ([a24b5ff](https://github.com/tylerbutler/birch/commit/a24b5ffa135d556e15298872068b9b86636a8cfe))
+* **handler:** add consola-style handler with box output, grouping, and semantic types ([844a70b](https://github.com/tylerbutler/birch/commit/844a70b1176c3e2dffb51f526587650875cf67d5))
+* **handler:** unify console handlers with customizable level formatting ([#29](https://github.com/tylerbutler/birch/issues/29)) ([bb7caea](https://github.com/tylerbutler/birch/commit/bb7caea642fb42729f1d9fa4c3ff6bbf6d721c98))
+
+
+### Code Refactoring
+
+* simplify code patterns and reduce FFI ([#30](https://github.com/tylerbutler/birch/issues/30)) ([d4fdcad](https://github.com/tylerbutler/birch/commit/d4fdcadd3a4461c8a20daa7260e28067ae095cf1))
+
 ## 0.1.0 (2026-01-03)
 
 
