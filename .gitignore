@@ -17,3 +17,7 @@ node_modules/
 .claude/settings.local.json
 _gleam_artefacts/
 **/examples/**/build/
+
+# Example manifests - not committed to allow fresh dependency resolution
+# and avoid lockfile conflicts with birch's transitive dependencies
+**/examples/**/manifest.toml
