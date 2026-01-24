@@ -12,6 +12,7 @@ import birch/logger
 import birch/record
 import birch/sampling
 import birch/scope
+import birl
 import gleam/json as gleam_json
 import gleam/list
 import gleam/option.{None, Some}
@@ -274,6 +275,49 @@ pub fn logger_silent_test() {
   logger.get_handlers(lgr)
   |> list.length
   |> should.equal(0)
+}
+
+pub fn logger_timestamp_format_default_test() {
+  let lgr = logger.new("test")
+
+  logger.get_timestamp_format(lgr)
+  |> should.equal(logger.Iso8601)
+}
+
+pub fn logger_timestamp_format_naive_test() {
+  let lgr =
+    logger.new("test")
+    |> logger.with_timestamp_format(logger.Naive)
+
+  logger.get_timestamp_format(lgr)
+  |> should.equal(logger.Naive)
+}
+
+pub fn logger_timestamp_format_unix_test() {
+  let lgr =
+    logger.new("test")
+    |> logger.with_timestamp_format(logger.Unix)
+
+  logger.get_timestamp_format(lgr)
+  |> should.equal(logger.Unix)
+}
+
+pub fn logger_timestamp_format_custom_test() {
+  // Custom format that just returns the year
+  let custom_formatter = fn(time: birl.Time) {
+    let day = birl.get_day(time)
+    day.year |> string.inspect
+  }
+
+  let lgr =
+    logger.new("test")
+    |> logger.with_timestamp_format(logger.Custom(custom_formatter))
+
+  // Verify the format is set (we can't compare function equality directly)
+  case logger.get_timestamp_format(lgr) {
+    logger.Custom(_) -> True |> should.be_true
+    _ -> False |> should.be_true
+  }
 }
 
 // ============================================================================
