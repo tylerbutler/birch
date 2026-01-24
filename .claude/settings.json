@@ -10,6 +10,16 @@
             "filePatterns": ["**/*.gleam"]
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "just check"
+          }
+        ],
+        "filePatterns": ["**/birch_ffi.erl", "**/birch_ffi.mjs"]
       }
     ],
     "PreToolUse": [
