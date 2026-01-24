@@ -697,15 +697,10 @@ fn format_styled_message(
 
   let icon_part = icon <> " "
 
-  let metadata_str = formatter.format_metadata(metadata)
+  let metadata_str = formatter.format_metadata_colored(metadata, use_color)
   let metadata_part = case metadata_str {
     "" -> ""
-    m ->
-      case use_color {
-        True ->
-          " " <> level_formatter.ansi_dim() <> m <> level_formatter.ansi_reset()
-        False -> " " <> m
-      }
+    m -> " " <> m
   }
 
   case use_color {

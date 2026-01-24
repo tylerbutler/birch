@@ -69,17 +69,21 @@ pub fn pad_level(level_str: String) -> String {
 
 /// Format metadata as key=value pairs separated by spaces.
 pub fn format_metadata(metadata: record.Metadata) -> String {
-  metadata
-  |> list.map(fn(pair) {
-    let #(key, value) = pair
-    key <> "=" <> escape_value(value)
-  })
-  |> string.join(" ")
+  format_metadata_colored(metadata, False)
+}
+
+/// Format metadata with color support.
+/// Each key gets a unique hash-based color when use_color is True.
+pub fn format_metadata_colored(
+  metadata: record.Metadata,
+  use_color: Bool,
+) -> String {
+  format_metadata_with_bold(metadata, [], use_color)
 }
 
 /// Format metadata with specific keys highlighted.
-/// Keys in the highlight_keys list will be styled with bold and a unique
-/// hash-based color for visual distinction.
+/// All keys get a unique hash-based color. Keys in the highlight_keys list
+/// are additionally styled with bold for extra visual distinction.
 pub fn format_metadata_with_bold(
   metadata: record.Metadata,
   highlight_keys: List(String),
@@ -89,12 +93,17 @@ pub fn format_metadata_with_bold(
   |> list.map(fn(pair) {
     let #(key, value) = pair
     let formatted_kv = key <> "=" <> escape_value(value)
-    case use_color && list.contains(highlight_keys, key) {
+    case use_color {
       True -> {
         let color = hash_color(key)
-        let bold = "\u{001b}[1m"
         let reset = "\u{001b}[0m"
-        bold <> color <> formatted_kv <> reset
+        case list.contains(highlight_keys, key) {
+          True -> {
+            let bold = "\u{001b}[1m"
+            bold <> color <> formatted_kv <> reset
+          }
+          False -> color <> formatted_kv <> reset
+        }
       }
       False -> formatted_kv
     }
