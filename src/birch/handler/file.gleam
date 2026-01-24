@@ -6,6 +6,7 @@ import birch/formatter
 import birch/handler.{type Handler}
 import birch/internal/platform
 import gleam/int
+import gleam/io
 import gleam/list
 import gleam/result
 import gleam/string
@@ -105,7 +106,7 @@ fn write_to_file(config: FileConfig, message: String) -> Nil {
     Ok(Nil) -> Nil
     Error(e) -> {
       // Log to stderr on failure, but don't crash
-      platform.write_stderr(
+      io.println_error(
         "birch: failed to write to "
         <> config.path
         <> ": "
@@ -184,7 +185,7 @@ fn rotate_file(path: String, max_files: Int, compress: Bool) -> Nil {
         }
         Error(_) -> {
           // If compression fails, fall back to rename without compression
-          platform.write_stderr(
+          io.println_error(
             "birch: compression failed, falling back to uncompressed rotation",
           )
           let _ = simplifile.rename(path, path <> ".1")

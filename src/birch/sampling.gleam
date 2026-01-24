@@ -35,6 +35,9 @@ import birch/level.{type Level}
 import gleam/float
 import gleam/int
 
+// Note: We use float.random() from stdlib for probabilistic sampling
+// and platform.current_time_ms() for token bucket timing
+
 // ============================================================================
 // Sampling Configuration
 // ============================================================================
@@ -74,7 +77,7 @@ pub fn should_sample(sample_config: SampleConfig, log_level: Level) -> Bool {
         r if r >=. 1.0 -> True
         r if r <=. 0.0 -> False
         rate -> {
-          let random = platform.random_float()
+          let random = float.random()
           random <. rate
         }
       }

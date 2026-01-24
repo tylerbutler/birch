@@ -2,6 +2,9 @@
 ////
 //// This module provides cross-platform abstractions for operations that
 //// differ between Erlang and JavaScript targets.
+////
+//// Note: For stdout/stderr output, use gleam/io.println and io.println_error.
+//// For random floats, use gleam/float.random().
 
 import birch/record.{type LogRecord, type Metadata}
 
@@ -10,16 +13,6 @@ import birch/record.{type LogRecord, type Metadata}
 @external(erlang, "birch_ffi", "timestamp_iso8601")
 @external(javascript, "../../birch_ffi.mjs", "timestamp_iso8601")
 pub fn timestamp_iso8601() -> String
-
-/// Write a string to stdout.
-@external(erlang, "birch_ffi", "write_stdout")
-@external(javascript, "../../birch_ffi.mjs", "write_stdout")
-pub fn write_stdout(message: String) -> Nil
-
-/// Write a string to stderr.
-@external(erlang, "birch_ffi", "write_stderr")
-@external(javascript, "../../birch_ffi.mjs", "write_stderr")
-pub fn write_stderr(message: String) -> Nil
 
 /// Check if stdout is a TTY (for color support detection).
 @external(erlang, "birch_ffi", "is_stdout_tty")
@@ -119,14 +112,8 @@ pub fn set_scope_context(context: Metadata) -> Nil
 pub fn is_scope_context_available() -> Bool
 
 // ============================================================================
-// Sampling FFI
+// Time FFI
 // ============================================================================
-
-/// Generate a random float between 0.0 (inclusive) and 1.0 (exclusive).
-/// Used for probabilistic sampling.
-@external(erlang, "birch_ffi", "random_float")
-@external(javascript, "../../birch_ffi.mjs", "random_float")
-pub fn random_float() -> Float
 
 /// Get the current time in milliseconds since epoch.
 /// Used for token bucket rate limiting.

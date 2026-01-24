@@ -11,6 +11,7 @@ import birch/level
 import birch/logger.{type Logger}
 import birch/record.{type LogRecord}
 import gleam/int
+import gleam/io
 import gleam/list
 import gleam/string
 
@@ -56,9 +57,9 @@ pub fn handler_with_config(config: ConsolaConfig) -> Handler {
   let use_icons = config.icons
 
   let write_fn = case config.target {
-    Stdout -> platform.write_stdout
-    Stderr -> platform.write_stderr
-    handler.StdoutWithStderr -> platform.write_stdout
+    Stdout -> io.println
+    Stderr -> io.println_error
+    handler.StdoutWithStderr -> io.println
   }
 
   let format_fn = format_consola(use_color, use_icons, config.timestamps)
@@ -217,12 +218,12 @@ fn find_max_width(lines: List(String), min_width: Int) -> Int {
 
 /// Write a boxed message directly to stdout.
 pub fn write_box(message: String) -> Nil {
-  platform.write_stdout(box(message))
+  io.println(box(message))
 }
 
 /// Write a boxed message with title directly to stdout.
 pub fn write_box_with_title(message: String, title: String) -> Nil {
-  platform.write_stdout(box_with_title(message, title))
+  io.println(box_with_title(message, title))
 }
 
 // ============================================================================
@@ -253,7 +254,7 @@ pub fn with_group(title: String, work: fn() -> a) -> a {
     True -> cyan <> "▸" <> reset
     False -> "▸"
   }
-  platform.write_stdout(arrow <> " " <> title)
+  io.println(arrow <> " " <> title)
   let result = work()
   result
 }
@@ -279,9 +280,9 @@ pub fn indented_handler_with_config(
   let use_icons = config.icons
 
   let write_fn = case config.target {
-    Stdout -> platform.write_stdout
-    Stderr -> platform.write_stderr
-    handler.StdoutWithStderr -> platform.write_stdout
+    Stdout -> io.println
+    Stderr -> io.println_error
+    handler.StdoutWithStderr -> io.println
   }
 
   let indent = string.repeat("  ", indent_level)
@@ -359,7 +360,7 @@ fn log_styled(
   let use_color = platform.is_stdout_tty()
   let formatted = format_styled_message(style, message, metadata, use_color)
   // Write directly since we're bypassing normal log flow for styling
-  platform.write_stdout(formatted)
+  io.println(formatted)
   // Also log through logger at Info level for any other handlers
   logger.info(lgr, message, metadata)
 }
@@ -434,7 +435,7 @@ pub fn write_fail(message: String) -> Nil {
 fn write_styled(style: LogStyle, message: String) -> Nil {
   let use_color = platform.is_stdout_tty()
   let formatted = format_styled_message(style, message, [], use_color)
-  platform.write_stdout(formatted)
+  io.println(formatted)
 }
 
 // ============================================================================

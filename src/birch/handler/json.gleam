@@ -20,9 +20,9 @@
 
 import birch/formatter
 import birch/handler.{type Handler}
-import birch/internal/platform
 import birch/level
 import birch/record.{type LogRecord}
+import gleam/io
 import gleam/json.{type Json}
 import gleam/list
 
@@ -164,12 +164,12 @@ pub fn standard_builder() -> JsonBuilder {
 ///   |> json.handler_with_formatter()
 /// ```
 pub fn handler_with_formatter(format: formatter.Formatter) -> Handler {
-  handler.new(name: "json", write: platform.write_stdout, format: format)
+  handler.new(name: "json", write: io.println, format: format)
 }
 
 /// Create a JSON handler with a custom formatter that writes to stderr.
 pub fn handler_stderr_with_formatter(format: formatter.Formatter) -> Handler {
-  handler.new(name: "json_stderr", write: platform.write_stderr, format: format)
+  handler.new(name: "json_stderr", write: io.println_error, format: format)
 }
 
 // ============================================================================
@@ -181,16 +181,12 @@ pub fn handler_stderr_with_formatter(format: formatter.Formatter) -> Handler {
 ///
 /// Default JSON format includes: timestamp, level, logger, message, and metadata.
 pub fn handler() -> Handler {
-  handler.new(name: "json", write: platform.write_stdout, format: format_json)
+  handler.new(name: "json", write: io.println, format: format_json)
 }
 
 /// Create a JSON handler that writes to stderr with the default format.
 pub fn handler_stderr() -> Handler {
-  handler.new(
-    name: "json_stderr",
-    write: platform.write_stderr,
-    format: format_json,
-  )
+  handler.new(name: "json_stderr", write: io.println_error, format: format_json)
 }
 
 // ============================================================================
