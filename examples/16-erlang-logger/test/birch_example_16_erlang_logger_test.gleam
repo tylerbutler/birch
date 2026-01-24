@@ -30,16 +30,16 @@ pub fn create_erlang_handler_test() {
 
 pub fn install_uninstall_handler_test() {
   // Should not crash
-  erlang_logger.install_logger_handler()
-  erlang_logger.uninstall_logger_handler()
+  let _ = erlang_logger.install_logger_handler()
+  let _ = erlang_logger.uninstall_logger_handler()
 
   should.be_true(True)
 }
 
 pub fn setup_teardown_test() {
   // Using example functions
-  example.setup_erlang_integration()
-  example.teardown_erlang_integration()
+  let _ = example.setup_erlang_integration()
+  let _ = example.teardown_erlang_integration()
 
   should.be_true(True)
 }

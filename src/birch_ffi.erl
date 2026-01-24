@@ -1,9 +1,10 @@
 -module(birch_ffi).
--export([timestamp_iso8601/0, is_stdout_tty/0,
+-export([timestamp_iso8601/0, is_stdout_tty/0, get_color_depth/0,
          get_global_config/0, set_global_config/1, clear_global_config/0,
          start_async_writer/5, async_send/2, flush_async_writers/0, flush_async_writer/1,
          compress_file_gzip/2, safe_call/1,
          get_scope_context/0, set_scope_context/1, is_scope_context_available/0,
+         get_scope_depth/0, set_scope_depth/1,
          current_time_ms/0,
          get_actor_registry/0, set_actor_registry/1,
          get_caller_id/0]).
@@ -32,6 +33,34 @@ is_stdout_tty() ->
                         false -> false;
                         "dumb" -> false;
                         _ -> true
+                    end
+            end
+    end.
+
+%% Get terminal color depth (number of colors supported)
+%% Returns 16777216 for truecolor, 256 for 256-color, 16 for basic, 0 for none
+get_color_depth() ->
+    case is_stdout_tty() of
+        false -> 0;
+        true ->
+            ColorTerm = os:getenv("COLORTERM"),
+            Term = os:getenv("TERM"),
+            case ColorTerm of
+                "truecolor" -> 16777216;
+                "24bit" -> 16777216;
+                _ ->
+                    %% Check TERM for 256color
+                    case Term of
+                        false -> 16;
+                        TermStr ->
+                            case string:find(TermStr, "256color") of
+                                nomatch ->
+                                    case string:find(TermStr, "256") of
+                                        nomatch -> 16;
+                                        _ -> 256
+                                    end;
+                                _ -> 256
+                            end
                     end
             end
     end.
@@ -263,6 +292,8 @@ format_error(exit, Reason) ->
 
 %% Key for scope context in process dictionary
 -define(SCOPE_CONTEXT_KEY, birch_scope_context).
+%% Key for scope depth in process dictionary
+-define(SCOPE_DEPTH_KEY, birch_scope_depth).
 
 %% Get the current scope context from the process dictionary.
 %% Returns a list of {Key, Value} tuples (Gleam Metadata format).
@@ -275,6 +306,19 @@ get_scope_context() ->
 %% Set the scope context in the process dictionary.
 set_scope_context(Context) ->
     erlang:put(?SCOPE_CONTEXT_KEY, Context),
+    nil.
+
+%% Get the current scope depth (nesting level).
+%% Returns 0 if no scope is active.
+get_scope_depth() ->
+    case erlang:get(?SCOPE_DEPTH_KEY) of
+        undefined -> 0;
+        Depth -> Depth
+    end.
+
+%% Set the scope depth.
+set_scope_depth(Depth) ->
+    erlang:put(?SCOPE_DEPTH_KEY, Depth),
     nil.
 
 %% Scoped context is always available on Erlang (uses process dictionary).

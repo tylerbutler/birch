@@ -20,7 +20,7 @@ pub fn create_async_file_handler_test() {
 }
 
 pub fn async_config_builder_test() {
-  let config =
+  let _config =
     async.config()
     |> async.with_queue_size(5000)
     |> async.with_flush_interval(200)

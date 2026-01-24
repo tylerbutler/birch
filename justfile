@@ -23,6 +23,17 @@ build-js:
 # Build for all targets
 build-all: build build-js
 
+# Build with warnings as errors (Erlang target)
+build-strict:
+    gleam build --warnings-as-errors
+
+# Build with warnings as errors (JavaScript target)
+build-strict-js:
+    gleam build --target javascript --warnings-as-errors
+
+# Build with warnings as errors (all targets)
+build-strict-all: build-strict build-strict-js
+
 # Run tests on Erlang target
 test-erlang:
     gleam test
@@ -59,6 +70,10 @@ check: format-check test
 
 # Run quick checks (format + erlang tests only)
 check-quick: format-check test-erlang
+
+# Full local validation (no act/Docker required)
+# Covers: format, strict build, tests, examples (Erlang), integration (Node.js)
+check-full: format-check build-strict-all test test-examples test-integration-node
 
 # Watch and rebuild on changes (requires watchexec)
 watch:
@@ -108,6 +123,18 @@ test-integration: test-integration-node
 test-integration-all: test-integration-node test-integration-deno test-integration-bun
 
 # ============================================================================
+# Demo
+# ============================================================================
+
+# Run the console handler demo showcasing all presentation options
+demo:
+    cd demo && gleam run
+
+# Run the console handler demo on JavaScript target
+demo-js:
+    cd demo && gleam run --target javascript
+
+# ============================================================================
 # Examples
 # ============================================================================
 
@@ -116,6 +143,15 @@ test-examples:
     #!/usr/bin/env bash
     set -e
     for dir in examples/*/; do
+        echo "Testing $dir (Erlang)..."
+        (cd "$dir" && gleam deps download && gleam test)
+    done
+
+# Quick smoke test of representative examples (Erlang)
+test-examples-smoke:
+    #!/usr/bin/env bash
+    set -e
+    for dir in examples/01-quick-start examples/06-json-handler examples/07-file-handler; do
         echo "Testing $dir (Erlang)..."
         (cd "$dir" && gleam deps download && gleam test)
     done
@@ -205,17 +241,16 @@ test-example-bun example:
     bun "build/dev/javascript/${pkg_name}/gleam.main.mjs"
 
 # ============================================================================
-# Local CI Testing with act (https://github.com/nektos/act)
+# Act-based CI Testing (https://github.com/nektos/act)
 # Requires: Docker running, act installed (https://nektosact.com/installation/)
 # ============================================================================
 
-# List all CI jobs available to run locally
+# List all act CI jobs available
 ci-list:
     act -l
 
-# Run all CI jobs locally (simulates push event)
-ci:
-    act push
+# Run full local CI validation (no Docker required)
+ci: check-full
 
 # Run a specific CI job locally
 ci-job job:
@@ -259,11 +294,11 @@ ci-dry:
 
 # Run CI with verbose output for debugging
 ci-verbose:
-    act push --verbose
+    act push --verbose --concurrent-jobs 1
 
 # Run CI on host system without Docker (uses locally installed tools)
 ci-host:
-    act push -P ubuntu-latest=-self-hosted
+    act push -P ubuntu-latest=-self-hosted --concurrent-jobs 1
 
 # Run specific CI job on host system without Docker
 ci-host-job job:
