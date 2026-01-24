@@ -9,7 +9,7 @@ pub fn main() {
 }
 
 pub fn production_sampling_test() {
-  let config = example.production_sampling()
+  let _config = example.production_sampling()
 
   // Should sample debug at 1%
   // We can't easily test the exact rate, but we can verify the config exists
@@ -17,7 +17,7 @@ pub fn production_sampling_test() {
 }
 
 pub fn development_sampling_test() {
-  let config = example.development_sampling()
+  let _config = example.development_sampling()
   should.be_true(True)
 }
 
