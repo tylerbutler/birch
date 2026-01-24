@@ -56,11 +56,11 @@ pub fn simple(record: LogRecord) -> String {
 }
 
 /// Pad a level string to 5 characters for alignment.
-fn pad_level(level_str: String) -> String {
-  case string.length(level_str) {
-    5 -> level_str
-    4 -> level_str <> " "
-    3 -> level_str <> "  "
+/// Uses pattern matching on known log level strings for efficiency.
+pub fn pad_level(level_str: String) -> String {
+  case level_str {
+    "TRACE" | "DEBUG" | "ERROR" | "FATAL" -> level_str
+    "INFO" | "WARN" -> level_str <> " "
     _ -> level_str
   }
 }

@@ -35,6 +35,9 @@ import birch/level.{type Level}
 import gleam/float
 import gleam/int
 
+// Note: We use float.random() from stdlib for probabilistic sampling
+// and platform.current_time_ms() for token bucket timing
+
 // ============================================================================
 // Sampling Configuration
 // ============================================================================
@@ -55,14 +58,7 @@ pub fn config(lvl: Level, rate: Float) -> SampleConfig {
 
 /// Clamp a rate to the valid range [0.0, 1.0].
 fn clamp_rate(rate: Float) -> Float {
-  case rate <. 0.0 {
-    True -> 0.0
-    False ->
-      case rate >. 1.0 {
-        True -> 1.0
-        False -> rate
-      }
-  }
+  float.clamp(rate, 0.0, 1.0)
 }
 
 /// Check if a log at the given level should be sampled (logged).
@@ -81,7 +77,7 @@ pub fn should_sample(sample_config: SampleConfig, log_level: Level) -> Bool {
         r if r >=. 1.0 -> True
         r if r <=. 0.0 -> False
         rate -> {
-          let random = platform.random_float()
+          let random = float.random()
           random <. rate
         }
       }
@@ -156,7 +152,7 @@ pub fn new_token_bucket(max_tokens: Int, refill_rate: Int) -> TokenBucket {
   TokenBucket(
     max_tokens: max_tokens,
     refill_rate: refill_rate,
-    tokens: int_to_float(max_tokens),
+    tokens: int.to_float(max_tokens),
     last_refill_ms: platform.current_time_ms(),
   )
 }
@@ -195,19 +191,14 @@ fn refill_bucket(bucket: TokenBucket, now_ms: Int) -> TokenBucket {
   case elapsed_ms > 0 {
     False -> bucket
     True -> {
-      let elapsed_seconds = int_to_float(elapsed_ms) /. 1000.0
-      let tokens_to_add = elapsed_seconds *. int_to_float(bucket.refill_rate)
+      let elapsed_seconds = int.to_float(elapsed_ms) /. 1000.0
+      let tokens_to_add = elapsed_seconds *. int.to_float(bucket.refill_rate)
       let new_tokens =
         float.min(
           bucket.tokens +. tokens_to_add,
-          int_to_float(bucket.max_tokens),
+          int.to_float(bucket.max_tokens),
         )
       TokenBucket(..bucket, tokens: new_tokens, last_refill_ms: now_ms)
     }
   }
-}
-
-/// Convert an Int to a Float.
-fn int_to_float(n: Int) -> Float {
-  int.to_float(n)
 }

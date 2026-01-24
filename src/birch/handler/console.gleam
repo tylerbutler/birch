@@ -12,6 +12,7 @@ import birch/internal/platform
 import birch/level_formatter.{type LevelFormatter}
 import birch/record.{type LogRecord, type Metadata}
 import gleam/int
+import gleam/io
 import gleam/list
 import gleam/string
 
@@ -190,8 +191,8 @@ pub fn handler_with_config(config: ConsoleConfig) -> Handler {
   let use_color = config.color && platform.is_stdout_tty()
 
   let write_fn = case config.target {
-    Stdout -> platform.write_stdout
-    Stderr -> platform.write_stderr
+    Stdout -> io.println
+    Stderr -> io.println_error
     handler.StdoutWithStderr -> write_split
   }
 
@@ -219,7 +220,7 @@ pub fn handler_with_config(config: ConsoleConfig) -> Handler {
 fn write_split(message: String) -> Nil {
   // We can't easily determine the level here, so we just write to stdout
   // A more complete implementation would need access to the record
-  platform.write_stdout(message)
+  io.println(message)
 }
 
 // ============================================================================
@@ -499,12 +500,12 @@ fn find_max_width(lines: List(String), min_width: Int) -> Int {
 
 /// Write a boxed message directly to stdout.
 pub fn write_box(message: String) -> Nil {
-  platform.write_stdout(box(message))
+  io.println(box(message))
 }
 
 /// Write a boxed message with title directly to stdout.
 pub fn write_box_with_title(message: String, title: String) -> Nil {
-  platform.write_stdout(box_with_title(message, title))
+  io.println(box_with_title(message, title))
 }
 
 // ============================================================================
@@ -535,7 +536,7 @@ pub fn with_group(title: String, work: fn() -> a) -> a {
     True -> level_formatter.ansi_cyan() <> "▸" <> level_formatter.ansi_reset()
     False -> "▸"
   }
-  platform.write_stdout(arrow <> " " <> title)
+  io.println(arrow <> " " <> title)
   work()
 }
 
@@ -559,9 +560,9 @@ pub fn indented_handler_with_config(
   let use_color = config.color && platform.is_stdout_tty()
 
   let write_fn = case config.target {
-    Stdout -> platform.write_stdout
-    Stderr -> platform.write_stderr
-    handler.StdoutWithStderr -> platform.write_stdout
+    Stdout -> io.println
+    Stderr -> io.println_error
+    handler.StdoutWithStderr -> io.println
   }
 
   let indent = string.repeat("  ", indent_level)
@@ -643,7 +644,7 @@ fn write_styled_with_metadata(
 ) -> Nil {
   let use_color = platform.is_stdout_tty()
   let formatted = format_styled_message(style, message, metadata, use_color)
-  platform.write_stdout(formatted)
+  io.println(formatted)
 }
 
 fn format_styled_message(

@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "gleam format $CLAUDE_FILE_PATHS",
+            "filePatterns": ["**/*.gleam"]
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '⚠️  Remember: FFI changes require updating BOTH birch_ffi.erl AND birch_ffi.mjs'",
+            "filePatterns": ["**/birch_ffi.erl", "**/birch_ffi.mjs"]
+          }
+        ]
+      }
+    ]
+  }
+}

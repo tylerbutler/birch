@@ -6,6 +6,7 @@ import birch/formatter
 import birch/handler.{type Handler}
 import birch/internal/platform
 import gleam/int
+import gleam/io
 import gleam/list
 import gleam/result
 import gleam/string
@@ -105,7 +106,7 @@ fn write_to_file(config: FileConfig, message: String) -> Nil {
     Ok(Nil) -> Nil
     Error(e) -> {
       // Log to stderr on failure, but don't crash
-      platform.write_stderr(
+      io.println_error(
         "birch: failed to write to "
         <> config.path
         <> ": "
@@ -184,7 +185,7 @@ fn rotate_file(path: String, max_files: Int, compress: Bool) -> Nil {
         }
         Error(_) -> {
           // If compression fails, fall back to rename without compression
-          platform.write_stderr(
+          io.println_error(
             "birch: compression failed, falling back to uncompressed rotation",
           )
           let _ = simplifile.rename(path, path <> ".1")
@@ -272,15 +273,10 @@ fn cleanup_old_rotated_files(base_path: String, max_files: Int) -> Nil {
 
 /// Get the filename from a path.
 fn get_filename(path: String) -> String {
-  case string.split(path, "/") {
-    [] -> path
-    parts -> {
-      case list.last(parts) {
-        Ok(name) -> name
-        Error(_) -> path
-      }
-    }
-  }
+  path
+  |> string.split("/")
+  |> list.last
+  |> result.unwrap(path)
 }
 
 /// Shift rotated files: .N -> .N+1 for N from max down to 1
@@ -313,13 +309,10 @@ fn ensure_parent_dir(path: String) -> Result(Nil, Nil) {
 
 /// Get the parent directory of a path.
 fn get_parent_dir(path: String) -> String {
-  case string.split(path, "/") {
-    [] -> ""
-    parts -> {
-      let without_last = list.take(parts, list.length(parts) - 1)
-      string.join(without_last, "/")
-    }
-  }
+  let parts = string.split(path, "/")
+  parts
+  |> list.take(list.length(parts) - 1)
+  |> string.join("/")
 }
 
 // ============================================================================
