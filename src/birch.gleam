@@ -56,6 +56,11 @@ pub type LogHandler =
 pub type LogMetadata =
   Metadata
 
+/// Timestamp format for log records.
+/// Re-exported from logger module for convenience.
+pub type TimestampFormat =
+  logger.TimestampFormat
+
 /// Global configuration for the default logger.
 /// Re-exported from config module for convenience.
 pub type Config =

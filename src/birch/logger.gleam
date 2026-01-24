@@ -5,12 +5,55 @@
 
 import birch/handler.{type Handler}
 import birch/handler/console
-import birch/internal/platform
 import birch/level.{type Level}
 import birch/record.{type Metadata}
+import birl
+import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
+
+// Re-import platform for non-timestamp operations
+import birch/internal/platform
+
+/// Timestamp format options for log records.
+///
+/// Controls how timestamps are formatted in log output.
+pub type TimestampFormat {
+  /// ISO 8601 format with timezone: "2024-12-26T10:30:45.123Z"
+  /// This is the default format.
+  Iso8601
+  /// ISO 8601 without timezone offset: "2024-12-26T10:30:45.123"
+  Naive
+  /// HTTP header format (RFC 2616): "Thu, 26 Dec 2024 10:30:45 GMT"
+  Http
+  /// Date only: "2024-12-26"
+  DateOnly
+  /// Time only: "10:30:45"
+  TimeOnly
+  /// Unix timestamp in seconds: "1703588445"
+  Unix
+  /// Unix timestamp in milliseconds: "1703588445123"
+  UnixMilli
+  /// Custom formatter function that receives a birl.Time and returns a string.
+  /// Use this for complete control over timestamp formatting.
+  ///
+  /// ## Example
+  ///
+  /// ```gleam
+  /// import birl
+  ///
+  /// // Custom format: "Dec 26, 2024 10:30"
+  /// let custom_format = Custom(fn(time) {
+  ///   let month = birl.short_string_month(birl.get_month(time))
+  ///   let day = birl.get_day(time) |> int.to_string
+  ///   let year = birl.get_year(time) |> int.to_string
+  ///   let time_str = birl.to_naive_time_string(time) |> string.slice(0, 5)
+  ///   month <> " " <> day <> ", " <> year <> " " <> time_str
+  /// })
+  /// ```
+  Custom(fn(birl.Time) -> String)
+}
 
 /// A function that provides timestamps.
 /// Used for testing with deterministic timestamps.
@@ -28,8 +71,10 @@ pub opaque type Logger {
     handlers: List(Handler),
     /// Persistent context metadata
     context: Metadata,
-    /// Optional custom time provider (defaults to platform.timestamp_iso8601)
+    /// Optional custom time provider (defaults to using birl.now())
     time_provider: Option(TimeProvider),
+    /// Timestamp format for log records (defaults to Iso8601)
+    timestamp_format: TimestampFormat,
     /// Whether to capture caller process/thread ID on each log call
     capture_caller_id: Bool,
   )
@@ -44,6 +89,7 @@ pub fn new(name: String) -> Logger {
     handlers: [console.handler()],
     context: [],
     time_provider: None,
+    timestamp_format: Iso8601,
     capture_caller_id: False,
   )
 }
@@ -57,6 +103,7 @@ pub fn silent(name: String) -> Logger {
     handlers: [],
     context: [],
     time_provider: None,
+    timestamp_format: Iso8601,
     capture_caller_id: False,
   )
 }
@@ -133,6 +180,41 @@ pub fn without_time_provider(logger: Logger) -> Logger {
   Logger(..logger, time_provider: None)
 }
 
+/// Set the timestamp format for a logger.
+///
+/// Controls how timestamps are formatted in log records.
+///
+/// ## Example
+///
+/// ```gleam
+/// import birch/logger
+///
+/// // Use naive format (no timezone)
+/// let logger =
+///   logger.new("myapp")
+///   |> logger.with_timestamp_format(logger.Naive)
+///
+/// // Use Unix milliseconds
+/// let logger =
+///   logger.new("myapp")
+///   |> logger.with_timestamp_format(logger.UnixMilli)
+///
+/// // Custom format
+/// let logger =
+///   logger.new("myapp")
+///   |> logger.with_timestamp_format(logger.Custom(fn(time) {
+///     birl.to_naive_time_string(time)
+///   }))
+/// ```
+pub fn with_timestamp_format(logger: Logger, format: TimestampFormat) -> Logger {
+  Logger(..logger, timestamp_format: format)
+}
+
+/// Get the timestamp format of a logger.
+pub fn get_timestamp_format(logger: Logger) -> TimestampFormat {
+  logger.timestamp_format
+}
+
 /// Enable caller ID capture for this logger.
 ///
 /// When enabled, log records will include the process/thread ID of the caller.
@@ -169,8 +251,24 @@ pub fn is_caller_id_capture_enabled(logger: Logger) -> Bool {
 /// Falls back to platform.timestamp_iso8601() if no custom provider is set.
 fn get_timestamp(logger: Logger) -> String {
   case logger.time_provider {
+    // Custom time provider takes precedence (for testing)
     Some(provider) -> provider()
-    None -> platform.timestamp_iso8601()
+    // Otherwise, format the current time according to timestamp_format
+    None -> format_timestamp(birl.now(), logger.timestamp_format)
+  }
+}
+
+/// Format a birl.Time according to the given TimestampFormat.
+fn format_timestamp(time: birl.Time, format: TimestampFormat) -> String {
+  case format {
+    Iso8601 -> birl.to_iso8601(time)
+    Naive -> birl.to_naive(time)
+    Http -> birl.to_http(time)
+    DateOnly -> birl.to_naive_date_string(time)
+    TimeOnly -> birl.to_naive_time_string(time)
+    Unix -> birl.to_unix(time) |> int.to_string
+    UnixMilli -> birl.to_unix_milli(time) |> int.to_string
+    Custom(formatter) -> formatter(time)
   }
 }
 
