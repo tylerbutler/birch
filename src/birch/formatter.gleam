@@ -2,8 +2,10 @@
 ////
 //// Formatters transform LogRecords into strings for output.
 
+import birch/internal/platform
 import birch/level
 import birch/record.{type LogRecord}
+import gleam/int
 import gleam/list
 import gleam/string
 
@@ -75,19 +77,25 @@ pub fn format_metadata(metadata: record.Metadata) -> String {
   |> string.join(" ")
 }
 
-/// Format metadata with specific keys bolded.
-/// Keys in the bold_keys list will be wrapped in ANSI bold codes.
+/// Format metadata with specific keys highlighted.
+/// Keys in the highlight_keys list will be styled with bold and a unique
+/// hash-based color for visual distinction.
 pub fn format_metadata_with_bold(
   metadata: record.Metadata,
-  bold_keys: List(String),
+  highlight_keys: List(String),
   use_color: Bool,
 ) -> String {
   metadata
   |> list.map(fn(pair) {
     let #(key, value) = pair
     let formatted_kv = key <> "=" <> escape_value(value)
-    case use_color && list.contains(bold_keys, key) {
-      True -> "\u{001b}[1m" <> formatted_kv <> "\u{001b}[22m"
+    case use_color && list.contains(highlight_keys, key) {
+      True -> {
+        let color = hash_color(key)
+        let bold = "\u{001b}[1m"
+        let reset = "\u{001b}[0m"
+        bold <> color <> formatted_kv <> reset
+      }
       False -> formatted_kv
     }
   })
@@ -99,5 +107,41 @@ fn escape_value(value: String) -> String {
   case string.contains(value, " ") || string.contains(value, "=") {
     True -> "\"" <> value <> "\""
     False -> value
+  }
+}
+
+/// Get a color based on a simple hash of the input string.
+/// Uses 256-color palette if terminal supports it, otherwise falls back to 6 basic colors.
+fn hash_color(text: String) -> String {
+  let hash =
+    text
+    |> string.to_utf_codepoints
+    |> list.fold(0, fn(acc, cp) { acc + string.utf_codepoint_to_int(cp) })
+
+  let color_depth = platform.get_color_depth()
+
+  case color_depth >= 256 {
+    True -> {
+      // Use 256-color palette - pick from a range of nice, readable colors
+      let color_index = { hash % 180 } + 38
+      "\u{001b}[38;5;" <> int.to_string(color_index) <> "m"
+    }
+    False -> {
+      // Fall back to basic 6-color palette
+      case hash % 6 {
+        0 -> "\u{001b}[36m"
+        // cyan
+        1 -> "\u{001b}[32m"
+        // green
+        2 -> "\u{001b}[33m"
+        // yellow
+        3 -> "\u{001b}[35m"
+        // magenta
+        4 -> "\u{001b}[34m"
+        // blue
+        _ -> "\u{001b}[31m"
+        // red
+      }
+    }
   }
 }
