@@ -15,3 +15,5 @@ node_modules/
 .act/
 
 .claude/settings.local.json
+_gleam_artefacts/
+**/examples/**/build/
