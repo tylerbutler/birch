@@ -1,18 +1,11 @@
 // JavaScript FFI for birch
 //
+// Note: Time functions (timestamp_iso8601, current_time_ms) are now provided by birl.
 // Note: write_stdout, write_stderr, and random_float have been removed.
 // Use gleam/io.println, io.println_error, and gleam/float.random() instead.
 
 // Import Gleam's Result constructors and List helpers from the prelude
 import { Ok, Error, toList } from "./gleam.mjs";
-
-/**
- * Get current timestamp in ISO 8601 format with milliseconds.
- * @returns {string} Timestamp like "2024-12-26T10:30:45.123Z"
- */
-export function timestamp_iso8601() {
-  return new Date().toISOString();
-}
 
 /**
  * Check if stdout is a TTY (for color support detection).
@@ -663,17 +656,6 @@ export function is_scope_context_available() {
   return scopeContextState.asyncLocalStorageAvailable;
 }
 
-// ============================================================================
-// Time FFI
-// ============================================================================
-
-/**
- * Get the current time in milliseconds since epoch.
- * @returns {number}
- */
-export function current_time_ms() {
-  return Date.now();
-}
 
 // ============================================================================
 // Process/Thread ID
