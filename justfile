@@ -71,6 +71,10 @@ check: format-check test
 # Run quick checks (format + erlang tests only)
 check-quick: format-check test-erlang
 
+# Full local validation (no act/Docker required)
+# Covers: format, strict build, tests, examples (Erlang), integration (Node.js)
+check-full: format-check build-strict-all test test-examples test-integration-node
+
 # Watch and rebuild on changes (requires watchexec)
 watch:
     watchexec -e gleam -r -- gleam build
@@ -139,6 +143,15 @@ test-examples:
     #!/usr/bin/env bash
     set -e
     for dir in examples/*/; do
+        echo "Testing $dir (Erlang)..."
+        (cd "$dir" && gleam deps download && gleam test)
+    done
+
+# Quick smoke test of representative examples (Erlang)
+test-examples-smoke:
+    #!/usr/bin/env bash
+    set -e
+    for dir in examples/01-quick-start examples/06-json-handler examples/07-file-handler; do
         echo "Testing $dir (Erlang)..."
         (cd "$dir" && gleam deps download && gleam test)
     done
@@ -228,17 +241,16 @@ test-example-bun example:
     bun "build/dev/javascript/${pkg_name}/gleam.main.mjs"
 
 # ============================================================================
-# Local CI Testing with act (https://github.com/nektos/act)
+# Act-based CI Testing (https://github.com/nektos/act)
 # Requires: Docker running, act installed (https://nektosact.com/installation/)
 # ============================================================================
 
-# List all CI jobs available to run locally
+# List all act CI jobs available
 ci-list:
     act -l
 
-# Run all CI jobs locally (simulates push event)
-ci:
-    act push
+# Run full local CI validation (no Docker required)
+ci: check-full
 
 # Run a specific CI job locally
 ci-job job:
@@ -282,11 +294,11 @@ ci-dry:
 
 # Run CI with verbose output for debugging
 ci-verbose:
-    act push --verbose
+    act push --verbose --concurrent-jobs 1
 
 # Run CI on host system without Docker (uses locally installed tools)
 ci-host:
-    act push -P ubuntu-latest=-self-hosted
+    act push -P ubuntu-latest=-self-hosted --concurrent-jobs 1
 
 # Run specific CI job on host system without Docker
 ci-host-job job:
