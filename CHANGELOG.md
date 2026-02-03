@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/tylerbutler/birch/compare/v0.1.1...v0.1.2) (2026-02-03)
+
+
+### Bug Fixes
+
+* **ci:** bypass pre-1.0 semver confirmation in publish workflow ([c8f742d](https://github.com/tylerbutler/birch/commit/c8f742daeeb77ee0cdb9f60c4bc569d2b059f074))
+
 ## [0.1.1](https://github.com/tylerbutler/birch/compare/v0.1.0...v0.1.1) (2026-01-24)
 
 
