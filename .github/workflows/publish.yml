@@ -18,7 +18,7 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Publish to Hex.pm
-        run: gleam publish --yes
+        run: gleam publish --yes --allow-prerelease
         env:
           HEXPM_USER: ${{ secrets.HEXPM_USER }}
           HEXPM_PASS: ${{ secrets.HEXPM_PASS }}
