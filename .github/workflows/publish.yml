@@ -18,7 +18,8 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Publish to Hex.pm
-        run: gleam publish --yes --allow-prerelease
+        # Pipe confirmation for pre-1.0 semver warning (no flag exists to bypass)
+        run: echo "I am not using semantic versioning" | gleam publish --yes
         env:
           HEXPM_USER: ${{ secrets.HEXPM_USER }}
           HEXPM_PASS: ${{ secrets.HEXPM_PASS }}
