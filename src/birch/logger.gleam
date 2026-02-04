@@ -35,24 +35,29 @@ pub type TimestampFormat {
   Unix
   /// Unix timestamp in milliseconds: "1703588445123"
   UnixMilli
-  /// Custom formatter function that receives a birl.Time and returns a string.
+  /// Custom formatter function that receives Unix milliseconds and returns a string.
   /// Use this for complete control over timestamp formatting.
+  ///
+  /// The function receives the current time as Unix milliseconds (Int),
+  /// which can be converted to any datetime format using your preferred library.
   ///
   /// ## Example
   ///
   /// ```gleam
-  /// import birl
+  /// import gleam/int
   ///
-  /// // Custom format: "Dec 26, 2024 10:30"
-  /// let custom_format = Custom(fn(time) {
-  ///   let month = birl.short_string_month(birl.get_month(time))
-  ///   let day = birl.get_day(time) |> int.to_string
-  ///   let year = birl.get_year(time) |> int.to_string
-  ///   let time_str = birl.to_naive_time_string(time) |> string.slice(0, 5)
-  ///   month <> " " <> day <> ", " <> year <> " " <> time_str
+  /// // Simple: just show seconds since epoch
+  /// let unix_seconds = Custom(fn(unix_ms) {
+  ///   int.to_string(unix_ms / 1000)
+  /// })
+  ///
+  /// // Or use any datetime library to format the timestamp
+  /// let custom_format = Custom(fn(unix_ms) {
+  ///   // Convert unix_ms to your preferred format
+  ///   my_datetime_lib.format(unix_ms, "MMM DD, YYYY HH:mm")
   /// })
   /// ```
-  Custom(fn(birl.Time) -> String)
+  Custom(fn(Int) -> String)
 }
 
 /// A function that provides timestamps.
@@ -268,7 +273,7 @@ fn format_timestamp(time: birl.Time, format: TimestampFormat) -> String {
     TimeOnly -> birl.to_naive_time_string(time)
     Unix -> birl.to_unix(time) |> int.to_string
     UnixMilli -> birl.to_unix_milli(time) |> int.to_string
-    Custom(formatter) -> formatter(time)
+    Custom(formatter) -> formatter(birl.to_unix_milli(time))
   }
 }
 

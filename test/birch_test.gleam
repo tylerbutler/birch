@@ -12,7 +12,7 @@ import birch/logger
 import birch/record
 import birch/sampling
 import birch/scope
-import birl
+import gleam/int
 import gleam/json as gleam_json
 import gleam/list
 import gleam/option.{None, Some}
@@ -303,11 +303,8 @@ pub fn logger_timestamp_format_unix_test() {
 }
 
 pub fn logger_timestamp_format_custom_test() {
-  // Custom format that just returns the year
-  let custom_formatter = fn(time: birl.Time) {
-    let day = birl.get_day(time)
-    day.year |> string.inspect
-  }
+  // Custom format that returns Unix seconds
+  let custom_formatter = fn(unix_ms: Int) { int.to_string(unix_ms / 1000) }
 
   let lgr =
     logger.new("test")
