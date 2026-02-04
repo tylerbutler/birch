@@ -6,13 +6,13 @@
 //// Note: For stdout/stderr output, use gleam/io.println and io.println_error.
 //// For random floats, use gleam/float.random().
 
+import birch/internal/time
 import birch/record.{type LogRecord, type Metadata}
-import birl
 
 /// Get the current timestamp in ISO 8601 format with milliseconds.
 /// Returns a string like "2024-12-26T10:30:45.123Z"
 pub fn timestamp_iso8601() -> String {
-  birl.now() |> birl.to_iso8601()
+  time.now() |> time.to_iso8601()
 }
 
 /// Check if stdout is a TTY (for color support detection).
@@ -129,16 +129,6 @@ pub fn set_scope_depth(depth: Int) -> Nil
 @external(erlang, "birch_ffi", "is_scope_context_available")
 @external(javascript, "../../birch_ffi.mjs", "is_scope_context_available")
 pub fn is_scope_context_available() -> Bool
-
-// ============================================================================
-// Time
-// ============================================================================
-
-/// Get the current time in milliseconds since epoch.
-/// Used for token bucket rate limiting.
-pub fn current_time_ms() -> Int {
-  birl.now() |> birl.to_unix_milli()
-}
 
 // ============================================================================
 // Process/Thread ID FFI

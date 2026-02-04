@@ -5,13 +5,14 @@
 
 import birch/handler.{type Handler}
 import birch/handler/console
+import birch/internal/time
 import birch/level.{type Level}
 import birch/record.{type Metadata}
-import birl
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
+import gleam/time/timestamp.{type Timestamp}
 
 // Re-import platform for non-timestamp operations
 import birch/internal/platform
@@ -76,7 +77,7 @@ pub opaque type Logger {
     handlers: List(Handler),
     /// Persistent context metadata
     context: Metadata,
-    /// Optional custom time provider (defaults to using birl.now())
+    /// Optional custom time provider (defaults to using gleam_time)
     time_provider: Option(TimeProvider),
     /// Timestamp format for log records (defaults to Iso8601)
     timestamp_format: TimestampFormat,
@@ -204,11 +205,11 @@ pub fn without_time_provider(logger: Logger) -> Logger {
 ///   logger.new("myapp")
 ///   |> logger.with_timestamp_format(logger.UnixMilli)
 ///
-/// // Custom format
+/// // Custom format using unix milliseconds
 /// let logger =
 ///   logger.new("myapp")
-///   |> logger.with_timestamp_format(logger.Custom(fn(time) {
-///     birl.to_naive_time_string(time)
+///   |> logger.with_timestamp_format(logger.Custom(fn(unix_ms) {
+///     int.to_string(unix_ms / 1000) <> "s"
 ///   }))
 /// ```
 pub fn with_timestamp_format(logger: Logger, format: TimestampFormat) -> Logger {
@@ -259,21 +260,21 @@ fn get_timestamp(logger: Logger) -> String {
     // Custom time provider takes precedence (for testing)
     Some(provider) -> provider()
     // Otherwise, format the current time according to timestamp_format
-    None -> format_timestamp(birl.now(), logger.timestamp_format)
+    None -> format_timestamp(time.now(), logger.timestamp_format)
   }
 }
 
-/// Format a birl.Time according to the given TimestampFormat.
-fn format_timestamp(time: birl.Time, format: TimestampFormat) -> String {
+/// Format a Timestamp according to the given TimestampFormat.
+fn format_timestamp(ts: Timestamp, format: TimestampFormat) -> String {
   case format {
-    Iso8601 -> birl.to_iso8601(time)
-    Naive -> birl.to_naive(time)
-    Http -> birl.to_http(time)
-    DateOnly -> birl.to_naive_date_string(time)
-    TimeOnly -> birl.to_naive_time_string(time)
-    Unix -> birl.to_unix(time) |> int.to_string
-    UnixMilli -> birl.to_unix_milli(time) |> int.to_string
-    Custom(formatter) -> formatter(birl.to_unix_milli(time))
+    Iso8601 -> time.to_iso8601(ts)
+    Naive -> time.to_naive(ts)
+    Http -> time.to_http(ts)
+    DateOnly -> time.to_date_string(ts)
+    TimeOnly -> time.to_time_string(ts)
+    Unix -> time.to_unix(ts) |> int.to_string
+    UnixMilli -> time.to_unix_milli(ts) |> int.to_string
+    Custom(formatter) -> formatter(time.to_unix_milli(ts))
   }
 }
 

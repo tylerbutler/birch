@@ -16,6 +16,7 @@ gleam_otp = ">= 1.0.0 and < 2.0.0"
 gleam_erlang = ">= 1.0.0 and < 2.0.0"
 gleam_regexp = ">= 1.0.0 and < 2.0.0"
 ranger = ">= 1.4.0 and < 2.0.0"
+gleam_time = ">= 1.0.0 and < 2.0.0"
 birl = { path = "src/birch/internal/vendored/birl" }
 
 [dev-dependencies]

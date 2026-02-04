@@ -8,7 +8,7 @@
          get_actor_registry/0, set_actor_registry/1,
          get_caller_id/0]).
 
-%% Note: Time functions (timestamp_iso8601, current_time_ms) are now provided by birl.
+%% Note: Time functions are now provided by gleam_time via birch/internal/time.
 %% Note: write_stdout, write_stderr, and random_float have been removed.
 %% Use gleam/io.println, io.println_error, and gleam/float.random() instead.
 
