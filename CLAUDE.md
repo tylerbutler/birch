@@ -22,12 +22,18 @@ The name "birch" comes from birch trees, whose white bark gleams in the light.
 src/
 ├── birch.gleam                  # Main public API - re-exports and convenience functions
 ├── birch/
+│   ├── config.gleam             # Configuration types and defaults
+│   ├── erlang_logger.gleam      # OTP logger integration (Erlang-only)
 │   ├── level.gleam              # LogLevel type (Trace/Debug/Info/Warn/Err/Fatal)
+│   ├── level_formatter.gleam    # Level formatting and presentation options
 │   ├── record.gleam             # LogRecord type and Metadata
 │   ├── logger.gleam             # Logger type with handlers and context
 │   ├── handler.gleam            # Handler interface and null handler
 │   ├── formatter.gleam          # Format functions (human_readable, simple)
+│   ├── sampling.gleam           # Log sampling for high-volume scenarios
+│   ├── scope.gleam              # Scoped logging context
 │   ├── handler/
+│   │   ├── async.gleam          # Async/buffered handler wrapper
 │   │   ├── console.gleam        # Console output with color support
 │   │   ├── json.gleam           # JSON-formatted output
 │   │   └── file.gleam           # File output with size-based rotation
@@ -36,12 +42,17 @@ src/
 ├── birch_ffi.erl                # Erlang FFI implementation
 └── birch_ffi.mjs                # JavaScript FFI implementation
 
+examples/                         # 17 runnable examples (01-quick-start through 17-handler-errors)
+
 test/
 ├── birch_test.gleam             # Unit tests using gleeunit
+├── erlang_logger_test.gleam     # OTP logger integration tests
+├── integration/                 # JavaScript runtime integration tests
 └── property_test.gleam          # Property tests (pending qcheck 1.0+ migration)
 
 docs/
-└── PRD.md                       # Product Requirements Document
+├── PRD.md                       # Product Requirements Document
+└── IMPLEMENTATION_PLAN.md       # Implementation phases and status
 ```
 
 ### Internal Modules
@@ -85,6 +96,34 @@ just test-integration-deno  # Run on Deno
 just test-integration-bun   # Run on Bun (via Node.js test runner)
 just test-integration       # Run on Node.js (default)
 just test-integration-all   # Run on all three runtimes
+```
+
+### Examples
+
+17 runnable examples in `examples/` directory:
+
+```bash
+just test-examples           # Test all examples on Erlang
+just test-examples-node      # Test all examples on Node.js
+just test-examples-all       # Test on Erlang + Node.js
+just test-example-erlang 01-quick-start  # Test specific example
+just demo                    # Run console handler demo (shows all presentation options)
+```
+
+### Local CI Validation
+
+```bash
+just ci                      # Full CI validation (uses Docker/act)
+just ci-host                 # Run CI without Docker (uses local tools)
+just check-full              # Format, strict build, tests, examples, integration
+```
+
+### Code Coverage
+
+```bash
+just coverage                # JavaScript tests with coverage
+just coverage-all            # All tests with combined coverage
+just coverage-report         # Generate coverage report
 ```
 
 ### Watch Mode (requires watchexec)
@@ -196,6 +235,8 @@ Tests are organized by module:
 - `gleam_stdlib` (>= 0.44.0)
 - `gleam_json` (>= 2.0.0) - For JSON formatter
 - `simplifile` (>= 2.0.0) - For file operations
+- `gleam_otp` (>= 1.0.0) - For async handler and OTP integration
+- `gleam_erlang` (>= 1.0.0) - For Erlang-specific features
 
 ### Development
 - `gleeunit` (>= 1.0.0) - Testing
@@ -249,10 +290,12 @@ When changing platform-specific code:
 
 ## Tool Versions
 
-Specified in `.tool-versions`:
+Specified in `.tool-versions` (source of truth, required by CI):
 - Erlang: 27.2.1
 - Gleam: 1.14.0
 - just: 1.38.0
+
+`.mise.toml` adds dev tools (act, bun, deno, node) and inherits erlang/gleam/just from `.tool-versions`.
 
 ## Known Limitations
 

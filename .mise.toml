@@ -1,16 +1,13 @@
 # mise configuration for birch
 # https://mise.jdx.dev/
 
-# Use .tool-versions as the source of truth for versions
-# This allows compatibility with setup-beam in CI
+# erlang, gleam, just versions come from .tool-versions (required by CI)
+# Additional dev tools are defined here
 
 [tools]
 act = "latest"
 bun = "latest"
 deno = "latest"
-erlang = "27.2.1"
-gleam = "1.14.0"
-just = "latest"
 node = "22"  # For JavaScript target testing
 
 [env]
