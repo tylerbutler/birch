@@ -4,9 +4,6 @@ description = "birch example: error result helpers"
 
 [dependencies]
 birch = { path = "../../" }
-birl = ">= 1.7.0 and < 2.0.0"
-# TODO: Remove constraint after birl update - https://github.com/tylerbutler/birch/issues/32
-gleam_stdlib = ">= 0.44.0 and < 0.68.0"
 simplifile = ">= 2.0.0"
 
 [dev-dependencies]

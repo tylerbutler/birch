@@ -9,12 +9,14 @@ gleam = ">= 1.7.0"
 internal_modules = ["birch/internal", "birch/internal/*"]
 
 [dependencies]
-gleam_stdlib = ">= 0.44.0 and < 1.0.0"
+gleam_stdlib = ">= 0.48.0 and < 2.0.0"
 gleam_json = ">= 2.0.0 and < 4.0.0"
 simplifile = ">= 2.0.0 and < 3.0.0"
 gleam_otp = ">= 1.0.0 and < 2.0.0"
 gleam_erlang = ">= 1.0.0 and < 2.0.0"
-birl = ">= 1.7.0 and < 2.0.0"
+gleam_regexp = ">= 1.0.0 and < 2.0.0"
+ranger = ">= 1.4.0 and < 2.0.0"
+birl = { path = "src/birch/internal/vendored/birl" }
 
 [dev-dependencies]
 gleeunit = ">= 1.0.0 and < 2.0.0"
