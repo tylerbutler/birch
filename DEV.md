@@ -59,29 +59,17 @@ just coverage-js-report    # Generate HTML report (after coverage-js)
 > [!NOTE]
 > Erlang coverage line numbers refer to the **generated Erlang code** in `build/dev/erlang/birch/_gleam_artefacts/*.erl`, not the original Gleam source files.
 
-### CI Integration (Codecov)
+### Why No Hosted Coverage (Codecov/Coveralls)?
 
-The CI workflow runs both coverage targets and uploads to [Codecov](https://codecov.io):
+Hosted coverage services like Codecov and Coveralls don't work well with Gleam because:
 
-```yaml
-- name: Run JavaScript tests with coverage
-  run: just coverage-js
+1. **Path mismatch**: Coverage reports contain paths to compiled artifacts (`build/dev/javascript/*.mjs`, `build/dev/erlang/*.erl`), not Gleam source files
+2. **Files not in repo**: The compiled files don't exist in the repository
+3. **Line number mismatch**: Line numbers in compiled Erlang/JS code don't correspond to Gleam source lines
 
-- name: Run Erlang tests with coverage
-  run: just coverage-erlang-lcov
+This is a fundamental limitation of transpiled languages. Elixir works better with these tools because it has tighter BEAM runtime integration, while Gleam compiles via intermediate Erlang source.
 
-- name: Upload coverage reports
-  uses: codecov/codecov-action@v5
-  with:
-    files: coverage/lcov.info,coverage/lcov-erlang.info
-```
-
-**PR Comments**: Codecov automatically comments on PRs with:
-- Coverage diff (lines added/removed and their coverage)
-- Overall project coverage change
-- Links to detailed file-by-file reports
-
-**Status Checks**: Codecov can be configured to block PRs that decrease coverage below a threshold (configured in `codecov.yml` if present).
+**Use local coverage instead** - `just coverage` provides accurate module-level percentages.
 
 ### Reusing for Other Gleam Projects
 
