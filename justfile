@@ -45,13 +45,13 @@ test-js:
 # Run tests on both targets
 test: test-erlang test-js
 
-# Format source code (excludes vendored dependencies)
+# Format source code
 format:
-    fd -e gleam . src test --exclude 'vendored' -x gleam format {}
+    gleam format src test
 
-# Check formatting (excludes vendored dependencies)
+# Check formatting
 format-check:
-    fd -e gleam . src test --exclude 'vendored' -x gleam format --check {}
+    gleam format --check src test
 
 # Generate documentation
 docs:
