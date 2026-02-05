@@ -226,6 +226,7 @@ Tests are organized by module:
   - Handler tests
   - JSON handler tests
   - Main API tests
+- `test/time_test.gleam` - Internal time module tests
 - `test/property_test.gleam` - Property-based tests using qcheck
   - Level property tests (ordering, comparison, roundtrip)
   - Record property tests (metadata operations)
@@ -301,9 +302,10 @@ Specified in `.tool-versions` (source of truth, required by CI):
 
 ## Known Limitations
 
-1. **Erlang coverage maps to generated code**: While Erlang's `cover` tool works with Gleam BEAM files, line numbers in coverage reports refer to the generated Erlang code, not the original Gleam source. Both JS coverage (via `c8`) and Erlang coverage (via `cover`) are available - see `just coverage` and `just coverage-erlang`
+1. **Coverage maps to generated code**: Coverage reports show compiled Erlang/JS code, not Gleam source. Line numbers don't match. Use `just coverage` for module-level percentages locally. Hosted services (Codecov, Coveralls) don't work with Gleam due to path/line mismatches.
 2. **Scoped context on JS**: JavaScript lacks Erlang's process dictionary; scoped context requires explicit passing or AsyncLocalStorage (Node.js only)
 3. **File handler rotation**: Only size-based rotation is implemented; time-based rotation is a future feature (see PRD Phase 3)
+4. **Stale build artifacts**: If coverage shows unexpected modules (e.g., 0% coverage for non-existent files), run `rm -rf build/dev && just build` to clean stale artifacts
 
 ## References
 
