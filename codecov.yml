@@ -1,27 +1,36 @@
+# Codecov configuration for Gleam project
+# Since Gleam compiles to Erlang/JS, we only track aggregate coverage
+# Line-level annotations are disabled as line numbers don't map to source
+
 coverage:
   status:
     project:
       default:
         target: auto
         threshold: 1%
-    patch:
-      default:
-        target: auto
+    # Disable patch coverage - line numbers don't match source
+    patch: off
 
 comment:
-  layout: "reach,diff,flags,files"
+  # Simple layout - just show totals, no file-level diffs
+  layout: "header,files"
   behavior: default
   require_changes: false
+  # Hide line-by-line annotations
+  hide_project_coverage: false
+
+# Disable inline annotations on PR files (they'd show wrong lines)
+github_checks:
+  annotations: false
 
 # Path fixes to map compiled artifacts back to source
-# Note: Line numbers won't match perfectly due to Gleam→Erlang/JS compilation
 fixes:
-  # JavaScript: build/dev/javascript/birch/birch/level.mjs → src/birch/level.gleam
+  # JavaScript paths
   - "build/dev/javascript/birch/birch/::src/birch/"
   - "build/dev/javascript/birch/::src/"
   - ".mjs::.gleam"
 
-  # Erlang: Remove absolute path prefix, convert @ to /, .erl to .gleam
+  # Erlang paths (CI uses /home/runner/work/...)
   - "/home/runner/work/birch/birch/build/dev/erlang/birch/_gleam_artefacts/::"
   - "build/dev/erlang/birch/_gleam_artefacts/::"
   - "@::/"
@@ -29,7 +38,8 @@ fixes:
   - "birch/::src/birch/"
   - "birch.gleam::src/birch.gleam"
 
-# Ignore FFI files that don't have Gleam source equivalents
+# Ignore files without Gleam source equivalents
 ignore:
   - "**/*_ffi.*"
   - "**/gleam.mjs"
+  - "**/fixtures/**"
