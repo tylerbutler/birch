@@ -12,7 +12,6 @@ import birch/logger
 import birch/record
 import birch/sampling
 import birch/scope
-import gleam/int
 import gleam/json as gleam_json
 import gleam/list
 import gleam/option.{None, Some}
@@ -277,44 +276,31 @@ pub fn logger_silent_test() {
   |> should.equal(0)
 }
 
-pub fn logger_timestamp_format_default_test() {
-  let lgr = logger.new("test")
-
-  logger.get_timestamp_format(lgr)
-  |> should.equal(logger.Iso8601)
-}
-
-pub fn logger_timestamp_format_naive_test() {
-  let lgr =
-    logger.new("test")
-    |> logger.with_timestamp_format(logger.Naive)
-
-  logger.get_timestamp_format(lgr)
-  |> should.equal(logger.Naive)
-}
-
-pub fn logger_timestamp_format_unix_test() {
-  let lgr =
-    logger.new("test")
-    |> logger.with_timestamp_format(logger.Unix)
-
-  logger.get_timestamp_format(lgr)
-  |> should.equal(logger.Unix)
-}
-
-pub fn logger_timestamp_format_custom_test() {
-  // Custom format that returns Unix seconds
-  let custom_formatter = fn(unix_ms: Int) { int.to_string(unix_ms / 1000) }
+pub fn logger_custom_timestamp_test() {
+  // Custom formatter that returns a fixed string
+  let custom_formatter = fn(_ts) { "CUSTOM_TIME" }
 
   let lgr =
     logger.new("test")
-    |> logger.with_timestamp_format(logger.Custom(custom_formatter))
+    |> logger.with_custom_timestamp(custom_formatter)
+    |> logger.with_handlers([handler.null()])
 
-  // Verify the format is set (we can't compare function equality directly)
-  case logger.get_timestamp_format(lgr) {
-    logger.Custom(_) -> True |> should.be_true
-    _ -> False |> should.be_true
-  }
+  // The logger should use the custom formatter
+  // We can't directly test the output here, but we verify it compiles and runs
+  logger.info(lgr, "Test message", [])
+}
+
+pub fn logger_without_custom_timestamp_test() {
+  let custom_formatter = fn(_ts) { "CUSTOM_TIME" }
+
+  let lgr =
+    logger.new("test")
+    |> logger.with_custom_timestamp(custom_formatter)
+    |> logger.without_custom_timestamp()
+    |> logger.with_handlers([handler.null()])
+
+  // Should use default ISO 8601 format after clearing custom formatter
+  logger.info(lgr, "Test message", [])
 }
 
 // ============================================================================

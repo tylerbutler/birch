@@ -8,7 +8,6 @@ import birch/handler/console
 import birch/internal/time
 import birch/level.{type Level}
 import birch/record.{type Metadata}
-import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
@@ -17,49 +16,10 @@ import gleam/time/timestamp.{type Timestamp}
 // Re-import platform for non-timestamp operations
 import birch/internal/platform
 
-/// Timestamp format options for log records.
-///
-/// Controls how timestamps are formatted in log output.
-pub type TimestampFormat {
-  /// ISO 8601 format with timezone: "2024-12-26T10:30:45.123Z"
-  /// This is the default format.
-  Iso8601
-  /// ISO 8601 without timezone offset: "2024-12-26T10:30:45.123"
-  Naive
-  /// HTTP header format (RFC 2616): "Thu, 26 Dec 2024 10:30:45 GMT"
-  Http
-  /// Date only: "2024-12-26"
-  DateOnly
-  /// Time only: "10:30:45"
-  TimeOnly
-  /// Unix timestamp in seconds: "1703588445"
-  Unix
-  /// Unix timestamp in milliseconds: "1703588445123"
-  UnixMilli
-  /// Custom formatter function that receives Unix milliseconds and returns a string.
-  /// Use this for complete control over timestamp formatting.
-  ///
-  /// The function receives the current time as Unix milliseconds (Int),
-  /// which can be converted to any datetime format using your preferred library.
-  ///
-  /// ## Example
-  ///
-  /// ```gleam
-  /// import gleam/int
-  ///
-  /// // Simple: just show seconds since epoch
-  /// let unix_seconds = Custom(fn(unix_ms) {
-  ///   int.to_string(unix_ms / 1000)
-  /// })
-  ///
-  /// // Or use any datetime library to format the timestamp
-  /// let custom_format = Custom(fn(unix_ms) {
-  ///   // Convert unix_ms to your preferred format
-  ///   my_datetime_lib.format(unix_ms, "MMM DD, YYYY HH:mm")
-  /// })
-  /// ```
-  Custom(fn(Int) -> String)
-}
+/// A function that formats a timestamp into a string.
+/// Used for custom timestamp formatting in log output.
+pub type TimestampFormatter =
+  fn(Timestamp) -> String
 
 /// A function that provides timestamps.
 /// Used for testing with deterministic timestamps.
@@ -79,8 +39,8 @@ pub opaque type Logger {
     context: Metadata,
     /// Optional custom time provider (defaults to using gleam_time)
     time_provider: Option(TimeProvider),
-    /// Timestamp format for log records (defaults to Iso8601)
-    timestamp_format: TimestampFormat,
+    /// Optional custom timestamp formatter (defaults to ISO 8601)
+    timestamp_formatter: Option(TimestampFormatter),
     /// Whether to capture caller process/thread ID on each log call
     capture_caller_id: Bool,
   )
@@ -95,7 +55,7 @@ pub fn new(name: String) -> Logger {
     handlers: [console.handler()],
     context: [],
     time_provider: None,
-    timestamp_format: Iso8601,
+    timestamp_formatter: None,
     capture_caller_id: False,
   )
 }
@@ -109,7 +69,7 @@ pub fn silent(name: String) -> Logger {
     handlers: [],
     context: [],
     time_provider: None,
-    timestamp_format: Iso8601,
+    timestamp_formatter: None,
     capture_caller_id: False,
   )
 }
@@ -186,39 +146,47 @@ pub fn without_time_provider(logger: Logger) -> Logger {
   Logger(..logger, time_provider: None)
 }
 
-/// Set the timestamp format for a logger.
+/// Set a custom timestamp formatter for a logger.
 ///
-/// Controls how timestamps are formatted in log records.
+/// The formatter receives a `Timestamp` from `gleam_time` and returns a string.
+/// By default, loggers use ISO 8601 format (e.g., "2024-12-26T10:30:45.123Z").
 ///
 /// ## Example
 ///
 /// ```gleam
 /// import birch/logger
+/// import gleam/int
+/// import gleam/time/timestamp
+/// import gleam/time/calendar
 ///
-/// // Use naive format (no timezone)
+/// // Unix seconds format
 /// let logger =
 ///   logger.new("myapp")
-///   |> logger.with_timestamp_format(logger.Naive)
+///   |> logger.with_custom_timestamp(fn(ts) {
+///     let #(seconds, _nanos) = timestamp.to_unix_seconds_and_nanoseconds(ts)
+///     int.to_string(seconds)
+///   })
 ///
-/// // Use Unix milliseconds
+/// // Date only format
 /// let logger =
 ///   logger.new("myapp")
-///   |> logger.with_timestamp_format(logger.UnixMilli)
-///
-/// // Custom format using unix milliseconds
-/// let logger =
-///   logger.new("myapp")
-///   |> logger.with_timestamp_format(logger.Custom(fn(unix_ms) {
-///     int.to_string(unix_ms / 1000) <> "s"
-///   }))
+///   |> logger.with_custom_timestamp(fn(ts) {
+///     let #(date, _time) = timestamp.to_calendar(ts, calendar.utc_offset)
+///     int.to_string(date.year) <> "-" <>
+///     int.to_string(date.month |> month_to_int) <> "-" <>
+///     int.to_string(date.day)
+///   })
 /// ```
-pub fn with_timestamp_format(logger: Logger, format: TimestampFormat) -> Logger {
-  Logger(..logger, timestamp_format: format)
+pub fn with_custom_timestamp(
+  logger: Logger,
+  formatter: TimestampFormatter,
+) -> Logger {
+  Logger(..logger, timestamp_formatter: Some(formatter))
 }
 
-/// Get the timestamp format of a logger.
-pub fn get_timestamp_format(logger: Logger) -> TimestampFormat {
-  logger.timestamp_format
+/// Clear the custom timestamp formatter, reverting to the default ISO 8601 format.
+pub fn without_custom_timestamp(logger: Logger) -> Logger {
+  Logger(..logger, timestamp_formatter: None)
 }
 
 /// Enable caller ID capture for this logger.
@@ -253,28 +221,20 @@ pub fn is_caller_id_capture_enabled(logger: Logger) -> Bool {
   logger.capture_caller_id
 }
 
-/// Get the current timestamp using the logger's time provider.
-/// Falls back to platform.timestamp_iso8601() if no custom provider is set.
+/// Get the current timestamp using the logger's time provider or formatter.
+/// Falls back to ISO 8601 format if no custom provider or formatter is set.
 fn get_timestamp(logger: Logger) -> String {
   case logger.time_provider {
     // Custom time provider takes precedence (for testing)
     Some(provider) -> provider()
-    // Otherwise, format the current time according to timestamp_format
-    None -> format_timestamp(time.now(), logger.timestamp_format)
-  }
-}
-
-/// Format a Timestamp according to the given TimestampFormat.
-fn format_timestamp(ts: Timestamp, format: TimestampFormat) -> String {
-  case format {
-    Iso8601 -> time.to_iso8601(ts)
-    Naive -> time.to_naive(ts)
-    Http -> time.to_http(ts)
-    DateOnly -> time.to_date_string(ts)
-    TimeOnly -> time.to_time_string(ts)
-    Unix -> time.to_unix(ts) |> int.to_string
-    UnixMilli -> time.to_unix_milli(ts) |> int.to_string
-    Custom(formatter) -> formatter(time.to_unix_milli(ts))
+    // Otherwise, use the timestamp formatter or default to ISO 8601
+    None -> {
+      let ts = time.now()
+      case logger.timestamp_formatter {
+        Some(formatter) -> formatter(ts)
+        None -> time.to_iso8601(ts)
+      }
+    }
   }
 }
 
