@@ -35,7 +35,7 @@ jobs:
 
   coverage:
     runs-on: ubuntu-latest
-    name: Code Coverage (JavaScript)
+    name: Code Coverage
 
     steps:
       - uses: actions/checkout@v4
@@ -48,13 +48,16 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
-      - name: Run tests with coverage
-        run: npm run test:all:coverage
+      - name: Run JavaScript tests with coverage
+        run: just coverage-all
+
+      - name: Run Erlang tests with coverage
+        run: just coverage-erlang-lcov
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v5
         with:
-          files: coverage/lcov.info
+          files: coverage/lcov.info,coverage/lcov-erlang.info
           fail_ci_if_error: false
 
   integration-test:

@@ -22,6 +22,10 @@
 %% The script auto-detects the project name from gleam.toml and finds
 %% all *_test modules in the build directory.
 %%
+%% LCOV OUTPUT (for Codecov integration):
+%%   escript scripts/gleam_cover.escript --lcov
+%%   This generates coverage/lcov-erlang.info for upload to Codecov
+%%
 %% LIMITATIONS:
 %%   - Line numbers in coverage reports refer to generated Erlang code,
 %%     not the original Gleam source files
@@ -32,8 +36,14 @@ main(Args) ->
     %% Add code paths (the %%! directive doesn't expand globs on all platforms)
     add_code_paths(),
 
+    %% Check for --lcov flag
+    {LcovMode, FilteredArgs} = case lists:member("--lcov", Args) of
+        true -> {true, lists:delete("--lcov", Args)};
+        false -> {false, Args}
+    end,
+
     %% Parse arguments or auto-detect
-    {ProjectName, TestModules} = case Args of
+    {ProjectName, TestModules} = case FilteredArgs of
         [] ->
             auto_detect();
         [P | T] ->
@@ -115,6 +125,14 @@ main(Args) ->
 
     io:format("~n==============================================~n"),
 
+    %% Export LCOV if requested
+    case LcovMode of
+        true ->
+            export_lcov(OkModules, ProjectName);
+        false ->
+            ok
+    end,
+
     cover:stop(),
     ok.
 
@@ -145,3 +163,49 @@ auto_detect() ->
     TestModules = [list_to_atom(filename:basename(B, ".beam")) || B <- TestBeams],
 
     {ProjectName, TestModules}.
+
+%% Export coverage data in LCOV format for Codecov
+export_lcov(Modules, ProjectName) ->
+    %% Ensure coverage directory exists
+    filelib:ensure_dir("coverage/"),
+    LcovFile = "coverage/lcov-erlang.info",
+
+    io:format("~nExporting LCOV to ~s...~n", [LcovFile]),
+
+    {ok, F} = file:open(LcovFile, [write]),
+
+    %% Get source directory for this project
+    SrcDir = lists:flatten(io_lib:format("build/dev/erlang/~s/_gleam_artefacts", [ProjectName])),
+
+    lists:foreach(fun(Module) ->
+        case cover:analyse(Module, calls, line) of
+            {ok, LineCalls} ->
+                %% Find the source file
+                ModStr = atom_to_list(Module),
+                SrcFile = filename:join(SrcDir, ModStr ++ ".erl"),
+                case filelib:is_file(SrcFile) of
+                    true ->
+                        %% Get absolute path
+                        AbsPath = filename:absname(SrcFile),
+                        io:format(F, "SF:~s~n", [AbsPath]),
+
+                        %% Write line data
+                        LinesHit = lists:foldl(fun({{_M, Line}, Count}, Acc) ->
+                            io:format(F, "DA:~p,~p~n", [Line, Count]),
+                            if Count > 0 -> Acc + 1; true -> Acc end
+                        end, 0, LineCalls),
+
+                        %% Write summary
+                        io:format(F, "LF:~p~n", [length(LineCalls)]),
+                        io:format(F, "LH:~p~n", [LinesHit]),
+                        io:format(F, "end_of_record~n", []);
+                    false ->
+                        ok
+                end;
+            {error, _} ->
+                ok
+        end
+    end, Modules),
+
+    file:close(F),
+    io:format("LCOV export complete: ~s~n", [LcovFile]).

@@ -91,6 +91,10 @@ coverage:
 coverage-erlang: build
     escript scripts/gleam_cover.escript
 
+# Run Erlang tests with coverage and generate LCOV (for CI/Codecov)
+coverage-erlang-lcov: build
+    escript scripts/gleam_cover.escript --lcov
+
 # Run all tests (gleeunit + integration) with combined coverage
 coverage-all:
     npm run test:all:coverage
