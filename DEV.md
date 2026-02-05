@@ -33,6 +33,71 @@ just watch-test   # Watch and run tests on changes
 > [!NOTE]
 > You can also use `gleam` commands directly (e.g., `gleam build`, `gleam test --target javascript`).
 
+## Code Coverage
+
+This project has code coverage for both Erlang and JavaScript targets.
+
+### Local Coverage
+
+```bash
+just coverage              # Run coverage on both Erlang and JavaScript
+just coverage-js           # JavaScript only (uses c8/V8 native coverage)
+just coverage-erlang       # Erlang only (uses Erlang's cover tool)
+just coverage-js-report    # Generate HTML report (after coverage-js)
+```
+
+### How It Works
+
+**JavaScript (c8)**: Uses V8's native code coverage via [c8](https://github.com/bcoe/c8). Runs gleeunit tests and integration tests, outputs to `coverage/lcov.info`.
+
+**Erlang (cover)**: Uses a custom escript (`scripts/gleam_cover.escript`) that:
+1. Compiles BEAM files with Erlang's [cover](https://www.erlang.org/doc/apps/tools/cover.html) tool
+2. Runs tests via EUnit (not gleeunit's `main()` which calls `halt()`)
+3. Collects per-module line coverage
+4. Optionally exports to LCOV format (`--lcov` flag)
+
+> [!NOTE]
+> Erlang coverage line numbers refer to the **generated Erlang code** in `build/dev/erlang/birch/_gleam_artefacts/*.erl`, not the original Gleam source files.
+
+### CI Integration (Codecov)
+
+The CI workflow runs both coverage targets and uploads to [Codecov](https://codecov.io):
+
+```yaml
+- name: Run JavaScript tests with coverage
+  run: just coverage-js
+
+- name: Run Erlang tests with coverage
+  run: just coverage-erlang-lcov
+
+- name: Upload coverage reports
+  uses: codecov/codecov-action@v5
+  with:
+    files: coverage/lcov.info,coverage/lcov-erlang.info
+```
+
+**PR Comments**: Codecov automatically comments on PRs with:
+- Coverage diff (lines added/removed and their coverage)
+- Overall project coverage change
+- Links to detailed file-by-file reports
+
+**Status Checks**: Codecov can be configured to block PRs that decrease coverage below a threshold (configured in `codecov.yml` if present).
+
+### Reusing for Other Gleam Projects
+
+The `scripts/gleam_cover.escript` is generic and can be copied to any Gleam project:
+
+1. Copy `scripts/gleam_cover.escript` to your project
+2. Add to your justfile:
+   ```just
+   coverage-erlang: build
+       escript scripts/gleam_cover.escript
+
+   coverage-erlang-lcov: build
+       escript scripts/gleam_cover.escript --lcov
+   ```
+3. The script auto-detects the project name from `gleam.toml` and finds all `*_test` modules
+
 ## Project Structure
 
 ```
