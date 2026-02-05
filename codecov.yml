@@ -12,3 +12,24 @@ comment:
   layout: "reach,diff,flags,files"
   behavior: default
   require_changes: false
+
+# Path fixes to map compiled artifacts back to source
+# Note: Line numbers won't match perfectly due to Gleam→Erlang/JS compilation
+fixes:
+  # JavaScript: build/dev/javascript/birch/birch/level.mjs → src/birch/level.gleam
+  - "build/dev/javascript/birch/birch/::src/birch/"
+  - "build/dev/javascript/birch/::src/"
+  - ".mjs::.gleam"
+
+  # Erlang: Remove absolute path prefix, convert @ to /, .erl to .gleam
+  - "/home/runner/work/birch/birch/build/dev/erlang/birch/_gleam_artefacts/::"
+  - "build/dev/erlang/birch/_gleam_artefacts/::"
+  - "@::/"
+  - ".erl::.gleam"
+  - "birch/::src/birch/"
+  - "birch.gleam::src/birch.gleam"
+
+# Ignore FFI files that don't have Gleam source equivalents
+ignore:
+  - "**/*_ffi.*"
+  - "**/gleam.mjs"
