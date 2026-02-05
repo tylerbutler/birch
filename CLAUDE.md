@@ -299,7 +299,7 @@ Specified in `.tool-versions` (source of truth, required by CI):
 
 ## Known Limitations
 
-1. **No code coverage**: Gleam compiles to Erlang source (not abstract format), making `cover` integration challenging
+1. **Erlang coverage maps to generated code**: While Erlang's `cover` tool works with Gleam BEAM files, line numbers in coverage reports refer to the generated Erlang code, not the original Gleam source. Both JS coverage (via `c8`) and Erlang coverage (via `cover`) are available - see `just coverage` and `just coverage-erlang`
 2. **Scoped context on JS**: JavaScript lacks Erlang's process dictionary; scoped context requires explicit passing or AsyncLocalStorage (Node.js only)
 3. **File handler rotation**: Only size-based rotation is implemented; time-based rotation is a future feature (see PRD Phase 3)
 
