@@ -5,12 +5,21 @@
 
 import birch/handler.{type Handler}
 import birch/handler/console
-import birch/internal/platform
+import birch/internal/time
 import birch/level.{type Level}
 import birch/record.{type Metadata}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
+import gleam/time/timestamp.{type Timestamp}
+
+// Re-import platform for non-timestamp operations
+import birch/internal/platform
+
+/// A function that formats a timestamp into a string.
+/// Used for custom timestamp formatting in log output.
+pub type TimestampFormatter =
+  fn(Timestamp) -> String
 
 /// A function that provides timestamps.
 /// Used for testing with deterministic timestamps.
@@ -28,8 +37,10 @@ pub opaque type Logger {
     handlers: List(Handler),
     /// Persistent context metadata
     context: Metadata,
-    /// Optional custom time provider (defaults to platform.timestamp_iso8601)
+    /// Optional custom time provider (defaults to using gleam_time)
     time_provider: Option(TimeProvider),
+    /// Optional custom timestamp formatter (defaults to ISO 8601)
+    timestamp_formatter: Option(TimestampFormatter),
     /// Whether to capture caller process/thread ID on each log call
     capture_caller_id: Bool,
   )
@@ -44,6 +55,7 @@ pub fn new(name: String) -> Logger {
     handlers: [console.handler()],
     context: [],
     time_provider: None,
+    timestamp_formatter: None,
     capture_caller_id: False,
   )
 }
@@ -57,6 +69,7 @@ pub fn silent(name: String) -> Logger {
     handlers: [],
     context: [],
     time_provider: None,
+    timestamp_formatter: None,
     capture_caller_id: False,
   )
 }
@@ -133,6 +146,49 @@ pub fn without_time_provider(logger: Logger) -> Logger {
   Logger(..logger, time_provider: None)
 }
 
+/// Set a custom timestamp formatter for a logger.
+///
+/// The formatter receives a `Timestamp` from `gleam_time` and returns a string.
+/// By default, loggers use ISO 8601 format (e.g., "2024-12-26T10:30:45.123Z").
+///
+/// ## Example
+///
+/// ```gleam
+/// import birch/logger
+/// import gleam/int
+/// import gleam/time/timestamp
+/// import gleam/time/calendar
+///
+/// // Unix seconds format
+/// let logger =
+///   logger.new("myapp")
+///   |> logger.with_custom_timestamp(fn(ts) {
+///     let #(seconds, _nanos) = timestamp.to_unix_seconds_and_nanoseconds(ts)
+///     int.to_string(seconds)
+///   })
+///
+/// // Date only format
+/// let logger =
+///   logger.new("myapp")
+///   |> logger.with_custom_timestamp(fn(ts) {
+///     let #(date, _time) = timestamp.to_calendar(ts, calendar.utc_offset)
+///     int.to_string(date.year) <> "-" <>
+///     int.to_string(date.month |> month_to_int) <> "-" <>
+///     int.to_string(date.day)
+///   })
+/// ```
+pub fn with_custom_timestamp(
+  logger: Logger,
+  formatter: TimestampFormatter,
+) -> Logger {
+  Logger(..logger, timestamp_formatter: Some(formatter))
+}
+
+/// Clear the custom timestamp formatter, reverting to the default ISO 8601 format.
+pub fn without_custom_timestamp(logger: Logger) -> Logger {
+  Logger(..logger, timestamp_formatter: None)
+}
+
 /// Enable caller ID capture for this logger.
 ///
 /// When enabled, log records will include the process/thread ID of the caller.
@@ -165,12 +221,20 @@ pub fn is_caller_id_capture_enabled(logger: Logger) -> Bool {
   logger.capture_caller_id
 }
 
-/// Get the current timestamp using the logger's time provider.
-/// Falls back to platform.timestamp_iso8601() if no custom provider is set.
+/// Get the current timestamp using the logger's time provider or formatter.
+/// Falls back to ISO 8601 format if no custom provider or formatter is set.
 fn get_timestamp(logger: Logger) -> String {
   case logger.time_provider {
+    // Custom time provider takes precedence (for testing)
     Some(provider) -> provider()
-    None -> platform.timestamp_iso8601()
+    // Otherwise, use the timestamp formatter or default to ISO 8601
+    None -> {
+      let ts = time.now()
+      case logger.timestamp_formatter {
+        Some(formatter) -> formatter(ts)
+        None -> time.to_iso8601(ts)
+      }
+    }
   }
 }
 

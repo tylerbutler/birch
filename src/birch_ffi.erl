@@ -1,24 +1,16 @@
 -module(birch_ffi).
--export([timestamp_iso8601/0, is_stdout_tty/0, get_color_depth/0,
+-export([is_stdout_tty/0, get_color_depth/0,
          get_global_config/0, set_global_config/1, clear_global_config/0,
          start_async_writer/5, async_send/2, flush_async_writers/0, flush_async_writer/1,
          compress_file_gzip/2, safe_call/1,
          get_scope_context/0, set_scope_context/1, is_scope_context_available/0,
          get_scope_depth/0, set_scope_depth/1,
-         current_time_ms/0,
          get_actor_registry/0, set_actor_registry/1,
          get_caller_id/0]).
 
+%% Note: Time functions are now provided by gleam_time via birch/internal/time.
 %% Note: write_stdout, write_stderr, and random_float have been removed.
 %% Use gleam/io.println, io.println_error, and gleam/float.random() instead.
-
-%% Get current timestamp in ISO 8601 format with milliseconds
-timestamp_iso8601() ->
-    {{Year, Month, Day}, {Hour, Minute, Second}} = calendar:universal_time(),
-    {_, _, Micro} = os:timestamp(),
-    Millis = Micro div 1000,
-    list_to_binary(io_lib:format("~4..0B-~2..0B-~2..0BT~2..0B:~2..0B:~2..0B.~3..0BZ",
-        [Year, Month, Day, Hour, Minute, Second, Millis])).
 
 %% Check if stdout is a TTY
 is_stdout_tty() ->
@@ -325,13 +317,6 @@ set_scope_depth(Depth) ->
 is_scope_context_available() ->
     true.
 
-%% ============================================================================
-%% Time FFI
-%% ============================================================================
-
-%% Get the current time in milliseconds since epoch.
-current_time_ms() ->
-    erlang:system_time(millisecond).
 
 %% ============================================================================
 %% OTP Actor Registry
