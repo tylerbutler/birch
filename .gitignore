@@ -17,8 +17,3 @@ node_modules/
 .claude/settings.local.json
 _gleam_artefacts/
 **/examples/**/build/
-
-# Manifest (lockfile) - not committed for libraries to allow fresh
-# dependency resolution for consumers
-manifest.toml
-**/examples/**/manifest.toml
