@@ -4,7 +4,6 @@ description = "birch example: error result helpers"
 
 [dependencies]
 birch = { path = "../../" }
-gleam_stdlib = ">= 0.44.0"
 simplifile = ">= 2.0.0"
 
 [dev-dependencies]

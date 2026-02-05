@@ -276,6 +276,33 @@ pub fn logger_silent_test() {
   |> should.equal(0)
 }
 
+pub fn logger_custom_timestamp_test() {
+  // Custom formatter that returns a fixed string
+  let custom_formatter = fn(_ts) { "CUSTOM_TIME" }
+
+  let lgr =
+    logger.new("test")
+    |> logger.with_custom_timestamp(custom_formatter)
+    |> logger.with_handlers([handler.null()])
+
+  // The logger should use the custom formatter
+  // We can't directly test the output here, but we verify it compiles and runs
+  logger.info(lgr, "Test message", [])
+}
+
+pub fn logger_without_custom_timestamp_test() {
+  let custom_formatter = fn(_ts) { "CUSTOM_TIME" }
+
+  let lgr =
+    logger.new("test")
+    |> logger.with_custom_timestamp(custom_formatter)
+    |> logger.without_custom_timestamp()
+    |> logger.with_handlers([handler.null()])
+
+  // Should use default ISO 8601 format after clearing custom formatter
+  logger.info(lgr, "Test message", [])
+}
+
 // ============================================================================
 // Handler Tests
 // ============================================================================

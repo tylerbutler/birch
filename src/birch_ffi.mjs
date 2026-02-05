@@ -1,18 +1,11 @@
 // JavaScript FFI for birch
 //
+// Note: Time functions are now provided by gleam_time via birch/internal/time.
 // Note: write_stdout, write_stderr, and random_float have been removed.
 // Use gleam/io.println, io.println_error, and gleam/float.random() instead.
 
 // Import Gleam's Result constructors and List helpers from the prelude
 import { Ok, Error, toList } from "./gleam.mjs";
-
-/**
- * Get current timestamp in ISO 8601 format with milliseconds.
- * @returns {string} Timestamp like "2024-12-26T10:30:45.123Z"
- */
-export function timestamp_iso8601() {
-  return new Date().toISOString();
-}
 
 /**
  * Check if stdout is a TTY (for color support detection).
@@ -331,22 +324,22 @@ export function flush_async_writer(name) {
 // File Compression
 // ============================================================================
 
-// Pre-load Node.js modules if available (for synchronous access)
+// Node.js fs/zlib modules for file compression
+// These are loaded at module initialization time using top-level await.
+// This is supported by Gleam's ESM output and modern Node.js/bundlers.
+// The compression feature is optional - if modules fail to load, compress_file_gzip
+// will fall back to Deno/Bun paths or return an error.
 let _nodeFs = null;
 let _nodeZlib = null;
 
-// Initialize Node.js modules synchronously
 if (typeof process !== "undefined" && process.versions?.node) {
   try {
-    // In Node.js ESM, we can use createRequire to load CommonJS modules synchronously
-    // This works because Gleam generates ESM output
     const module = await import("node:module");
     const require = module.createRequire(import.meta.url);
     _nodeFs = require("node:fs");
     _nodeZlib = require("node:zlib");
   } catch (e) {
-    // Module loading failed - will fall back to error in compress_file_gzip
-    console.error("birch: Failed to load Node.js compression modules:", e);
+    // Module loading failed - compress_file_gzip will return an error for Node.js
   }
 }
 
@@ -393,21 +386,25 @@ export function compress_file_gzip(sourcePath, destPath) {
       return new Ok(undefined);
     }
 
-    // Bun
+    // Bun - has native require() support
     if (typeof Bun !== "undefined") {
-      const fs = require("fs");
-      const zlib = require("zlib");
+      try {
+        const fs = require("fs");
+        const zlib = require("zlib");
 
-      // Read source file
-      const data = fs.readFileSync(sourcePath);
+        // Read source file
+        const data = fs.readFileSync(sourcePath);
 
-      // Compress with gzip (synchronous)
-      const compressed = zlib.gzipSync(data);
+        // Compress with gzip (synchronous)
+        const compressed = zlib.gzipSync(data);
 
-      // Write compressed data
-      fs.writeFileSync(destPath, compressed);
+        // Write compressed data
+        fs.writeFileSync(destPath, compressed);
 
-      return new Ok(undefined);
+        return new Ok(undefined);
+      } catch (e) {
+        return new Error(`Bun compression error: ${e.message || String(e)}`);
+      }
     }
 
     // Browser or unsupported environment
@@ -663,17 +660,6 @@ export function is_scope_context_available() {
   return scopeContextState.asyncLocalStorageAvailable;
 }
 
-// ============================================================================
-// Time FFI
-// ============================================================================
-
-/**
- * Get the current time in milliseconds since epoch.
- * @returns {number}
- */
-export function current_time_ms() {
-  return Date.now();
-}
 
 // ============================================================================
 // Process/Thread ID

@@ -30,13 +30,13 @@
 //// ```
 
 import birch/config.{type SampleConfig, SampleConfig}
-import birch/internal/platform
 import birch/level.{type Level}
 import gleam/float
 import gleam/int
+import gleam/time/timestamp
 
 // Note: We use float.random() from stdlib for probabilistic sampling
-// and platform.current_time_ms() for token bucket timing
+// and gleam/time/timestamp for token bucket timing
 
 // ============================================================================
 // Sampling Configuration
@@ -139,8 +139,8 @@ pub opaque type TokenBucket {
     refill_rate: Int,
     /// Current number of tokens
     tokens: Float,
-    /// Last refill timestamp (milliseconds)
-    last_refill_ms: Int,
+    /// Last refill timestamp (seconds, nanoseconds)
+    last_refill: #(Int, Int),
   )
 }
 
@@ -153,7 +153,8 @@ pub fn new_token_bucket(max_tokens: Int, refill_rate: Int) -> TokenBucket {
     max_tokens: max_tokens,
     refill_rate: refill_rate,
     tokens: int.to_float(max_tokens),
-    last_refill_ms: platform.current_time_ms(),
+    last_refill: timestamp.system_time()
+      |> timestamp.to_unix_seconds_and_nanoseconds(),
   )
 }
 
@@ -173,8 +174,9 @@ pub fn bucket_burst_size(bucket: TokenBucket) -> Int {
 /// - Bool: True if token was consumed (log allowed), False if bucket empty
 /// - TokenBucket: The updated bucket state
 pub fn try_consume(bucket: TokenBucket) -> #(Bool, TokenBucket) {
-  let now_ms = platform.current_time_ms()
-  let refilled = refill_bucket(bucket, now_ms)
+  let now =
+    timestamp.system_time() |> timestamp.to_unix_seconds_and_nanoseconds()
+  let refilled = refill_bucket(bucket, now)
 
   case refilled.tokens >=. 1.0 {
     True -> {
@@ -186,19 +188,25 @@ pub fn try_consume(bucket: TokenBucket) -> #(Bool, TokenBucket) {
 }
 
 /// Refill the bucket based on elapsed time.
-fn refill_bucket(bucket: TokenBucket, now_ms: Int) -> TokenBucket {
-  let elapsed_ms = now_ms - bucket.last_refill_ms
-  case elapsed_ms > 0 {
+fn refill_bucket(bucket: TokenBucket, now: #(Int, Int)) -> TokenBucket {
+  let #(now_sec, now_nano) = now
+  let #(last_sec, last_nano) = bucket.last_refill
+  // Calculate elapsed time in seconds as a float
+  let elapsed_seconds =
+    int.to_float(now_sec - last_sec)
+    +. int.to_float(now_nano - last_nano)
+    /. 1_000_000_000.0
+
+  case elapsed_seconds >. 0.0 {
     False -> bucket
     True -> {
-      let elapsed_seconds = int.to_float(elapsed_ms) /. 1000.0
       let tokens_to_add = elapsed_seconds *. int.to_float(bucket.refill_rate)
       let new_tokens =
         float.min(
           bucket.tokens +. tokens_to_add,
           int.to_float(bucket.max_tokens),
         )
-      TokenBucket(..bucket, tokens: new_tokens, last_refill_ms: now_ms)
+      TokenBucket(..bucket, tokens: new_tokens, last_refill: now)
     }
   }
 }
