@@ -121,11 +121,11 @@ just check-full              # Format, strict build, tests, examples, integratio
 ### Code Coverage
 
 ```bash
-just coverage                # JavaScript tests with coverage (c8)
+just coverage                # Run coverage on both Erlang and JavaScript
+just coverage-js             # JavaScript tests with coverage (c8)
 just coverage-erlang         # Erlang tests with coverage (cover)
 just coverage-erlang-lcov    # Erlang coverage with LCOV export (for Codecov)
-just coverage-all            # All JS tests with combined coverage
-just coverage-report         # Generate JS coverage report
+just coverage-js-report      # Generate JS coverage HTML report
 ```
 
 ### Watch Mode (requires watchexec)

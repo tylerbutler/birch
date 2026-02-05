@@ -83,9 +83,12 @@ watch:
 watch-test:
     watchexec -e gleam -r -- gleam test
 
+# Run coverage on both Erlang and JavaScript targets
+coverage: coverage-erlang coverage-js
+
 # Run JavaScript tests with code coverage (requires npm install)
-coverage:
-    npm run test:coverage
+coverage-js:
+    npm run test:all:coverage
 
 # Run Erlang tests with code coverage (cross-platform)
 coverage-erlang: build
@@ -95,16 +98,12 @@ coverage-erlang: build
 coverage-erlang-lcov: build
     escript scripts/gleam_cover.escript --lcov
 
-# Run all tests (gleeunit + integration) with combined coverage
-coverage-all:
-    npm run test:all:coverage
-
-# Generate coverage report (after running coverage)
-coverage-report:
+# Generate JavaScript coverage report (after running coverage-js)
+coverage-js-report:
     npm run coverage:report
 
-# Generate LCOV coverage report for CI integration
-coverage-lcov:
+# Generate JavaScript LCOV report for CI integration
+coverage-js-lcov:
     npm run coverage:lcov
 
 # ============================================================================
