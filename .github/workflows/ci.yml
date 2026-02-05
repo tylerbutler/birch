@@ -59,6 +59,7 @@ jobs:
         with:
           files: coverage/lcov.info,coverage/lcov-erlang.info
           fail_ci_if_error: false
+          verbose: true
 
   integration-test:
     runs-on: ubuntu-latest
