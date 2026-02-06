@@ -3422,10 +3422,37 @@ pub fn main_api_get_scope_context_outside_test() {
   |> should.equal([])
 }
 
-pub fn main_api_is_scoped_context_available_test() {
-  // On Erlang, this should always be true
+@target(erlang)
+pub fn main_api_is_scoped_context_available_erlang_test() {
+  // On Erlang, this should always be true (process dictionary is always available)
   log.is_scoped_context_available()
   |> should.be_true
+}
+
+@target(javascript)
+pub fn main_api_is_scoped_context_available_js_test() {
+  // On JavaScript, availability depends on the runtime
+  // Node.js has AsyncLocalStorage, Deno/Bun may not
+  let available = log.is_scoped_context_available()
+
+  // If AsyncLocalStorage is available, verify scoped context actually works
+  case available {
+    True -> {
+      // Scoped context should work when available
+      let result =
+        log.with_scope([#("test_key", "test_value")], fn() {
+          log.get_scope_context()
+          |> list.filter(fn(pair) { !string.starts_with(pair.0, "_") })
+        })
+      result
+      |> should.equal([#("test_key", "test_value")])
+    }
+    False -> {
+      // Fallback behavior - scope still works but uses stack-based approach
+      // This is valid for Deno/Bun/browser environments
+      Nil
+    }
+  }
 }
 
 // ============================================================================
