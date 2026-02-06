@@ -1,4 +1,4 @@
-# birch -- logs that gleam ✨🪵✨
+# birch - logs that gleam ✨🪵✨
 
 A logging library for Gleam with cross-platform support.
 
