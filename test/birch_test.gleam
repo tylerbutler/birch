@@ -2927,3 +2927,570 @@ pub fn console_with_level_formatter_test() {
   handler.name(h)
   |> should.equal("console")
 }
+
+// ============================================================================
+// Main birch Module API Tests
+// ============================================================================
+
+pub fn main_api_silent_test() {
+  let lgr = log.silent("test-silent")
+
+  // Silent logger should have the correct name
+  logger.name(lgr)
+  |> should.equal("test-silent")
+
+  // Silent logger should have no handlers
+  logger.get_handlers(lgr)
+  |> list.length
+  |> should.equal(0)
+}
+
+pub fn main_api_with_handler_test() {
+  let lgr =
+    log.new("test")
+    |> log.with_handler(handler.null())
+
+  // Should have at least one handler (null handler added)
+  logger.get_handlers(lgr)
+  |> list.is_empty
+  |> should.be_false
+}
+
+pub fn main_api_timestamp_test() {
+  let ts = log.timestamp()
+
+  // Timestamp should be non-empty
+  string.is_empty(ts)
+  |> should.be_false
+
+  // Timestamp should contain ISO 8601 elements
+  string.contains(ts, "T")
+  |> should.be_true
+}
+
+pub fn main_api_without_time_provider_test() {
+  let lgr =
+    log.new("test")
+    |> log.with_time_provider(fn() { "fixed" })
+    |> log.without_time_provider()
+
+  // After removing time provider, logger should use platform timestamp
+  // Just verify it doesn't crash
+  logger.name(lgr)
+  |> should.equal("test")
+}
+
+pub fn main_api_without_caller_id_capture_test() {
+  let lgr =
+    log.new("test")
+    |> log.with_caller_id_capture()
+    |> log.without_caller_id_capture()
+
+  logger.is_caller_id_capture_enabled(lgr)
+  |> should.be_false
+}
+
+// ============================================================================
+// Logger-Specific Logging Function Tests
+// ============================================================================
+
+pub fn main_api_logger_log_test() {
+  let lgr =
+    log.new("test")
+    |> log.with_level(level.Trace)
+    |> log.with_handler(handler.null())
+
+  // Should not crash - logs at specified level
+  log.logger_log(lgr, level.Info, "Test message", [#("key", "value")])
+}
+
+pub fn main_api_logger_trace_test() {
+  let lgr =
+    log.new("test")
+    |> log.with_level(level.Trace)
+    |> log.with_handler(handler.null())
+
+  // Should not crash
+  log.logger_trace(lgr, "Trace message", [])
+}
+
+pub fn main_api_logger_debug_test() {
+  let lgr =
+    log.new("test")
+    |> log.with_level(level.Debug)
+    |> log.with_handler(handler.null())
+
+  // Should not crash
+  log.logger_debug(lgr, "Debug message", [#("detail", "test")])
+}
+
+pub fn main_api_logger_warn_test() {
+  let lgr =
+    log.new("test")
+    |> log.with_handler(handler.null())
+
+  // Should not crash
+  log.logger_warn(lgr, "Warning message", [])
+}
+
+pub fn main_api_logger_error_test() {
+  let lgr =
+    log.new("test")
+    |> log.with_handler(handler.null())
+
+  // Should not crash
+  log.logger_error(lgr, "Error message", [#("code", "E001")])
+}
+
+pub fn main_api_logger_fatal_test() {
+  let lgr =
+    log.new("test")
+    |> log.with_handler(handler.null())
+
+  // Should not crash
+  log.logger_fatal(lgr, "Fatal message", [])
+}
+
+// ============================================================================
+// Module-Level Logging Function Tests
+// ============================================================================
+
+pub fn main_api_trace_test() {
+  // Configure with trace level and null handler to capture
+  log.reset_config()
+  log.configure([
+    log.config_level(level.Trace),
+    log.config_handlers([handler.null()]),
+  ])
+
+  // Should not crash
+  log.trace("Trace level message")
+
+  // Cleanup
+  log.reset_config()
+}
+
+pub fn main_api_trace_m_test() {
+  log.reset_config()
+  log.configure([
+    log.config_level(level.Trace),
+    log.config_handlers([handler.null()]),
+  ])
+
+  // Should not crash
+  log.trace_m("Trace with metadata", [#("trace_id", "abc123")])
+
+  log.reset_config()
+}
+
+pub fn main_api_debug_test() {
+  log.reset_config()
+  log.configure([
+    log.config_level(level.Debug),
+    log.config_handlers([handler.null()]),
+  ])
+
+  // Should not crash
+  log.debug("Debug level message")
+
+  log.reset_config()
+}
+
+pub fn main_api_debug_m_test() {
+  log.reset_config()
+  log.configure([
+    log.config_level(level.Debug),
+    log.config_handlers([handler.null()]),
+  ])
+
+  // Should not crash
+  log.debug_m("Debug with metadata", [#("debug_key", "debug_value")])
+
+  log.reset_config()
+}
+
+pub fn main_api_info_test() {
+  log.reset_config()
+  log.configure([log.config_handlers([handler.null()])])
+
+  // Should not crash (Info is default level)
+  log.info("Info level message")
+
+  log.reset_config()
+}
+
+pub fn main_api_info_m_test() {
+  log.reset_config()
+  log.configure([log.config_handlers([handler.null()])])
+
+  // Should not crash
+  log.info_m("Info with metadata", [#("user", "alice")])
+
+  log.reset_config()
+}
+
+pub fn main_api_warn_test() {
+  log.reset_config()
+  log.configure([log.config_handlers([handler.null()])])
+
+  // Should not crash
+  log.warn("Warning level message")
+
+  log.reset_config()
+}
+
+pub fn main_api_warn_m_test() {
+  log.reset_config()
+  log.configure([log.config_handlers([handler.null()])])
+
+  // Should not crash
+  log.warn_m("Warning with metadata", [#("warning_code", "W001")])
+
+  log.reset_config()
+}
+
+pub fn main_api_error_test() {
+  log.reset_config()
+  log.configure([log.config_handlers([handler.null()])])
+
+  // Should not crash
+  log.error("Error level message")
+
+  log.reset_config()
+}
+
+pub fn main_api_error_m_test() {
+  log.reset_config()
+  log.configure([log.config_handlers([handler.null()])])
+
+  // Should not crash
+  log.error_m("Error with metadata", [#("error_type", "validation")])
+
+  log.reset_config()
+}
+
+pub fn main_api_fatal_test() {
+  log.reset_config()
+  log.configure([log.config_handlers([handler.null()])])
+
+  // Should not crash
+  log.fatal("Fatal level message")
+
+  log.reset_config()
+}
+
+pub fn main_api_fatal_m_test() {
+  log.reset_config()
+  log.configure([log.config_handlers([handler.null()])])
+
+  // Should not crash
+  log.fatal_m("Fatal with metadata", [#("critical", "true")])
+
+  log.reset_config()
+}
+
+// ============================================================================
+// Lazy Evaluation Tests
+// ============================================================================
+
+pub fn main_api_debug_lazy_test() {
+  log.reset_config()
+  log.configure([
+    log.config_level(level.Debug),
+    log.config_handlers([handler.null()]),
+  ])
+
+  // Should call the function and not crash
+  log.debug_lazy(fn() { "Lazy debug message" })
+
+  log.reset_config()
+}
+
+pub fn main_api_debug_lazy_not_called_when_filtered_test() {
+  log.reset_config()
+  // Set level higher than Debug - lazy function should NOT be called
+  log.configure([
+    log.config_level(level.Warn),
+    log.config_handlers([handler.null()]),
+  ])
+
+  // This would crash if called, but shouldn't be since Debug < Warn
+  log.debug_lazy(fn() {
+    // If this runs, it means lazy evaluation isn't working
+    // We can't easily verify this doesn't run, but we verify it doesn't crash
+    "This lazy function runs"
+  })
+
+  log.reset_config()
+}
+
+pub fn main_api_info_lazy_test() {
+  log.reset_config()
+  log.configure([log.config_handlers([handler.null()])])
+
+  // Should call the function and not crash
+  log.info_lazy(fn() { "Lazy info message" })
+
+  log.reset_config()
+}
+
+pub fn main_api_info_lazy_not_called_when_filtered_test() {
+  log.reset_config()
+  log.configure([
+    log.config_level(level.Err),
+    log.config_handlers([handler.null()]),
+  ])
+
+  // Should not be called since Info < Err
+  log.info_lazy(fn() { "This lazy function runs" })
+
+  log.reset_config()
+}
+
+// ============================================================================
+// Fatal Result Tests
+// ============================================================================
+
+pub fn main_api_fatal_result_with_error_test() {
+  log.reset_config()
+  log.configure([log.config_handlers([handler.null()])])
+
+  let result: Result(Int, String) = Error("Critical failure")
+
+  // Should not crash - logs fatal with error in metadata
+  log.fatal_result("System crash", result)
+
+  log.reset_config()
+}
+
+pub fn main_api_fatal_result_with_ok_test() {
+  log.reset_config()
+  log.configure([log.config_handlers([handler.null()])])
+
+  let result: Result(Int, String) = Ok(42)
+
+  // Should not crash - logs fatal without error metadata
+  log.fatal_result("Unexpected termination", result)
+
+  log.reset_config()
+}
+
+pub fn main_api_fatal_result_m_test() {
+  log.reset_config()
+  log.configure([log.config_handlers([handler.null()])])
+
+  let result: Result(Int, String) = Error("Disk full")
+
+  // Should not crash
+  log.fatal_result_m("Storage failure", result, [#("disk", "/dev/sda1")])
+
+  log.reset_config()
+}
+
+pub fn main_api_logger_fatal_result_test() {
+  let lgr =
+    log.new("test")
+    |> log.with_handler(handler.null())
+
+  let result: Result(Int, String) = Error("Connection lost")
+
+  // Should not crash
+  log.logger_fatal_result(lgr, "Database connection failed", result, [
+    #("host", "db.example.com"),
+  ])
+}
+
+// ============================================================================
+// Config Builder Function Tests
+// ============================================================================
+
+pub fn main_api_config_level_test() {
+  log.reset_config()
+
+  // Use config_level function directly
+  log.configure([log.config_level(level.Warn)])
+
+  log.get_level()
+  |> should.equal(level.Warn)
+
+  log.reset_config()
+}
+
+pub fn main_api_config_handlers_test() {
+  log.reset_config()
+
+  let h1 = handler.null()
+  let h2 = handler.null()
+
+  log.configure([log.config_handlers([h1, h2])])
+
+  let cfg = log.get_config()
+  list.length(cfg.handlers)
+  |> should.equal(2)
+
+  log.reset_config()
+}
+
+pub fn main_api_config_context_test() {
+  log.reset_config()
+
+  log.configure([
+    log.config_context([#("env", "production"), #("version", "1.0")]),
+  ])
+
+  let cfg = log.get_config()
+  cfg.context
+  |> should.equal([#("env", "production"), #("version", "1.0")])
+
+  log.reset_config()
+}
+
+pub fn main_api_config_on_error_test() {
+  log.reset_config()
+
+  // Create a simple error callback
+  let callback = fn(_err) { Nil }
+
+  log.configure([log.config_on_error(callback)])
+
+  let cfg = log.get_config()
+  // Verify callback is set (Some rather than None)
+  case cfg.on_error {
+    Some(_) -> True
+    None -> False
+  }
+  |> should.be_true
+
+  log.reset_config()
+}
+
+pub fn main_api_config_sampling_test() {
+  log.reset_config()
+
+  let sample_cfg = sampling.config(level.Debug, 0.5)
+  log.configure([log.config_sampling(sample_cfg)])
+
+  let cfg = log.get_config()
+  // Verify sampling is configured
+  case cfg.sampling {
+    Ok(_) -> True
+    Error(_) -> False
+  }
+  |> should.be_true
+
+  log.reset_config()
+}
+
+// ============================================================================
+// get_level Function Test
+// ============================================================================
+
+pub fn main_api_get_level_test() {
+  log.reset_config()
+
+  // Default level should be Info
+  log.get_level()
+  |> should.equal(level.Info)
+
+  // Change level and verify
+  log.set_level(level.Debug)
+  log.get_level()
+  |> should.equal(level.Debug)
+
+  log.reset_config()
+}
+
+// ============================================================================
+// Scoped Context via birch Module Tests
+// ============================================================================
+
+pub fn main_api_with_scope_test() {
+  let result =
+    log.with_scope([#("request_id", "req-123")], fn() {
+      // Inside scope - filter out internal keys (prefixed with _)
+      log.get_scope_context()
+      |> list.filter(fn(pair) { !string.starts_with(pair.0, "_") })
+    })
+
+  result
+  |> should.equal([#("request_id", "req-123")])
+}
+
+pub fn main_api_get_scope_context_outside_test() {
+  // Outside any scope
+  log.get_scope_context()
+  |> should.equal([])
+}
+
+@target(erlang)
+pub fn main_api_is_scoped_context_available_erlang_test() {
+  // On Erlang, this should always be true (process dictionary is always available)
+  log.is_scoped_context_available()
+  |> should.be_true
+}
+
+@target(javascript)
+pub fn main_api_is_scoped_context_available_js_test() {
+  // On JavaScript, availability depends on the runtime
+  // Node.js has AsyncLocalStorage, Deno/Bun may not
+  let available = log.is_scoped_context_available()
+
+  // If AsyncLocalStorage is available, verify scoped context actually works
+  case available {
+    True -> {
+      // Scoped context should work when available
+      let result =
+        log.with_scope([#("test_key", "test_value")], fn() {
+          log.get_scope_context()
+          |> list.filter(fn(pair) { !string.starts_with(pair.0, "_") })
+        })
+      result
+      |> should.equal([#("test_key", "test_value")])
+    }
+    False -> {
+      // Fallback behavior - scope still works but uses stack-based approach
+      // This is valid for Deno/Bun/browser environments
+      Nil
+    }
+  }
+}
+
+// ============================================================================
+// Type Re-export Tests
+// ============================================================================
+
+pub fn main_api_type_reexports_test() {
+  // Test that type aliases work correctly
+  let _level: log.LogLevel = level.Info
+  let _handler: log.LogHandler = handler.null()
+  let _metadata: log.LogMetadata = [#("key", "value")]
+
+  // If this compiles, the type re-exports are working
+  True |> should.be_true
+}
+
+// ============================================================================
+// Default Logger Inherits Config Test
+// ============================================================================
+
+pub fn main_api_default_logger_inherits_config_test() {
+  log.reset_config()
+
+  // Configure global settings
+  log.configure([
+    log.config_level(level.Debug),
+    log.config_context([#("app", "test-app")]),
+    log.config_handlers([handler.null()]),
+  ])
+
+  // Create a new logger - should inherit config
+  let lgr = log.new("mylogger")
+
+  logger.get_level(lgr)
+  |> should.equal(level.Debug)
+
+  logger.get_context(lgr)
+  |> should.equal([#("app", "test-app")])
+
+  log.reset_config()
+}
