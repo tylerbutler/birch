@@ -1,0 +1,55 @@
+@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&display=swap");
+
+:root {
+	--sl-font: "Open Sans", sans-serif;
+}
+
+/* Dark mode colors - Forest/birch theme */
+:root {
+	/* Accent: Forest greens */
+	--sl-color-accent-low: #1a2e1a;
+	--sl-color-accent: #3d8b40;
+	--sl-color-accent-high: #a8d5a9;
+
+	/* Neutrals: Birch bark tones (dark mode inverted) */
+	--sl-color-white: #f5f2ed;
+	--sl-color-gray-1: #e8e4dc;
+	--sl-color-gray-2: #c9c4b8;
+	--sl-color-gray-3: #9a9488;
+	--sl-color-gray-4: #6b665c;
+	--sl-color-gray-5: #4a463e;
+	--sl-color-gray-6: #2d2a25;
+	--sl-color-black: #1a1815;
+}
+
+/* Light mode colors */
+:root[data-theme="light"] {
+	/* Accent: Deeper forest greens for contrast */
+	--sl-color-accent-low: #e8f5e9;
+	--sl-color-accent: #2d6a30;
+	--sl-color-accent-high: #1b4d1e;
+
+	/* Neutrals: Birch bark tones (light mode) */
+	--sl-color-white: #1a1815;
+	--sl-color-gray-1: #2d2a25;
+	--sl-color-gray-2: #4a463e;
+	--sl-color-gray-3: #6b665c;
+	--sl-color-gray-4: #9a9488;
+	--sl-color-gray-5: #c9c4b8;
+	--sl-color-gray-6: #e8e4dc;
+	--sl-color-gray-7: #f5f2ed;
+	--sl-color-black: #faf9f7;
+}
+
+/* Code font with ligatures */
+.expressive-code code {
+	font-feature-settings:
+		"ss01",
+		"ss02",
+		"ss03",
+		"ss04",
+		"ss05",
+		"ss06",
+		"zero",
+		"onum";
+}

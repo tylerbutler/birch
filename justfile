@@ -310,3 +310,27 @@ ci-host:
 # Run specific CI job on host system without Docker
 ci-host-job job:
     act -j {{job}} -P ubuntu-latest=-self-hosted
+
+# ============================================================================
+# Documentation Site (Astro/Starlight)
+# ============================================================================
+
+# Install docs-site dependencies
+docs-site-deps:
+    cd docs-site && pnpm install
+
+# Start docs-site dev server
+docs-site-dev:
+    cd docs-site && pnpm dev
+
+# Build docs-site for production
+docs-site-build:
+    cd docs-site && pnpm build
+
+# Preview docs-site production build
+docs-site-preview:
+    cd docs-site && pnpm preview
+
+# Clean docs-site build artifacts
+docs-site-clean:
+    cd docs-site && pnpm clean
