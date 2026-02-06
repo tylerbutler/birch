@@ -1,0 +1,73 @@
+---
+title: birch
+description: A logging library for Gleam with cross-platform support
+template: splash
+hero:
+  tagline: logs that gleam
+  image:
+    file: ../../assets/birch-logo.svg
+  actions:
+    - text: Get Started
+      link: /getting-started/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/tylerbutler/birch
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Features
+
+<CardGrid stagger>
+	<Card title="Cross-Platform" icon="laptop">
+		Works on both **Erlang** (BEAM) and **JavaScript** targets. Same API, consistent behavior across Node.js, Deno, Bun, and browsers.
+	</Card>
+	<Card title="Zero-Configuration" icon="rocket">
+		Just import and start logging. Sensible defaults get you started immediately with no boilerplate.
+	</Card>
+	<Card title="Structured Logging" icon="document">
+		Attach key-value metadata to every log message. Perfect for filtering and aggregation in production.
+	</Card>
+	<Card title="Multiple Handlers" icon="setting">
+		Console with colors, JSON for log aggregation, file with rotation, async for performance, or build your own.
+	</Card>
+</CardGrid>
+
+## Quick Example
+
+```gleam
+import birch as log
+
+pub fn main() {
+  // Simple logging
+  log.info("Application starting")
+  log.debug("Debug message")
+  log.error("Something went wrong")
+
+  // With metadata
+  log.info_m("User logged in", [
+    #("user_id", "123"),
+    #("ip", "192.168.1.1"),
+  ])
+}
+```
+
+Output:
+```
+2024-12-26T10:30:45.123Z | INFO  | root | Application starting
+2024-12-26T10:30:45.124Z | DEBUG | root | Debug message
+2024-12-26T10:30:45.125Z | ERROR | root | Something went wrong
+2024-12-26T10:30:45.126Z | INFO  | root | User logged in | user_id=123 ip=192.168.1.1
+```
+
+## More Highlights
+
+- **Lazy evaluation** - Avoid expensive string formatting when logs are filtered
+- **Scoped context** - Request-scoped metadata that propagates automatically
+- **Log rotation** - Size-based and time-based rotation for file handlers
+- **Sampling** - Probabilistic sampling for high-volume scenarios
+- **Named loggers** - Organize logs by component with persistent context
+
+Ready to get started? Check out the [installation guide](/getting-started/) or browse the [API reference on HexDocs](https://hexdocs.pm/birch/).

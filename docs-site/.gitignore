@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.astro/
+.netlify/
+
+# Lock files (optional - remove if you want to commit)
+# pnpm-lock.yaml
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
