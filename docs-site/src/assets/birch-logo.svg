@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="95" fill="#f5f2ed" stroke="#3d8b40" stroke-width="3"/>
+
+  <!-- Birch tree trunk with bark texture -->
+  <rect x="90" y="45" width="20" height="120" fill="#e8e4dc" rx="3"/>
+
+  <!-- Bark marks -->
+  <ellipse cx="95" cy="60" rx="4" ry="2" fill="#6b665c"/>
+  <ellipse cx="105" cy="75" rx="5" ry="2" fill="#6b665c"/>
+  <ellipse cx="93" cy="95" rx="4" ry="2" fill="#6b665c"/>
+  <ellipse cx="107" cy="110" rx="3" ry="2" fill="#6b665c"/>
+  <ellipse cx="95" cy="130" rx="5" ry="2" fill="#6b665c"/>
+  <ellipse cx="103" cy="145" rx="4" ry="2" fill="#6b665c"/>
+
+  <!-- Leaves/foliage - forest green -->
+  <ellipse cx="100" cy="35" rx="35" ry="25" fill="#3d8b40"/>
+  <ellipse cx="75" cy="50" rx="25" ry="18" fill="#2d6a30"/>
+  <ellipse cx="125" cy="50" rx="25" ry="18" fill="#2d6a30"/>
+  <ellipse cx="65" cy="65" rx="20" ry="15" fill="#3d8b40"/>
+  <ellipse cx="135" cy="65" rx="20" ry="15" fill="#3d8b40"/>
+
+  <!-- Gleam sparkles -->
+  <polygon points="55,90 58,85 61,90 58,95" fill="#ffeb3b"/>
+  <polygon points="145,90 148,85 151,90 148,95" fill="#ffeb3b"/>
+  <polygon points="100,25 102,20 104,25 102,30" fill="#ffeb3b"/>
+</svg>

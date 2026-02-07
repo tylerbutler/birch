@@ -75,6 +75,10 @@ check-quick: format-check test-erlang
 # Covers: format, strict build, tests, examples (Erlang), integration (Node.js)
 check-full: format-check build-strict-all test test-examples test-integration-node
 
+# CI parity recipes
+pr: format-check build-strict test docs
+main: pr test-examples
+
 # Watch and rebuild on changes (requires watchexec)
 watch:
     watchexec -e gleam -r -- gleam build
@@ -310,3 +314,27 @@ ci-host:
 # Run specific CI job on host system without Docker
 ci-host-job job:
     act -j {{job}} -P ubuntu-latest=-self-hosted
+
+# ============================================================================
+# Documentation Site (Astro/Starlight)
+# ============================================================================
+
+# Install docs-site dependencies
+docs-site-deps:
+    cd docs-site && pnpm install
+
+# Start docs-site dev server
+docs-site-dev:
+    cd docs-site && pnpm dev
+
+# Build docs-site for production
+docs-site-build:
+    cd docs-site && pnpm build
+
+# Preview docs-site production build
+docs-site-preview:
+    cd docs-site && pnpm preview
+
+# Clean docs-site build artifacts
+docs-site-clean:
+    cd docs-site && pnpm clean
