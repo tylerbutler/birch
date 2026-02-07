@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.2.1](https://github.com/tylerbutler/birch/compare/v0.2.0...v0.2.1) (2026-02-07)
+
+
+### Features
+
+* add Erlang code coverage support ([09115f9](https://github.com/tylerbutler/birch/commit/09115f9a6bc76059faa5c7fb96ddf2beda7cd207))
+* add LCOV export for Codecov integration ([fd0a518](https://github.com/tylerbutler/birch/commit/fd0a51857719cc0b081ee0b744342207a4377f54))
+* add template patterns for consistency ([#42](https://github.com/tylerbutler/birch/issues/42)) ([128b554](https://github.com/tylerbutler/birch/commit/128b5546e7cea16b28f9476bf4f67e8ec7983ddf))
+
+
+### Bug Fixes
+
+* **claude:** add required frontmatter to ffi-reviewer agent ([#37](https://github.com/tylerbutler/birch/issues/37)) ([ef25903](https://github.com/tylerbutler/birch/commit/ef2590324c6737a648e25414f04cdf8c4438e8cb))
+
+
+### Code Refactoring
+
+* rename coverage tasks for clarity ([b0e6813](https://github.com/tylerbutler/birch/commit/b0e681360b3e651ffb2d6cd44ae7e2764ecfc828))
+* replace timestamp ffi with gleam_time ([#36](https://github.com/tylerbutler/birch/issues/36)) ([4fb73ba](https://github.com/tylerbutler/birch/commit/4fb73ba43b980cb9234f0fdc82e269a4e1075d89))
+
 ## [0.2.0](https://github.com/tylerbutler/birch/compare/v0.1.2...v0.2.0) (2026-02-03)
 
 
