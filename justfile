@@ -75,6 +75,10 @@ check-quick: format-check test-erlang
 # Covers: format, strict build, tests, examples (Erlang), integration (Node.js)
 check-full: format-check build-strict-all test test-examples test-integration-node
 
+# CI parity recipes
+pr: format-check build-strict test docs
+main: pr test-examples
+
 # Watch and rebuild on changes (requires watchexec)
 watch:
     watchexec -e gleam -r -- gleam build
