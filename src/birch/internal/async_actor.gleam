@@ -10,6 +10,12 @@
 ////
 //// On JavaScript, this module is not used - the platform FFI handles async there.
 
+@target(javascript)
+/// Placeholder type to prevent empty module warning on JavaScript target.
+pub type Unused {
+  Unused
+}
+
 @target(erlang)
 import birch/handler.{type Handler}
 

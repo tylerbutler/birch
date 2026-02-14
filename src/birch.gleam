@@ -37,8 +37,13 @@
 
 import birch/config.{type ConfigOption, type GlobalConfig, type SampleConfig}
 import birch/handler.{type ErrorCallback, type Handler}
-import birch/handler/console
 import birch/internal/platform
+
+@target(erlang)
+import birch/erlang_logger
+
+@target(javascript)
+import birch/handler/console
 import birch/level.{type Level}
 import birch/logger.{type Logger}
 import birch/record.{type Metadata}
@@ -188,15 +193,30 @@ pub fn config_sampling(sample_config: SampleConfig) -> ConfigOption {
   config.sampling(sample_config)
 }
 
-/// Default configuration: Info level, console handler, no context, no error callback, no sampling.
+/// Default configuration: Info level, platform-appropriate handler, no context,
+/// no error callback, no sampling.
+///
+/// On Erlang, the default handler forwards logs to the BEAM logger (`:logger`),
+/// integrating with the standard OTP logging ecosystem.
+/// On JavaScript, the default handler writes to the console with colors.
 pub fn default_config() -> GlobalConfig {
   config.GlobalConfig(
     level: level.Info,
-    handlers: [console.handler()],
+    handlers: default_handlers(),
     context: [],
     on_error: None,
     sampling: Error(Nil),
   )
+}
+
+@target(erlang)
+fn default_handlers() -> List(Handler) {
+  [erlang_logger.forward_to_logger_raw()]
+}
+
+@target(javascript)
+fn default_handlers() -> List(Handler) {
+  [console.handler()]
 }
 
 // ============================================================================

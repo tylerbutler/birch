@@ -832,7 +832,7 @@ pub fn config_default_test() {
   config.level
   |> should.equal(level.Info)
 
-  // Default should have one handler (console)
+  // Default should have one handler (BEAM logger on Erlang, console on JS)
   config.handlers
   |> list.length
   |> should.equal(1)
