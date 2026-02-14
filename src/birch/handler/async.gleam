@@ -28,7 +28,7 @@
 //// // Wrap any handler to make it async
 //// let async_console =
 ////   console.handler()
-////   |> async.make_async(async.default_config())
+////   |> async.make_async(async.config())
 ////
 //// // Use with custom configuration
 //// let config =
@@ -85,15 +85,6 @@ pub type AsyncConfig {
 /// Create an empty async configuration builder.
 pub fn config() -> AsyncConfig {
   AsyncConfig(queue_size: 1000, flush_interval_ms: 100, overflow: DropOldest)
-}
-
-/// Get the default async configuration.
-///
-/// - queue_size: 1000 messages
-/// - flush_interval_ms: 100ms
-/// - overflow: DropOldest
-pub fn default_config() -> AsyncConfig {
-  config()
 }
 
 /// Set the maximum queue size.

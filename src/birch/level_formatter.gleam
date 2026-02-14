@@ -11,33 +11,9 @@
 //// - **Simple style**: `INFO`, `WARN`, `ERROR` - uppercase labels only
 //// - **Custom**: Create your own formatting function
 
+import birch/internal/ansi
 import birch/level
 import gleam/string
-
-// ============================================================================
-// ANSI Escape Codes
-// ============================================================================
-
-const reset = "\u{001b}[0m"
-
-const bold = "\u{001b}[1m"
-
-// Colors
-const gray = "\u{001b}[90m"
-
-const cyan = "\u{001b}[36m"
-
-const green = "\u{001b}[32m"
-
-const yellow = "\u{001b}[33m"
-
-const red = "\u{001b}[31m"
-
-const magenta = "\u{001b}[35m"
-
-const blue = "\u{001b}[34m"
-
-const bright_red = "\u{001b}[91m"
 
 // ============================================================================
 // Level Formatter Type
@@ -95,17 +71,17 @@ fn format_label(
   config: LabelConfig,
   use_color: Bool,
 ) -> String {
-  let label = level_label(lvl)
+  let label = level.to_string_lowercase(lvl)
 
   case use_color, config.icons {
     True, True -> {
       let color = level_color(lvl)
       let icon = level_icon(lvl)
-      color <> icon <> " " <> bold <> label <> reset
+      color <> icon <> " " <> ansi.bold <> label <> ansi.reset
     }
     True, False -> {
       let color = level_color(lvl)
-      color <> bold <> label <> reset
+      color <> ansi.bold <> label <> ansi.reset
     }
     False, True -> {
       let icon = level_icon(lvl)
@@ -119,27 +95,12 @@ fn format_label(
 // Badge Style Formatter
 // ============================================================================
 
-/// Configuration for badge-style level formatting.
-pub type BadgeConfig {
-  BadgeConfig
-}
-
-/// Default badge configuration.
-pub fn default_badge_config() -> BadgeConfig {
-  BadgeConfig
-}
-
-/// Create a badge-style formatter with default settings.
+/// Create a badge-style formatter.
 /// Output: "[INFO]", "[WARN]", "[ERROR]", etc.
 ///
 /// With colors enabled, displays with bold foreground colors based on severity.
 /// This style provides high visual prominence, especially for errors.
 pub fn badge_formatter() -> LevelFormatter {
-  badge_formatter_with_config(default_badge_config())
-}
-
-/// Create a badge-style formatter with custom configuration.
-pub fn badge_formatter_with_config(_config: BadgeConfig) -> LevelFormatter {
   LevelFormatter(
     format: fn(lvl, use_color) { format_badge(lvl, use_color) },
     // Badge width: "[TRACE]" = 7, "[ERROR]" = 7
@@ -148,12 +109,12 @@ pub fn badge_formatter_with_config(_config: BadgeConfig) -> LevelFormatter {
 }
 
 fn format_badge(lvl: level.Level, use_color: Bool) -> String {
-  let label = level_label_upper(lvl)
+  let label = level.to_string(lvl)
 
   case use_color {
     True -> {
       let color = level_color(lvl)
-      color <> bold <> "[" <> label <> "]" <> reset
+      color <> ansi.bold <> "[" <> label <> "]" <> ansi.reset
     }
     False -> "[" <> label <> "]"
   }
@@ -177,12 +138,12 @@ pub fn simple_formatter() -> LevelFormatter {
 }
 
 fn format_simple(lvl: level.Level, use_color: Bool) -> String {
-  let label = level_label_upper(lvl)
+  let label = level.to_string(lvl)
 
   case use_color {
     True -> {
       let color = simple_level_color(lvl)
-      color <> label <> reset
+      color <> label <> ansi.reset
     }
     False -> label
   }
@@ -264,48 +225,24 @@ pub fn level_icon(lvl: level.Level) -> String {
 /// Get the color code for a log level (fancy style).
 pub fn level_color(lvl: level.Level) -> String {
   case lvl {
-    level.Trace -> gray
-    level.Debug -> gray
-    level.Info -> cyan
-    level.Warn -> yellow
-    level.Err -> red
-    level.Fatal -> bright_red
+    level.Trace -> ansi.gray
+    level.Debug -> ansi.gray
+    level.Info -> ansi.cyan
+    level.Warn -> ansi.yellow
+    level.Err -> ansi.red
+    level.Fatal -> ansi.bright_red
   }
 }
 
 /// Get the color code for a log level (simple style).
 fn simple_level_color(lvl: level.Level) -> String {
   case lvl {
-    level.Trace -> gray
-    level.Debug -> blue
-    level.Info -> cyan
-    level.Warn -> yellow
-    level.Err -> red
-    level.Fatal -> bright_red
-  }
-}
-
-/// Get the label for a log level (lowercase).
-pub fn level_label(lvl: level.Level) -> String {
-  case lvl {
-    level.Trace -> "trace"
-    level.Debug -> "debug"
-    level.Info -> "info"
-    level.Warn -> "warn"
-    level.Err -> "error"
-    level.Fatal -> "fatal"
-  }
-}
-
-/// Get the uppercase label for a log level.
-pub fn level_label_upper(lvl: level.Level) -> String {
-  case lvl {
-    level.Trace -> "TRACE"
-    level.Debug -> "DEBUG"
-    level.Info -> "INFO"
-    level.Warn -> "WARN"
-    level.Err -> "ERROR"
-    level.Fatal -> "FATAL"
+    level.Trace -> ansi.gray
+    level.Debug -> ansi.blue
+    level.Info -> ansi.cyan
+    level.Warn -> ansi.yellow
+    level.Err -> ansi.red
+    level.Fatal -> ansi.bright_red
   }
 }
 
@@ -326,7 +263,7 @@ pub fn level_label_upper(lvl: level.Level) -> String {
 /// by padding AFTER any ANSI reset codes to keep coloring clean.
 pub fn pad_to_width(formatted: String, target_width: Int) -> String {
   // Calculate visual length - either by removing ANSI codes or using string length
-  let visual_length = case string.contains(formatted, reset) {
+  let visual_length = case string.contains(formatted, ansi.reset) {
     True -> calculate_visual_length(formatted)
     False -> string.length(formatted)
   }
@@ -341,20 +278,9 @@ pub fn pad_to_width(formatted: String, target_width: Int) -> String {
 /// Calculate the visual length of a string, excluding ANSI escape codes.
 /// This is a simplified calculation that counts visible characters.
 fn calculate_visual_length(s: String) -> Int {
-  // For our formatters, we know the structure:
-  // - Simple: "\u{001b}[XXm" + label + "\u{001b}[0m"
-  // - Badge: "\u{001b}[XXm\u{001b}[1m[" + label + "]\u{001b}[0m"
-  // - Label: "\u{001b}[XXm\u{001b}[1m" + label + "\u{001b}[0m"
-  //
-  // We can estimate by: total length - (ANSI overhead)
-  // Each color code is typically 5-6 chars, reset is 4 chars, bold is 4 chars
-  //
-  // For now, use a simple heuristic: count characters that aren't part of escape sequences
-  let without_reset = string.replace(s, reset, "")
-  let without_bold = string.replace(without_reset, bold, "")
+  let without_reset = string.replace(s, ansi.reset, "")
+  let without_bold = string.replace(without_reset, ansi.bold, "")
 
-  // Remove color codes (they all start with \u{001b}[ and end with m)
-  // This is approximate but works for our use case
   let chars = string.to_graphemes(without_bold)
   count_visible_chars(chars, False, 0)
 }
@@ -367,58 +293,4 @@ fn count_visible_chars(chars: List(String), in_escape: Bool, count: Int) -> Int 
     [_, ..rest] if in_escape -> count_visible_chars(rest, True, count)
     [_, ..rest] -> count_visible_chars(rest, False, count + 1)
   }
-}
-
-// ============================================================================
-// ANSI Code Accessors (for use by other modules)
-// ============================================================================
-
-/// Get the ANSI reset code.
-pub fn ansi_reset() -> String {
-  reset
-}
-
-/// Get the ANSI bold code.
-pub fn ansi_bold() -> String {
-  bold
-}
-
-/// Get the ANSI dim code.
-pub fn ansi_dim() -> String {
-  "\u{001b}[2m"
-}
-
-/// Get the ANSI gray color code.
-pub fn ansi_gray() -> String {
-  gray
-}
-
-/// Get the ANSI cyan color code.
-pub fn ansi_cyan() -> String {
-  cyan
-}
-
-/// Get the ANSI green color code.
-pub fn ansi_green() -> String {
-  green
-}
-
-/// Get the ANSI yellow color code.
-pub fn ansi_yellow() -> String {
-  yellow
-}
-
-/// Get the ANSI red color code.
-pub fn ansi_red() -> String {
-  red
-}
-
-/// Get the ANSI magenta color code.
-pub fn ansi_magenta() -> String {
-  magenta
-}
-
-/// Get the ANSI blue color code.
-pub fn ansi_blue() -> String {
-  blue
 }

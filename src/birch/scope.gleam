@@ -32,7 +32,6 @@
 import birch/internal/platform
 import birch/record.{type Metadata}
 import gleam/list
-import gleam/string
 
 /// Execute a function with the given context applied.
 ///
@@ -60,16 +59,8 @@ pub fn with_scope(context: Metadata, work: fn() -> a) -> a {
   let current_context = platform.get_scope_context()
   let current_depth = platform.get_scope_depth()
 
-  // Extract the keys from the new context being added (for highlight formatting)
-  let new_keys = list.map(context, fn(pair) { pair.0 })
-  let highlight_keys_value = string.join(new_keys, ",")
-
-  // Add _scope_highlight_keys to mark which keys to highlight from this scope level
-  let context_with_highlight =
-    list.append(context, [#("_scope_highlight_keys", highlight_keys_value)])
-
   // Merge new context with current (new values prepended for shadowing)
-  let merged_context = list.append(context_with_highlight, current_context)
+  let merged_context = list.append(context, current_context)
   let new_depth = current_depth + 1
 
   // Set the new scope context and depth

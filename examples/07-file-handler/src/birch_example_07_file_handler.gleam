@@ -55,6 +55,7 @@ fn demo_size_rotation(dir: String) {
         max_bytes: 1024,
         // 1 KB for demo
         max_files: 3,
+        compress: False,
       ),
     ))
 
@@ -106,7 +107,11 @@ fn demo_json_file(dir: String) {
     file.handler_with_formatter(
       file.FileConfig(
         path: dir <> "/json.log",
-        rotation: file.SizeRotation(max_bytes: 10_000_000, max_files: 5),
+        rotation: file.SizeRotation(
+          max_bytes: 10_000_000,
+          max_files: 5,
+          compress: False,
+        ),
       ),
       json.format_json,
     )

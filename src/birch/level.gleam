@@ -96,18 +96,3 @@ pub fn gte(a: Level, b: Level) -> Bool {
 pub fn gt(a: Level, b: Level) -> Bool {
   to_int(a) > to_int(b)
 }
-
-/// Check if the first level is less severe than the second.
-pub fn lt(a: Level, b: Level) -> Bool {
-  to_int(a) < to_int(b)
-}
-
-/// Check if the first level is at most as severe as the second.
-pub fn lte(a: Level, b: Level) -> Bool {
-  to_int(a) <= to_int(b)
-}
-
-/// Get the default log level (Info).
-pub fn default() -> Level {
-  Info
-}

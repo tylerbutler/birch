@@ -88,11 +88,6 @@ pub fn level_from_string_test() {
   |> should.equal(Error(Nil))
 }
 
-pub fn level_default_test() {
-  level.default()
-  |> should.equal(level.Info)
-}
-
 // ============================================================================
 // Record Tests
 // ============================================================================
@@ -125,11 +120,12 @@ pub fn record_creation_test() {
 
 pub fn record_with_metadata_test() {
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "Hello",
+      metadata: [],
     )
     |> record.with_metadata([#("new_key", "new_value")])
 
@@ -196,11 +192,12 @@ pub fn formatter_human_readable_test() {
 
 pub fn formatter_simple_test() {
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Err,
       logger_name: "test",
       message: "Something failed",
+      metadata: [],
     )
 
   formatter.simple(r)
@@ -315,11 +312,12 @@ pub fn handler_null_test() {
 
   // Should not crash
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "test",
+      metadata: [],
     )
 
   handler.handle(h, r)
@@ -388,11 +386,12 @@ pub fn json_builder_empty_test() {
   // An empty builder should produce an empty JSON object
   let format = json.builder() |> json.build()
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "Hello",
+      metadata: [],
     )
 
   let formatted = format(r)
@@ -407,11 +406,12 @@ pub fn json_builder_add_timestamp_test() {
     |> json.build()
 
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "Hello",
+      metadata: [],
     )
 
   let formatted = format(r)
@@ -427,11 +427,12 @@ pub fn json_builder_add_level_test() {
     |> json.build()
 
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Warn,
       logger_name: "test",
       message: "Hello",
+      metadata: [],
     )
 
   let formatted = format(r)
@@ -447,11 +448,12 @@ pub fn json_builder_add_logger_test() {
     |> json.build()
 
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "myapp.database",
       message: "Hello",
+      metadata: [],
     )
 
   let formatted = format(r)
@@ -467,11 +469,12 @@ pub fn json_builder_add_message_test() {
     |> json.build()
 
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "Request completed",
+      metadata: [],
     )
 
   let formatted = format(r)
@@ -517,11 +520,12 @@ pub fn json_builder_add_custom_test() {
     |> json.build()
 
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "Hello",
+      metadata: [],
     )
 
   let formatted = format(r)
@@ -544,11 +548,12 @@ pub fn json_builder_multiple_fields_test() {
     |> json.build()
 
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Err,
       logger_name: "test",
       message: "Something failed",
+      metadata: [],
     )
 
   let formatted = format(r)
@@ -665,11 +670,12 @@ pub fn json_standard_builder_with_custom_extension_test() {
     |> json.build()
 
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "Hello",
+      metadata: [],
     )
 
   let formatted = format(r)
@@ -723,11 +729,12 @@ pub fn json_add_custom_uses_record_data_test() {
     |> json.build()
 
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Fatal,
       logger_name: "test",
       message: "Critical error",
+      metadata: [],
     )
 
   let formatted = format(r)
@@ -746,11 +753,12 @@ pub fn json_builder_field_order_test() {
     |> json.build()
 
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "Hello",
+      metadata: [],
     )
 
   let formatted = format(r)
@@ -937,7 +945,7 @@ pub fn config_default_logger_uses_config_test() {
 // ============================================================================
 
 pub fn async_config_default_test() {
-  let config = async.default_config()
+  let config = async.config()
 
   config.queue_size
   |> should.equal(1000)
@@ -968,7 +976,7 @@ pub fn async_config_builder_test() {
 
 pub fn async_make_async_creates_handler_test() {
   let base_handler = handler.null()
-  let async_handler = async.make_async(base_handler, async.default_config())
+  let async_handler = async.make_async(base_handler, async.config())
 
   // The async handler should have a name containing "async"
   handler.name(async_handler)
@@ -979,14 +987,15 @@ pub fn async_make_async_creates_handler_test() {
 pub fn async_handle_does_not_block_test() {
   // Create a counter to track writes
   let base_handler = handler.null()
-  let async_handler = async.make_async(base_handler, async.default_config())
+  let async_handler = async.make_async(base_handler, async.config())
 
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "async test message",
+      metadata: [],
     )
 
   // This should return immediately (non-blocking)
@@ -1000,15 +1009,16 @@ pub fn async_handle_does_not_block_test() {
 
 pub fn async_flush_waits_for_pending_test() {
   let base_handler = handler.null()
-  let async_handler = async.make_async(base_handler, async.default_config())
+  let async_handler = async.make_async(base_handler, async.config())
 
   // Send multiple records
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "flush test",
+      metadata: [],
     )
 
   handler.handle(async_handler, r)
@@ -1020,15 +1030,16 @@ pub fn async_flush_waits_for_pending_test() {
 
 pub fn async_flush_handler_by_name_test() {
   let base_handler = handler.null()
-  let async_handler = async.make_async(base_handler, async.default_config())
+  let async_handler = async.make_async(base_handler, async.config())
   let handler_name = handler.name(async_handler)
 
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "flush by name test",
+      metadata: [],
     )
 
   handler.handle(async_handler, r)
@@ -1039,15 +1050,16 @@ pub fn async_flush_handler_by_name_test() {
 
 pub fn async_multiple_handlers_test() {
   // Create multiple async handlers wrapping different base handlers
-  let handler1 = async.make_async(handler.null(), async.default_config())
-  let handler2 = async.make_async(handler.null(), async.default_config())
+  let handler1 = async.make_async(handler.null(), async.config())
+  let handler2 = async.make_async(handler.null(), async.config())
 
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "multi-handler test",
+      metadata: [],
     )
 
   // Both handlers should receive records independently
@@ -1068,11 +1080,12 @@ pub fn async_overflow_drop_oldest_test() {
   let async_handler = async.make_async(handler.null(), config)
 
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "overflow test",
+      metadata: [],
     )
 
   // Send more records than queue can hold
@@ -1094,11 +1107,12 @@ pub fn async_overflow_drop_newest_test() {
   let async_handler = async.make_async(handler.null(), config)
 
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "overflow newest test",
+      metadata: [],
     )
 
   handler.handle(async_handler, r)
@@ -1112,15 +1126,16 @@ pub fn async_overflow_drop_newest_test() {
 @target(erlang)
 pub fn async_shutdown_handler_test() {
   let base_handler = handler.null()
-  let async_handler = async.make_async(base_handler, async.default_config())
+  let async_handler = async.make_async(base_handler, async.config())
   let handler_name = handler.name(async_handler)
 
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "shutdown test",
+      metadata: [],
     )
 
   handler.handle(async_handler, r)
@@ -1132,15 +1147,16 @@ pub fn async_shutdown_handler_test() {
 @target(erlang)
 pub fn async_shutdown_all_test() {
   // Create multiple handlers
-  let handler1 = async.make_async(handler.null(), async.default_config())
-  let handler2 = async.make_async(handler.null(), async.default_config())
+  let handler1 = async.make_async(handler.null(), async.config())
+  let handler2 = async.make_async(handler.null(), async.config())
 
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "shutdown all test",
+      metadata: [],
     )
 
   handler.handle(handler1, r)
@@ -1152,7 +1168,7 @@ pub fn async_shutdown_all_test() {
 
 @target(erlang)
 pub fn async_get_subject_returns_subject_test() {
-  let async_handler = async.make_async(handler.null(), async.default_config())
+  let async_handler = async.make_async(handler.null(), async.config())
   let handler_name = handler.name(async_handler)
 
   // Should be able to get the Subject for the async handler
@@ -1294,17 +1310,18 @@ pub fn file_rotation_no_compression_test() {
   let config =
     file.FileConfig(
       path: test_path,
-      rotation: file.SizeRotation(max_bytes: 100, max_files: 3),
+      rotation: file.SizeRotation(max_bytes: 100, max_files: 3, compress: False),
     )
   let file_handler = file.handler(config)
 
   // Write enough data to trigger rotation
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "This is a log message that should trigger rotation when repeated",
+      metadata: [],
     )
 
   // Write multiple log records to trigger rotation
@@ -1334,21 +1351,18 @@ pub fn file_rotation_with_compression_test() {
   let config =
     file.FileConfig(
       path: test_path,
-      rotation: file.SizeRotationCompressed(
-        max_bytes: 100,
-        max_files: 3,
-        compress: True,
-      ),
+      rotation: file.SizeRotation(max_bytes: 100, max_files: 3, compress: True),
     )
   let file_handler = file.handler(config)
 
   // Write enough data to trigger rotation
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "This is a log message that should trigger rotation when repeated",
+      metadata: [],
     )
 
   // Write multiple log records to trigger rotation
@@ -1366,7 +1380,7 @@ pub fn file_rotation_with_compression_test() {
 }
 
 pub fn file_rotation_compression_disabled_test() {
-  // Test that SizeRotationCompressed with compress: False behaves like SizeRotation
+  // Test that SizeRotation with compress: False creates uncompressed rotated files
   let test_dir = "/tmp/birch_test_compress_disabled"
   let test_path = test_dir <> "/app.log"
 
@@ -1378,21 +1392,18 @@ pub fn file_rotation_compression_disabled_test() {
   let config =
     file.FileConfig(
       path: test_path,
-      rotation: file.SizeRotationCompressed(
-        max_bytes: 100,
-        max_files: 3,
-        compress: False,
-      ),
+      rotation: file.SizeRotation(max_bytes: 100, max_files: 3, compress: False),
     )
   let file_handler = file.handler(config)
 
   // Write enough data to trigger rotation
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "This is a log message that should trigger rotation when repeated",
+      metadata: [],
     )
 
   // Write multiple log records to trigger rotation
@@ -1428,16 +1439,12 @@ pub fn file_rotation_compressed_file_is_smaller_test() {
   let config_uncompressed =
     file.FileConfig(
       path: test_path_uncompressed,
-      rotation: file.SizeRotation(max_bytes: 100, max_files: 3),
+      rotation: file.SizeRotation(max_bytes: 100, max_files: 3, compress: False),
     )
   let config_compressed =
     file.FileConfig(
       path: test_path_compressed,
-      rotation: file.SizeRotationCompressed(
-        max_bytes: 100,
-        max_files: 3,
-        compress: True,
-      ),
+      rotation: file.SizeRotation(max_bytes: 100, max_files: 3, compress: True),
     )
 
   let handler_uncompressed = file.handler(config_uncompressed)
@@ -1445,11 +1452,12 @@ pub fn file_rotation_compressed_file_is_smaller_test() {
 
   // Write the same data to both to trigger rotation
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "This is a repeating log message for testing compression size comparison",
+      metadata: [],
     )
 
   handler.handle(handler_uncompressed, r)
@@ -1497,21 +1505,18 @@ pub fn file_rotation_max_files_with_compression_test() {
   let config =
     file.FileConfig(
       path: test_path,
-      rotation: file.SizeRotationCompressed(
-        max_bytes: 50,
-        max_files: 2,
-        compress: True,
-      ),
+      rotation: file.SizeRotation(max_bytes: 50, max_files: 2, compress: True),
     )
   let file_handler = file.handler(config)
 
   // Write enough data to trigger multiple rotations
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "Log message for testing max files limit with compression enabled",
+      metadata: [],
     )
 
   // This should trigger rotations and enforce max_files limit
@@ -1547,11 +1552,12 @@ pub fn file_rotation_max_files_with_compression_test() {
 pub fn handler_error_type_test() {
   // Test that HandlerError can be created with all expected fields
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Err,
       logger_name: "test",
       message: "test message",
+      metadata: [],
     )
 
   let err =
@@ -1607,11 +1613,12 @@ pub fn handler_error_callback_invoked_on_failure_test() {
     handler.with_error_callback(failing_handler, error_received)
 
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "test",
+      metadata: [],
     )
 
   // This should not crash - error should be caught and callback invoked
@@ -1632,11 +1639,12 @@ pub fn handler_error_callback_not_invoked_on_success_test() {
     handler.with_error_callback(success_handler, error_callback)
 
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "test",
+      metadata: [],
     )
 
   // This should succeed without calling the error callback
@@ -1665,11 +1673,12 @@ pub fn handler_error_includes_record_test() {
     handler.with_error_callback(failing_handler, error_callback)
 
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test.logger",
       message: "original message",
+      metadata: [],
     )
 
   handler.handle(handler_with_cb, r)
@@ -2101,18 +2110,6 @@ pub fn rotation_combined_rotation_test() {
   }
 }
 
-pub fn time_interval_to_hours_hourly_test() {
-  // Hourly interval should represent 1 hour
-  file.interval_to_hours(file.Hourly)
-  |> should.equal(1)
-}
-
-pub fn time_interval_to_hours_daily_test() {
-  // Daily interval should represent 24 hours
-  file.interval_to_hours(file.Daily)
-  |> should.equal(24)
-}
-
 pub fn file_handler_with_time_rotation_test() {
   // Should be able to create a file handler with TimeRotation
   let config =
@@ -2348,11 +2345,12 @@ pub fn logger_without_caller_id_capture_test() {
 pub fn record_with_caller_id_test() {
   // Test the record.with_caller_id function directly
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-01-01T00:00:00.000Z",
       level: level.Info,
       logger_name: "test",
       message: "Hello",
+      metadata: [],
     )
 
   // Initially no caller ID
@@ -2624,11 +2622,12 @@ pub fn console_indented_handler_handles_records_test() {
   let h = console.indented_handler(1)
 
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-12-26T10:30:45.123Z",
       level: level.Info,
       logger_name: "test",
       message: "Indented message",
+      metadata: [],
     )
 
   // Should not crash
@@ -2638,15 +2637,16 @@ pub fn console_indented_handler_handles_records_test() {
 pub fn console_auto_indent_from_scopes_test() {
   // Test that auto-indent configuration option works
   let config =
-    console.default_fancy_config()
-    |> console.with_auto_indent_from_scopes()
+    console.ConsoleConfig(
+      ..console.default_fancy_config(),
+      auto_indent_from_scopes: True,
+    )
 
   config.auto_indent_from_scopes
   |> should.be_true()
 
   let config_disabled =
-    config
-    |> console.without_auto_indent_from_scopes()
+    console.ConsoleConfig(..config, auto_indent_from_scopes: False)
 
   config_disabled.auto_indent_from_scopes
   |> should.be_false()
@@ -2868,21 +2868,35 @@ pub fn level_formatter_simple_test() {
 }
 
 pub fn console_with_badge_style_test() {
-  let config = console.default_fancy_config() |> console.with_badge_style
+  let config =
+    console.ConsoleConfig(
+      ..console.default_fancy_config(),
+      level_formatter: level_formatter.badge_formatter(),
+    )
   let h = console.handler_with_config(config)
   handler.name(h)
   |> should.equal("console")
 }
 
 pub fn console_with_label_style_test() {
-  let config = console.default_config() |> console.with_label_style
+  let config =
+    console.ConsoleConfig(
+      ..console.default_config(),
+      level_formatter: level_formatter.label_formatter(),
+    )
   let h = console.handler_with_config(config)
   handler.name(h)
   |> should.equal("console")
 }
 
 pub fn console_with_label_style_no_icons_test() {
-  let config = console.default_config() |> console.with_label_style_no_icons
+  let config =
+    console.ConsoleConfig(
+      ..console.default_config(),
+      level_formatter: level_formatter.label_formatter_with_config(
+        level_formatter.LabelConfig(icons: False),
+      ),
+    )
   let h = console.handler_with_config(config)
   handler.name(h)
   |> should.equal("console")
@@ -2920,8 +2934,10 @@ pub fn console_with_level_formatter_test() {
     level_formatter.custom_level_formatter(fn(_lvl, _use_color) { "CUSTOM" }, 6)
 
   let config =
-    console.default_config()
-    |> console.with_level_formatter(custom_formatter)
+    console.ConsoleConfig(
+      ..console.default_config(),
+      level_formatter: custom_formatter,
+    )
 
   let h = console.handler_with_config(config)
   handler.name(h)

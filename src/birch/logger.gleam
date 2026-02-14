@@ -51,7 +51,7 @@ pub opaque type Logger {
 pub fn new(name: String) -> Logger {
   Logger(
     name: name,
-    min_level: level.default(),
+    min_level: level.Info,
     handlers: [console.handler()],
     context: [],
     time_provider: None,
@@ -65,7 +65,7 @@ pub fn new(name: String) -> Logger {
 pub fn silent(name: String) -> Logger {
   Logger(
     name: name,
-    min_level: level.default(),
+    min_level: level.Info,
     handlers: [],
     context: [],
     time_provider: None,

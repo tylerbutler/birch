@@ -90,22 +90,11 @@ pub fn level_gte_reflexive_test() {
   |> should.be_true
 }
 
-/// Property: lte is reflexive (lte(x, x) == True)
-pub fn level_lte_reflexive_test() {
-  use lvl <- qcheck.given(level_generator())
-
-  level.lte(lvl, lvl)
-  |> should.be_true
-}
-
-/// Property: gt and lt are irreflexive
-pub fn level_gt_lt_irreflexive_test() {
+/// Property: gt is irreflexive
+pub fn level_gt_irreflexive_test() {
   use lvl <- qcheck.given(level_generator())
 
   level.gt(lvl, lvl)
-  |> should.be_false
-
-  level.lt(lvl, lvl)
   |> should.be_false
 }
 
@@ -228,11 +217,12 @@ pub fn record_with_metadata_prepends_test() {
   ))
 
   let r =
-    record.new_simple(
+    record.new(
       timestamp: "2024-01-01T00:00:00Z",
       level: Info,
       logger_name: "test",
       message: "test",
+      metadata: [],
     )
     |> record.with_metadata([#(key, value)])
 
@@ -249,11 +239,12 @@ pub fn record_new_simple_empty_metadata_test() {
   ))
 
   let r =
-    record.new_simple(
+    record.new(
       timestamp: timestamp,
       level: lvl,
       logger_name: "test",
       message: message,
+      metadata: [],
     )
 
   r.metadata

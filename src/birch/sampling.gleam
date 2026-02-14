@@ -42,10 +42,6 @@ import gleam/time/timestamp
 // Sampling Configuration
 // ============================================================================
 
-// Re-export SampleConfig type from config module
-pub type SampleConfigType =
-  SampleConfig
-
 /// Create a sampling configuration.
 ///
 /// - `lvl`: Apply sampling to this level and all levels below it

@@ -8,6 +8,7 @@
 
 import birch/formatter
 import birch/handler.{type Handler, type OutputTarget, Stderr, Stdout}
+import birch/internal/ansi
 import birch/internal/platform
 import birch/level_formatter.{type LevelFormatter}
 import birch/record.{type LogRecord, type Metadata}
@@ -83,94 +84,6 @@ pub fn default_fancy_config() -> ConsoleConfig {
 }
 
 // ============================================================================
-// Configuration Modifiers
-// ============================================================================
-
-/// Set the level formatter for a configuration.
-pub fn with_level_formatter(
-  config: ConsoleConfig,
-  formatter: LevelFormatter,
-) -> ConsoleConfig {
-  ConsoleConfig(..config, level_formatter: formatter)
-}
-
-/// Use badge-style level formatting.
-pub fn with_badge_style(config: ConsoleConfig) -> ConsoleConfig {
-  ConsoleConfig(..config, level_formatter: level_formatter.badge_formatter())
-}
-
-/// Use label-style level formatting (icons + lowercase labels).
-pub fn with_label_style(config: ConsoleConfig) -> ConsoleConfig {
-  ConsoleConfig(..config, level_formatter: level_formatter.label_formatter())
-}
-
-/// Use label-style formatting without icons.
-pub fn with_label_style_no_icons(config: ConsoleConfig) -> ConsoleConfig {
-  ConsoleConfig(
-    ..config,
-    level_formatter: level_formatter.label_formatter_with_config(
-      level_formatter.LabelConfig(icons: False),
-    ),
-  )
-}
-
-/// Use simple-style level formatting (uppercase labels only).
-pub fn with_simple_style(config: ConsoleConfig) -> ConsoleConfig {
-  ConsoleConfig(..config, level_formatter: level_formatter.simple_formatter())
-}
-
-/// Enable timestamps in output.
-pub fn with_timestamps(config: ConsoleConfig) -> ConsoleConfig {
-  ConsoleConfig(..config, timestamps: True)
-}
-
-/// Disable timestamps in output.
-pub fn without_timestamps(config: ConsoleConfig) -> ConsoleConfig {
-  ConsoleConfig(..config, timestamps: False)
-}
-
-/// Enable colors in output.
-pub fn with_color(config: ConsoleConfig) -> ConsoleConfig {
-  ConsoleConfig(..config, color: True)
-}
-
-/// Disable colors in output.
-pub fn without_color(config: ConsoleConfig) -> ConsoleConfig {
-  ConsoleConfig(..config, color: False)
-}
-
-/// Enable automatic indentation based on scope depth.
-/// When enabled, logs will be automatically indented by 2 spaces per scope level.
-pub fn with_auto_indent_from_scopes(config: ConsoleConfig) -> ConsoleConfig {
-  ConsoleConfig(..config, auto_indent_from_scopes: True)
-}
-
-/// Disable automatic indentation from scopes.
-pub fn without_auto_indent_from_scopes(config: ConsoleConfig) -> ConsoleConfig {
-  ConsoleConfig(..config, auto_indent_from_scopes: False)
-}
-
-/// Set output target to stdout.
-pub fn with_stdout(config: ConsoleConfig) -> ConsoleConfig {
-  ConsoleConfig(..config, target: Stdout)
-}
-
-/// Set output target to stderr.
-pub fn with_stderr(config: ConsoleConfig) -> ConsoleConfig {
-  ConsoleConfig(..config, target: Stderr)
-}
-
-/// Set presentation style to Simple (pipe-delimited).
-pub fn with_simple_presentation(config: ConsoleConfig) -> ConsoleConfig {
-  ConsoleConfig(..config, style: Simple)
-}
-
-/// Set presentation style to Fancy (compact with icons).
-pub fn with_fancy_presentation(config: ConsoleConfig) -> ConsoleConfig {
-  ConsoleConfig(..config, style: Fancy)
-}
-
-// ============================================================================
 // Handler Creation
 // ============================================================================
 
@@ -193,7 +106,6 @@ pub fn handler_with_config(config: ConsoleConfig) -> Handler {
   let write_fn = case config.target {
     Stdout -> io.println
     Stderr -> io.println_error
-    handler.StdoutWithStderr -> write_split
   }
 
   let format_fn = case config.style {
@@ -214,13 +126,6 @@ pub fn handler_with_config(config: ConsoleConfig) -> Handler {
   }
 
   handler.new(name: "console", write: write_fn, format: format_fn)
-}
-
-/// Write to stdout for normal logs, stderr for errors.
-fn write_split(message: String) -> Nil {
-  // We can't easily determine the level here, so we just write to stdout
-  // A more complete implementation would need access to the record
-  io.println(message)
 }
 
 // ============================================================================
@@ -258,11 +163,7 @@ fn format_record_simple(
     level_formatter.format_level_padded(level_fmt, record.level, use_color)
 
   let timestamp_part = case show_timestamp, use_color {
-    True, True ->
-      level_formatter.ansi_gray()
-      <> record.timestamp
-      <> level_formatter.ansi_reset()
-      <> " | "
+    True, True -> ansi.gray <> record.timestamp <> ansi.reset <> " | "
     True, False -> record.timestamp <> " | "
     False, _ -> ""
   }
@@ -274,7 +175,7 @@ fn format_record_simple(
     m ->
       " | "
       <> case use_color {
-        True -> level_formatter.ansi_cyan() <> m <> level_formatter.ansi_reset()
+        True -> ansi.cyan <> m <> ansi.reset
         False -> m
       }
   }
@@ -318,8 +219,8 @@ fn format_record_fancy(
   show_timestamp: Bool,
   level_fmt: LevelFormatter,
 ) -> String {
-  let dim = level_formatter.ansi_dim()
-  let reset = level_formatter.ansi_reset()
+  let dim = ansi.dim
+  let reset = ansi.reset
 
   let level_part =
     level_formatter.format_level_padded(level_fmt, record.level, use_color)
@@ -356,24 +257,11 @@ fn format_record_fancy(
 // ============================================================================
 
 /// Format metadata, excluding internal keys (prefixed with _).
-/// Bolds keys listed in _scope_highlight_keys if use_color is true.
 fn format_metadata_visible(metadata: record.Metadata, use_color: Bool) -> String {
-  // Extract the highlight keys from _scope_highlight_keys metadata
-  let highlight_keys = case list.key_find(metadata, "_scope_highlight_keys") {
-    Ok(keys_str) -> string.split(keys_str, ",")
-    Error(_) -> []
-  }
-
-  // Filter out internal keys
   let visible_metadata =
     list.filter(metadata, fn(pair) { !string.starts_with(pair.0, "_") })
 
-  // Format with bold highlighting for scope keys
-  formatter.format_metadata_with_bold(
-    visible_metadata,
-    highlight_keys,
-    use_color,
-  )
+  formatter.format_metadata_colored(visible_metadata, use_color)
 }
 
 // ============================================================================
@@ -431,11 +319,11 @@ fn format_box(message: String, title: String, use_color: Bool) -> String {
   // 1 space padding on each side
 
   let color = case use_color {
-    True -> level_formatter.ansi_cyan()
+    True -> ansi.cyan
     False -> ""
   }
   let reset_code = case use_color {
-    True -> level_formatter.ansi_reset()
+    True -> ansi.reset
     False -> ""
   }
 
@@ -512,38 +400,6 @@ pub fn write_box_with_title(message: String, title: String) -> Nil {
 // Grouping
 // ============================================================================
 
-/// Get a color based on a simple hash of the input string.
-/// Uses 256-color palette if terminal supports it, otherwise falls back to 6 basic colors.
-fn hash_color(text: String) -> String {
-  let hash =
-    text
-    |> string.to_utf_codepoints
-    |> list.fold(0, fn(acc, cp) { acc + string.utf_codepoint_to_int(cp) })
-
-  let color_depth = platform.get_color_depth()
-
-  case color_depth >= 256 {
-    True -> {
-      // Use 256-color palette - pick from a range of nice, readable colors
-      // We use colors 38-218 (avoiding the very dark and very light ones)
-      // These are the 6x6x6 color cube (16-231) minus the extremes
-      let color_index = { hash % 180 } + 38
-      "\u{001b}[38;5;" <> int.to_string(color_index) <> "m"
-    }
-    False -> {
-      // Fall back to basic 6-color palette
-      case hash % 6 {
-        0 -> level_formatter.ansi_cyan()
-        1 -> level_formatter.ansi_green()
-        2 -> level_formatter.ansi_yellow()
-        3 -> level_formatter.ansi_magenta()
-        4 -> level_formatter.ansi_blue()
-        _ -> level_formatter.ansi_red()
-      }
-    }
-  }
-}
-
 /// Execute a function within a named group, with all log output indented.
 /// The group title is printed before the content, and indentation is applied
 /// to all output within the scope.
@@ -569,9 +425,9 @@ pub fn with_group(title: String, work: fn() -> a) -> a {
   let use_color = platform.is_stdout_tty()
   let #(arrow, styled_title) = case use_color {
     True -> {
-      let color = hash_color(title)
-      let reset = level_formatter.ansi_reset()
-      let bold = level_formatter.ansi_bold()
+      let color = formatter.hash_color(title)
+      let reset = ansi.reset
+      let bold = ansi.bold
       #(color <> "▸" <> reset, bold <> color <> title <> reset)
     }
     False -> #("▸", title)
@@ -602,7 +458,6 @@ pub fn indented_handler_with_config(
   let write_fn = case config.target {
     Stdout -> io.println
     Stderr -> io.println_error
-    handler.StdoutWithStderr -> io.println
   }
 
   let indent = string.repeat("  ", indent_level)
@@ -707,9 +562,9 @@ fn format_styled_message(
     True ->
       color
       <> icon_part
-      <> level_formatter.ansi_bold()
+      <> ansi.bold
       <> label
-      <> level_formatter.ansi_reset()
+      <> ansi.reset
       <> " "
       <> message
       <> metadata_part
@@ -719,10 +574,10 @@ fn format_styled_message(
 
 fn style_properties(style: LogStyle) -> #(String, String, String) {
   case style {
-    Success -> #("✔", level_formatter.ansi_green(), "success")
-    Start -> #("◐", level_formatter.ansi_magenta(), "start")
-    Ready -> #("✔", level_formatter.ansi_green(), "ready")
-    Fail -> #("✖", level_formatter.ansi_red(), "fail")
+    Success -> #("✔", ansi.green, "success")
+    Start -> #("◐", ansi.magenta, "start")
+    Ready -> #("✔", ansi.green, "ready")
+    Fail -> #("✖", ansi.red, "fail")
   }
 }
 

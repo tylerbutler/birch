@@ -3,7 +3,7 @@
 //// Demonstrates configuring the console handler for different scenarios.
 
 import birch as log
-import birch/handler
+import birch/handler.{type Handler, Stderr, Stdout}
 import birch/handler/console
 
 pub fn main() {
@@ -40,8 +40,7 @@ fn demo_no_colors() {
   log.info("--- Console Handler Without Colors ---")
 
   let no_color_handler =
-    console.default_config()
-    |> console.without_color()
+    console.ConsoleConfig(..console.default_config(), color: False)
     |> console.handler_with_config()
 
   log.configure([log.config_handlers([no_color_handler])])
@@ -56,8 +55,7 @@ fn demo_stderr() {
   log.info("--- Console Handler to stderr ---")
 
   let stderr_handler =
-    console.default_config()
-    |> console.with_stderr()
+    console.ConsoleConfig(..console.default_config(), target: Stderr)
     |> console.handler_with_config()
 
   log.configure([log.config_handlers([stderr_handler])])
@@ -71,16 +69,16 @@ fn demo_stderr() {
 pub fn create_custom_console_handler(
   use_colors: Bool,
   use_stderr: Bool,
-) -> handler.Handler {
-  let config = case use_colors {
-    True -> console.default_config() |> console.with_color()
-    False -> console.default_config() |> console.without_color()
+) -> Handler {
+  let target = case use_stderr {
+    True -> Stderr
+    False -> Stdout
   }
 
-  let config = case use_stderr {
-    True -> config |> console.with_stderr()
-    False -> config |> console.with_stdout()
-  }
-
-  console.handler_with_config(config)
+  console.ConsoleConfig(
+    ..console.default_config(),
+    color: use_colors,
+    target: target,
+  )
+  |> console.handler_with_config()
 }

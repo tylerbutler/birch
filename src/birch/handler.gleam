@@ -16,8 +16,6 @@ pub type OutputTarget {
   Stdout
   /// Write to standard error
   Stderr
-  /// Write errors (level >= Error) to stderr, others to stdout
-  StdoutWithStderr
 }
 
 /// Error details passed to error callbacks when a handler fails.

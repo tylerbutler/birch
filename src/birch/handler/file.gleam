@@ -24,11 +24,9 @@ pub type TimeInterval {
 pub type Rotation {
   /// No rotation - file grows indefinitely
   NoRotation
-  /// Rotate when file exceeds max_bytes, keep up to max_files old files
-  SizeRotation(max_bytes: Int, max_files: Int)
   /// Rotate when file exceeds max_bytes, keep up to max_files old files,
   /// with optional gzip compression of rotated files
-  SizeRotationCompressed(max_bytes: Int, max_files: Int, compress: Bool)
+  SizeRotation(max_bytes: Int, max_files: Int, compress: Bool)
   /// Rotate based on time interval, keep up to max_files old files
   TimeRotation(interval: TimeInterval, max_files: Int)
   /// Rotate on size OR time, whichever comes first
@@ -71,13 +69,7 @@ fn write_to_file(config: FileConfig, message: String) -> Nil {
   // Check if we need to rotate first
   case config.rotation {
     NoRotation -> Nil
-    SizeRotation(max_bytes, max_files) -> {
-      case should_rotate_by_size(config.path, max_bytes) {
-        True -> rotate_file(config.path, max_files, False)
-        False -> Nil
-      }
-    }
-    SizeRotationCompressed(max_bytes, max_files, compress) -> {
+    SizeRotation(max_bytes, max_files, compress) -> {
       case should_rotate_by_size(config.path, max_bytes) {
         True -> rotate_file(config.path, max_files, compress)
         False -> Nil
@@ -318,14 +310,6 @@ fn get_parent_dir(path: String) -> String {
 // ============================================================================
 // Time-Based Rotation Helpers
 // ============================================================================
-
-/// Get the number of hours in a time interval.
-pub fn interval_to_hours(interval: TimeInterval) -> Int {
-  case interval {
-    Hourly -> 1
-    Daily -> 24
-  }
-}
 
 /// Format a rotation timestamp based on the interval.
 /// - Hourly: "2024-12-26T14" (includes hour)

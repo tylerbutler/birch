@@ -10,21 +10,6 @@
 ////
 //// On JavaScript, this module is not used - the platform FFI handles async there.
 
-/// This module is only implemented for Erlang. On JavaScript, this returns False.
-pub fn is_available() -> Bool {
-  do_is_available()
-}
-
-@target(erlang)
-fn do_is_available() -> Bool {
-  True
-}
-
-@target(javascript)
-fn do_is_available() -> Bool {
-  False
-}
-
 @target(erlang)
 import birch/handler.{type Handler}
 

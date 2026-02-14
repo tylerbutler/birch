@@ -29,7 +29,7 @@ fn demo_basic_async() {
   // Wrap console handler with async
   let async_console =
     console.handler()
-    |> async.make_async(async.default_config())
+    |> async.make_async(async.config())
 
   log.configure([log.config_handlers([async_console])])
 
@@ -74,7 +74,7 @@ fn demo_flush() {
 
   let async_handler =
     console.handler()
-    |> async.make_async(async.default_config())
+    |> async.make_async(async.config())
 
   log.configure([log.config_handlers([async_handler])])
 

@@ -33,8 +33,7 @@ pub fn main() {
   print_header("SIMPLE STYLE (no timestamps)")
 
   let simple_no_ts =
-    console.default_config()
-    |> console.without_timestamps
+    console.ConsoleConfig(..console.default_config(), timestamps: False)
   log.configure([
     log.config_handlers([console.handler_with_config(simple_no_ts)]),
     log.config_level(level.Trace),
@@ -70,8 +69,7 @@ pub fn main() {
   print_header("FANCY STYLE (with timestamps)")
 
   let fancy_with_ts =
-    console.default_fancy_config()
-    |> console.with_timestamps
+    console.ConsoleConfig(..console.default_fancy_config(), timestamps: True)
   log.configure([
     log.config_handlers([console.handler_with_config(fancy_with_ts)]),
     log.config_level(level.Trace),
@@ -90,8 +88,10 @@ pub fn main() {
   print_header("BADGE STYLE")
 
   let badge_config =
-    console.default_fancy_config()
-    |> console.with_badge_style
+    console.ConsoleConfig(
+      ..console.default_fancy_config(),
+      level_formatter: level_formatter.badge_formatter(),
+    )
   log.configure([
     log.config_handlers([console.handler_with_config(badge_config)]),
     log.config_level(level.Trace),
@@ -110,8 +110,12 @@ pub fn main() {
   print_header("LABEL STYLE (no icons)")
 
   let no_icons_config =
-    console.default_fancy_config()
-    |> console.with_label_style_no_icons
+    console.ConsoleConfig(
+      ..console.default_fancy_config(),
+      level_formatter: level_formatter.label_formatter_with_config(
+        level_formatter.LabelConfig(icons: False),
+      ),
+    )
   log.configure([
     log.config_handlers([console.handler_with_config(no_icons_config)]),
     log.config_level(level.Trace),
@@ -261,8 +265,10 @@ pub fn main() {
   // Width 3: "⚠️ " is 3 chars (emoji + space + space)
 
   let custom_config =
-    console.default_fancy_config()
-    |> console.with_level_formatter(emoji_formatter)
+    console.ConsoleConfig(
+      ..console.default_fancy_config(),
+      level_formatter: emoji_formatter,
+    )
 
   log.configure([
     log.config_handlers([console.handler_with_config(custom_config)]),
@@ -282,8 +288,7 @@ pub fn main() {
   print_header("NO COLORS")
 
   let no_color_config =
-    console.default_fancy_config()
-    |> console.without_color
+    console.ConsoleConfig(..console.default_fancy_config(), color: False)
 
   log.configure([
     log.config_handlers([console.handler_with_config(no_color_config)]),
@@ -303,8 +308,10 @@ pub fn main() {
   print_header("AUTO-INDENT FROM SCOPES")
 
   let auto_indent_config =
-    console.default_fancy_config()
-    |> console.with_auto_indent_from_scopes()
+    console.ConsoleConfig(
+      ..console.default_fancy_config(),
+      auto_indent_from_scopes: True,
+    )
 
   log.configure([
     log.config_handlers([console.handler_with_config(auto_indent_config)]),

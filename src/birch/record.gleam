@@ -51,24 +51,6 @@ pub fn new(
   )
 }
 
-/// Create a log record with empty metadata.
-/// The caller_id field defaults to None.
-pub fn new_simple(
-  timestamp timestamp: String,
-  level level: Level,
-  logger_name logger_name: String,
-  message message: String,
-) -> LogRecord {
-  LogRecord(
-    timestamp: timestamp,
-    level: level,
-    logger_name: logger_name,
-    message: message,
-    metadata: [],
-    caller_id: None,
-  )
-}
-
 /// Add metadata to a log record.
 /// New metadata is prepended, allowing later entries to shadow earlier ones.
 pub fn with_metadata(record: LogRecord, metadata: Metadata) -> LogRecord {

@@ -2,21 +2,13 @@
 ////
 //// Formatters transform LogRecords into strings for output.
 
+import birch/internal/ansi
 import birch/internal/platform
 import birch/level
 import birch/record.{type LogRecord}
 import gleam/int
 import gleam/list
 import gleam/string
-
-/// Format metadata, excluding internal keys (prefixed with _).
-/// Internal keys are used by the logging system for features like
-/// semantic log styles and grouping, and should not be shown to users.
-pub fn format_metadata_visible(metadata: record.Metadata) -> String {
-  metadata
-  |> list.filter(fn(pair) { !string.starts_with(pair.0, "_") })
-  |> format_metadata()
-}
 
 /// A formatter is a function that converts a LogRecord to a string.
 pub type Formatter =
@@ -78,17 +70,6 @@ pub fn format_metadata_colored(
   metadata: record.Metadata,
   use_color: Bool,
 ) -> String {
-  format_metadata_with_bold(metadata, [], use_color)
-}
-
-/// Format metadata with specific keys highlighted.
-/// All keys get a unique hash-based color. Keys in the highlight_keys list
-/// are additionally styled with bold for extra visual distinction.
-pub fn format_metadata_with_bold(
-  metadata: record.Metadata,
-  highlight_keys: List(String),
-  use_color: Bool,
-) -> String {
   metadata
   |> list.map(fn(pair) {
     let #(key, value) = pair
@@ -96,14 +77,7 @@ pub fn format_metadata_with_bold(
     case use_color {
       True -> {
         let color = hash_color(key)
-        let reset = "\u{001b}[0m"
-        case list.contains(highlight_keys, key) {
-          True -> {
-            let bold = "\u{001b}[1m"
-            bold <> color <> formatted_kv <> reset
-          }
-          False -> color <> formatted_kv <> reset
-        }
+        color <> formatted_kv <> ansi.reset
       }
       False -> formatted_kv
     }
@@ -121,7 +95,7 @@ fn escape_value(value: String) -> String {
 
 /// Get a color based on a simple hash of the input string.
 /// Uses 256-color palette if terminal supports it, otherwise falls back to 6 basic colors.
-fn hash_color(text: String) -> String {
+pub fn hash_color(text: String) -> String {
   let hash =
     text
     |> string.to_utf_codepoints
@@ -131,25 +105,17 @@ fn hash_color(text: String) -> String {
 
   case color_depth >= 256 {
     True -> {
-      // Use 256-color palette - pick from a range of nice, readable colors
       let color_index = { hash % 180 } + 38
       "\u{001b}[38;5;" <> int.to_string(color_index) <> "m"
     }
     False -> {
-      // Fall back to basic 6-color palette
       case hash % 6 {
-        0 -> "\u{001b}[36m"
-        // cyan
-        1 -> "\u{001b}[32m"
-        // green
-        2 -> "\u{001b}[33m"
-        // yellow
-        3 -> "\u{001b}[35m"
-        // magenta
-        4 -> "\u{001b}[34m"
-        // blue
-        _ -> "\u{001b}[31m"
-        // red
+        0 -> ansi.cyan
+        1 -> ansi.green
+        2 -> ansi.yellow
+        3 -> ansi.magenta
+        4 -> ansi.blue
+        _ -> ansi.red
       }
     }
   }

@@ -3,6 +3,7 @@
 //// Demonstrates log sampling and rate limiting.
 
 import birch as log
+import birch/config
 import birch/level
 import birch/sampling
 
@@ -87,13 +88,13 @@ fn int_to_string(n: Int) -> String {
 
 /// Create a sampling config for production.
 /// Logs 1% of debug, all info and above.
-pub fn production_sampling() -> sampling.SampleConfigType {
+pub fn production_sampling() -> config.SampleConfig {
   sampling.config(level.Debug, 0.01)
 }
 
 /// Create a sampling config for development.
 /// Logs everything.
-pub fn development_sampling() -> sampling.SampleConfigType {
+pub fn development_sampling() -> config.SampleConfig {
   sampling.config(level.Trace, 1.0)
 }
 
