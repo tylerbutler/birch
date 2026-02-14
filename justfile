@@ -11,6 +11,7 @@ alias t := test
 alias f := format
 alias c := check
 alias d := docs
+alias g := generate-configs
 
 # Build the project (Erlang target)
 build:
@@ -65,18 +66,18 @@ deps:
 clean:
     rm -rf build
 
-# Run all checks (format + tests)
-check: format-check test
+# Run all checks (format + config sync + tests)
+check: format-check check-configs-sync test
 
-# Run quick checks (format + erlang tests only)
-check-quick: format-check test-erlang
+# Run quick checks (format + config sync + erlang tests only)
+check-quick: format-check check-configs-sync test-erlang
 
 # Full local validation (no act/Docker required)
-# Covers: format, strict build, tests, examples (Erlang), integration (Node.js)
-check-full: format-check build-strict-all test test-examples test-integration-node
+# Covers: format, config sync, strict build, tests, examples (Erlang), integration (Node.js)
+check-full: format-check check-configs-sync build-strict-all test test-examples test-integration-node
 
 # CI parity recipes
-pr: format-check build-strict test docs
+pr: format-check check-configs-sync build-strict test docs
 main: pr test-examples
 
 # Watch and rebuild on changes (requires watchexec)
@@ -314,6 +315,27 @@ ci-host:
 # Run specific CI job on host system without Docker
 ci-host-job job:
     act -j {{job}} -P ubuntu-latest=-self-hosted
+
+# ============================================================================
+# Configuration Generation
+# Requires: commit-config-gen (go install github.com/tylerbutler/commit-config-gen@latest)
+# ============================================================================
+
+# Generate cliff.toml and .commitlintrc.json from commit-types.json
+generate-configs:
+    commit-config-gen generate
+
+# Check that generated configs are in sync with commit-types.json
+check-configs-sync:
+    commit-config-gen check
+
+# Generate changelog using git-cliff
+changelog:
+    git cliff -o CHANGELOG.md
+
+# Preview changelog without writing
+changelog-preview:
+    git cliff --unreleased
 
 # ============================================================================
 # Documentation Site (Astro/Starlight)

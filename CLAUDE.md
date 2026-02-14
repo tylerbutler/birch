@@ -79,8 +79,8 @@ just test-erlang  # Run tests on Erlang only
 just test-js      # Run tests on JavaScript only
 just format       # Format source code (alias: f)
 just format-check # Check formatting
-just check        # Run format-check + tests on both targets (alias: c)
-just check-quick  # Run format-check + Erlang tests only
+just check        # Run format-check + config-sync + tests on both targets (alias: c)
+just check-quick  # Run format-check + config-sync + Erlang tests only
 just docs         # Generate documentation (alias: d)
 just deps         # Download dependencies
 just clean        # Remove build artifacts
@@ -251,6 +251,23 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR to main using `just`
 - Tests on both Erlang and JavaScript targets (`just test-erlang`, `just test-js`)
 - Format checking (`just format-check`)
 - Documentation build (`just docs`)
+
+## Commit Configuration
+
+Single source of truth pattern for commit types and changelog generation:
+- `commit-types.json` - defines commit types, changelog groups, and excluded scopes
+- `commit-config-gen` - Go CLI tool that generates configs (install: `go install github.com/tylerbutler/commit-config-gen@latest`)
+
+### Workflow
+```bash
+just g                    # Regenerate configs after editing commit-types.json
+just changelog-preview    # Preview unreleased changelog
+just changelog            # Generate CHANGELOG.md
+```
+
+### Scope Exclusions
+Commits with scopes in `excluded_scopes` (e.g., `fix(ci)`, `chore(deps)`) are hidden from changelog.
+Edit `commit-types.json` to add/remove excluded scopes.
 
 ## Conventions
 
