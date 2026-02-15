@@ -32,6 +32,10 @@ pub type SampleConfig {
 
 /// Global configuration that affects the default logger and
 /// application-wide settings.
+///
+/// **Planned breaking change:** The `sampling` field will change from
+/// `Result(SampleConfig, Nil)` to `Option(SampleConfig)` in a future release.
+/// Migrate from `Ok(config)` / `Error(Nil)` to `Some(config)` / `None`.
 pub type GlobalConfig {
   GlobalConfig(
     /// Minimum log level for the default logger
@@ -42,7 +46,12 @@ pub type GlobalConfig {
     context: Metadata,
     /// Optional global error callback for handler failures
     on_error: Option(ErrorCallback),
-    /// Optional sampling configuration
+    /// Optional sampling configuration.
+    ///
+    /// **Planned breaking change:** This field will change from
+    /// `Result(SampleConfig, Nil)` to `Option(SampleConfig)` in a future
+    /// release. Use `Ok(config)` / `Error(Nil)` for now, but plan to
+    /// migrate to `Some(config)` / `None`.
     sampling: Result(SampleConfig, Nil),
   )
 }
@@ -86,6 +95,7 @@ pub fn sampling(config: SampleConfig) -> ConfigOption {
 
 /// Returns the default global configuration with no handlers.
 /// Note: Use birch.default_config() to get defaults with console handler.
+@deprecated("Use birch.default_config() instead for sensible defaults, or construct GlobalConfig directly")
 pub fn empty() -> GlobalConfig {
   GlobalConfig(
     level: level.Info,
@@ -130,6 +140,7 @@ pub fn get_level(config: GlobalConfig) -> Level {
 }
 
 /// Get the error callback from a GlobalConfig, if set.
+@deprecated("Access config.on_error directly instead")
 pub fn get_on_error(config: GlobalConfig) -> Option(ErrorCallback) {
   config.on_error
 }
