@@ -1,5 +1,5 @@
 name = "birch"
-version = "0.2.0"
+version = "0.2.1"
 description = "A logging library for Gleam with cross-platform support"
 licences = ["MIT"]
 repository = { type = "github", user = "tylerbutler", repo = "birch" }
