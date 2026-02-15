@@ -1,5 +1,12 @@
 # birch - logs that gleam ✨🪵✨
 
+> [!IMPORTANT]
+> birch is pre-1.0. The API is unstable — features may be removed in minor releases, and quality
+> should not be considered production-ready. Pre-1.0 we are exploring a broad set of features and
+> stabilizing them at different rates, so 1.0 may ship with only a subset of what you see here.
+> Once we reach 1.0, stable features will be ready for broad use. We welcome usage and feedback in
+> the meantime! We will do our best to minimize breaking changes regardless.
+
 A logging library for Gleam with cross-platform support.
 
 The name "birch" comes from birch trees, whose white bark gleams in the light.
