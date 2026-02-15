@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.2.1](https://github.com/tylerbutler/birch/compare/v0.2.0...v0.2.1) (2026-02-15)
+
+
+### Features
+
+* add Erlang code coverage support ([ecfc298](https://github.com/tylerbutler/birch/commit/ecfc2989137ab5fa137929e731485920584d9bed))
+* add LCOV export for Codecov integration ([68988a2](https://github.com/tylerbutler/birch/commit/68988a2ab0e8322b105c00ebf7043157db8961ad))
+* add template patterns for consistency ([#42](https://github.com/tylerbutler/birch/issues/42)) ([703c957](https://github.com/tylerbutler/birch/commit/703c957ff7b93529bfff79cf5a389b7a23a49656))
+
+
+### Bug Fixes
+
+* **ci:** add JS target stub to async_actor to fix warnings-as-errors build ([#49](https://github.com/tylerbutler/birch/issues/49)) ([b2a858d](https://github.com/tylerbutler/birch/commit/b2a858df79209349f8a65cead9e5c80664fe3700))
+* **claude:** add required frontmatter to ffi-reviewer agent ([#37](https://github.com/tylerbutler/birch/issues/37)) ([ef25903](https://github.com/tylerbutler/birch/commit/ef2590324c6737a648e25414f04cdf8c4438e8cb))
+
+
+### Code Refactoring
+
+* remove dead code, deduplicate, and simplify codebase ([9387fec](https://github.com/tylerbutler/birch/commit/9387fecdbbae8a5a5316dd78221abe7779da8f70))
+* rename coverage tasks for clarity ([bbb4320](https://github.com/tylerbutler/birch/commit/bbb4320361382320ffc4c127f1c9663cfda41eb9))
+* replace timestamp ffi with gleam_time ([#36](https://github.com/tylerbutler/birch/issues/36)) ([0a1ac9d](https://github.com/tylerbutler/birch/commit/0a1ac9df7beac397e7389b8d5f4767750da266b2))
+
 ## [0.2.0](https://github.com/tylerbutler/birch/compare/v0.1.2...v0.2.0) (2026-02-03)
 
 
