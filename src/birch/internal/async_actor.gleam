@@ -11,10 +11,9 @@
 //// On JavaScript, this module is not used - the platform FFI handles async there.
 
 @target(javascript)
-/// Placeholder type to prevent empty module warning on JavaScript target.
-pub type Unused {
-  Unused
-}
+/// This module is only used on the Erlang target.
+/// The JavaScript target does not support OTP actors.
+pub const erlang_only = True
 
 @target(erlang)
 import birch/handler.{type Handler}
