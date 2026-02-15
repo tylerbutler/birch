@@ -7,7 +7,7 @@ import birch/handler.{type ErrorCallback, type Handler}
 import birch/level.{type Level}
 import birch/record.{type Metadata}
 import gleam/list
-import gleam/option.{type Option, None, Some}
+import gleam/option.{type Option, Some}
 
 // ============================================================================
 // Sampling Types (defined here to avoid circular imports)
@@ -43,7 +43,7 @@ pub type GlobalConfig {
     /// Optional global error callback for handler failures
     on_error: Option(ErrorCallback),
     /// Optional sampling configuration
-    sampling: Result(SampleConfig, Nil),
+    sampling: Option(SampleConfig),
   )
 }
 
@@ -84,18 +84,6 @@ pub fn sampling(config: SampleConfig) -> ConfigOption {
   SamplingOption(config)
 }
 
-/// Returns the default global configuration with no handlers.
-/// Note: Use birch.default_config() to get defaults with console handler.
-pub fn empty() -> GlobalConfig {
-  GlobalConfig(
-    level: level.Info,
-    handlers: [],
-    context: [],
-    on_error: None,
-    sampling: Error(Nil),
-  )
-}
-
 /// Apply a list of configuration options to a GlobalConfig.
 pub fn apply_options(
   config: GlobalConfig,
@@ -111,7 +99,7 @@ fn apply_option(config: GlobalConfig, option: ConfigOption) -> GlobalConfig {
     HandlersOption(h) -> GlobalConfig(..config, handlers: h)
     ContextOption(ctx) -> GlobalConfig(..config, context: ctx)
     OnErrorOption(callback) -> GlobalConfig(..config, on_error: Some(callback))
-    SamplingOption(s) -> GlobalConfig(..config, sampling: Ok(s))
+    SamplingOption(s) -> GlobalConfig(..config, sampling: Some(s))
   }
 }
 
@@ -127,11 +115,6 @@ pub fn with_level(config: GlobalConfig, lvl: Level) -> GlobalConfig {
 /// Get the log level from a GlobalConfig.
 pub fn get_level(config: GlobalConfig) -> Level {
   config.level
-}
-
-/// Get the error callback from a GlobalConfig, if set.
-pub fn get_on_error(config: GlobalConfig) -> Option(ErrorCallback) {
-  config.on_error
 }
 
 // ============================================================================

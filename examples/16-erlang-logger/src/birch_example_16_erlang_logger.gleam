@@ -5,9 +5,10 @@
 
 import birch as log
 import birch/erlang_logger
+import birch/handler
 
 pub fn main() {
-  log.info("=== Erlang Logger Integration Demo ===")
+  log.info("=== Erlang Logger Integration Demo ===", [])
 
   // Demo 1: Forward to Erlang logger
   demo_forward_to_logger()
@@ -16,12 +17,12 @@ pub fn main() {
   demo_install_handler()
 
   log.reset_config()
-  log.info("Demo complete")
+  log.info("Demo complete", [])
 }
 
 /// Demonstrate forwarding birch logs to Erlang :logger.
 fn demo_forward_to_logger() {
-  log.info("--- Forward to Erlang Logger ---")
+  log.info("--- Forward to Erlang Logger ---", [])
 
   // Create handler that forwards to Erlang's logger
   let handler = erlang_logger.forward_to_logger()
@@ -30,34 +31,34 @@ fn demo_forward_to_logger() {
   log.configure([log.config_handlers([handler])])
 
   // These logs go through Erlang's logger system
-  log.info("This message goes to Erlang logger")
-  log.warn("Warnings are mapped to Erlang warning level")
-  log.error("Errors are mapped to Erlang error level")
+  log.info("This message goes to Erlang logger", [])
+  log.warn("Warnings are mapped to Erlang warning level", [])
+  log.error("Errors are mapped to Erlang error level", [])
 
   // Reset for next demo
   log.reset_config()
-  log.info("Forwarding demo complete")
+  log.info("Forwarding demo complete", [])
 }
 
 /// Demonstrate installing birch as an Erlang logger handler.
 fn demo_install_handler() {
-  log.info("--- Install as Logger Handler ---")
+  log.info("--- Install as Logger Handler ---", [])
 
   // Install birch to receive logs from Erlang's logger
   let _ = erlang_logger.install_logger_handler()
 
-  log.info("Birch is now installed as an Erlang logger handler")
-  log.info("OTP and library logs would now be formatted by birch")
+  log.info("Birch is now installed as an Erlang logger handler", [])
+  log.info("OTP and library logs would now be formatted by birch", [])
 
   // Uninstall when done
   let _ = erlang_logger.uninstall_logger_handler()
 
-  log.info("Handler uninstalled")
+  log.info("Handler uninstalled", [])
 }
 
 /// Create a handler that forwards to Erlang logger.
 /// Useful for OTP application integration.
-pub fn create_erlang_handler() -> log.LogHandler {
+pub fn create_erlang_handler() -> handler.Handler {
   erlang_logger.forward_to_logger()
 }
 

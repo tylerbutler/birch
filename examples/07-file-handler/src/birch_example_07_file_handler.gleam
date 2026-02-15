@@ -3,12 +3,13 @@
 //// Demonstrates file output with various rotation strategies.
 
 import birch as log
+import birch/handler
 import birch/handler/file
 import birch/handler/json
 import simplifile
 
 pub fn main() {
-  log.info("=== File Handler Demo ===")
+  log.info("=== File Handler Demo ===", [])
 
   // Create a temp directory for demo files
   let demo_dir = "/tmp/birch-demo"
@@ -26,12 +27,12 @@ pub fn main() {
 
   // Reset to defaults
   log.reset_config()
-  log.info("Demo complete")
+  log.info("Demo complete", [])
 }
 
 /// Demonstrate file handler without rotation.
 fn demo_no_rotation(dir: String) {
-  log.info("--- No Rotation ---")
+  log.info("--- No Rotation ---", [])
 
   let handler =
     file.handler(file.FileConfig(
@@ -40,13 +41,13 @@ fn demo_no_rotation(dir: String) {
     ))
 
   log.configure([log.config_handlers([handler])])
-  log.info("This goes to a file with no rotation")
-  log.info("File will grow indefinitely")
+  log.info("This goes to a file with no rotation", [])
+  log.info("File will grow indefinitely", [])
 }
 
 /// Demonstrate size-based rotation.
 fn demo_size_rotation(dir: String) {
-  log.info("--- Size Rotation ---")
+  log.info("--- Size Rotation ---", [])
 
   let handler =
     file.handler(file.FileConfig(
@@ -60,13 +61,13 @@ fn demo_size_rotation(dir: String) {
     ))
 
   log.configure([log.config_handlers([handler])])
-  log.info("This file rotates when it exceeds 1KB")
-  log.info("Old files: size-rotation.log.1, size-rotation.log.2, etc.")
+  log.info("This file rotates when it exceeds 1KB", [])
+  log.info("Old files: size-rotation.log.1, size-rotation.log.2, etc.", [])
 }
 
 /// Demonstrate time-based rotation.
 fn demo_time_rotation(dir: String) {
-  log.info("--- Time Rotation ---")
+  log.info("--- Time Rotation ---", [])
 
   let handler =
     file.handler(file.FileConfig(
@@ -75,13 +76,13 @@ fn demo_time_rotation(dir: String) {
     ))
 
   log.configure([log.config_handlers([handler])])
-  log.info("This file rotates daily")
-  log.info("Old files have date suffixes: time-rotation.log.2024-01-14")
+  log.info("This file rotates daily", [])
+  log.info("Old files have date suffixes: time-rotation.log.2024-01-14", [])
 }
 
 /// Demonstrate combined rotation.
 fn demo_combined_rotation(dir: String) {
-  log.info("--- Combined Rotation ---")
+  log.info("--- Combined Rotation ---", [])
 
   let handler =
     file.handler(file.FileConfig(
@@ -95,13 +96,13 @@ fn demo_combined_rotation(dir: String) {
     ))
 
   log.configure([log.config_handlers([handler])])
-  log.info("This file rotates on size OR time")
-  log.info("Whichever condition is met first triggers rotation")
+  log.info("This file rotates on size OR time", [])
+  log.info("Whichever condition is met first triggers rotation", [])
 }
 
 /// Demonstrate JSON format for file logs.
 fn demo_json_file(dir: String) {
-  log.info("--- JSON File Format ---")
+  log.info("--- JSON File Format ---", [])
 
   let handler =
     file.handler_with_formatter(
@@ -117,12 +118,12 @@ fn demo_json_file(dir: String) {
     )
 
   log.configure([log.config_handlers([handler])])
-  log.info("This file contains JSON-formatted logs")
-  log.info_m("Great for log aggregation", [#("key", "value")])
+  log.info("This file contains JSON-formatted logs", [])
+  log.info("Great for log aggregation", [#("key", "value")])
 }
 
 /// Create a production-ready file handler.
-pub fn create_production_file_handler(log_path: String) -> log.LogHandler {
+pub fn create_production_file_handler(log_path: String) -> handler.Handler {
   file.handler_with_formatter(
     file.FileConfig(
       path: log_path,

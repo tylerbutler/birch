@@ -111,20 +111,6 @@ pub fn erlang_level_to_gleam(erlang_level: ErlangLevel) -> Level {
   }
 }
 
-/// Convert an Erlang level to its atom representation (for FFI).
-pub fn erlang_level_to_atom(erlang_level: ErlangLevel) -> String {
-  case erlang_level {
-    ErlangEmergency -> "emergency"
-    ErlangAlert -> "alert"
-    ErlangCritical -> "critical"
-    ErlangError -> "error"
-    ErlangWarning -> "warning"
-    ErlangNotice -> "notice"
-    ErlangInfo -> "info"
-    ErlangDebug -> "debug"
-  }
-}
-
 // ============================================================================
 // Forward to :logger Handler
 // ============================================================================

@@ -23,6 +23,6 @@ pub fn create_custom_console_handler_stderr_test() {
 pub fn logging_with_console_handler_test() {
   // Just verify logging doesn't crash
   log.reset_config()
-  log.info("Test message")
+  log.info("Test message", [])
   |> should.equal(Nil)
 }

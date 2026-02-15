@@ -26,12 +26,12 @@ import birch as log
 
 pub fn main() {
   // Simple logging
-  log.info("Application starting")
-  log.debug("Debug message")
-  log.error("Something went wrong")
+  log.info("Application starting", [])
+  log.debug("Debug message", [])
+  log.error("Something went wrong", [])
 
   // With metadata
-  log.info_m("User logged in", [#("user_id", "123"), #("ip", "192.168.1.1")])
+  log.info("User logged in", [#("user_id", "123"), #("ip", "192.168.1.1")])
 }
 ```
 
@@ -63,7 +63,7 @@ pub fn main() {
   ])
 
   // All logs now include the context and go to both handlers
-  log.info("Server starting")
+  log.info("Server starting", [])
 }
 ```
 
@@ -91,13 +91,14 @@ Create named loggers for different components:
 
 ```gleam
 import birch as log
+import birch/logger
 
 pub fn main() {
   let db_logger = log.new("myapp.database")
   let http_logger = log.new("myapp.http")
 
-  db_logger |> log.logger_info("Connected to database", [])
-  http_logger |> log.logger_info("Server started on port 8080", [])
+  db_logger |> logger.info("Connected to database", [])
+  http_logger |> logger.info("Server started on port 8080", [])
 }
 ```
 
@@ -107,17 +108,18 @@ Add persistent context to a logger:
 
 ```gleam
 import birch as log
+import birch/logger
 
 pub fn handle_request(request_id: String) {
-  let logger = log.new("myapp.http")
+  let lgr = log.new("myapp.http")
     |> log.with_context([
       #("request_id", request_id),
       #("service", "api"),
     ])
 
   // All logs from this logger include the context
-  logger |> log.logger_info("Processing request", [])
-  logger |> log.logger_info("Request complete", [#("status", "200")])
+  lgr |> logger.info("Processing request", [])
+  lgr |> logger.info("Request complete", [#("status", "200")])
 }
 ```
 
@@ -131,9 +133,9 @@ import birch as log
 pub fn handle_request(request_id: String) {
   log.with_scope([#("request_id", request_id)], fn() {
     // All logs in this block include request_id automatically
-    log.info("Processing request")
+    log.info("Processing request", [])
     do_work()  // Logs in nested functions also include request_id
-    log.info("Request complete")
+    log.info("Request complete", [])
   })
 }
 ```
@@ -142,13 +144,13 @@ Scopes can be nested, with inner scopes adding to outer scope context:
 
 ```gleam
 log.with_scope([#("request_id", "123")], fn() {
-  log.info("Start")  // request_id=123
+  log.info("Start", [])  // request_id=123
 
   log.with_scope([#("step", "validation")], fn() {
-    log.info("Validating")  // request_id=123 step=validation
+    log.info("Validating", [])  // request_id=123 step=validation
   })
 
-  log.info("Done")  // request_id=123
+  log.info("Done", [])  // request_id=123
 })
 ```
 
@@ -438,11 +440,12 @@ For library code, create silent loggers that consumers can configure:
 ```gleam
 // In your library
 import birch as log
+import birch/logger
 
-const logger = log.silent("mylib.internal")
+const lgr = log.silent("mylib.internal")
 
 pub fn do_something() {
-  logger |> log.logger_debug("Starting operation", [])
+  lgr |> logger.debug("Starting operation", [])
   // ...
 }
 ```

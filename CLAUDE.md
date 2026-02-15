@@ -24,7 +24,7 @@ src/
 ├── birch/
 │   ├── config.gleam             # Configuration types and defaults
 │   ├── erlang_logger.gleam      # OTP logger integration (Erlang-only)
-│   ├── level.gleam              # LogLevel type (Trace/Debug/Info/Warn/Err/Fatal)
+│   ├── level.gleam              # Level type (Trace/Debug/Info/Warn/Err/Fatal)
 │   ├── level_formatter.gleam    # Level formatting and presentation options
 │   ├── record.gleam             # LogRecord type and Metadata
 │   ├── logger.gleam             # Logger type with handlers and context
@@ -277,9 +277,9 @@ Edit `commit-types.json` to add/remove excluded scopes.
 - Logger names use dot notation for hierarchy (e.g., `"myapp.database"`)
 
 ### API Design
-- Module-level functions (e.g., `log.info()`) use a default logger
-- Logger-specific functions are prefixed with `logger_` (e.g., `logger_info`)
-- Metadata variants use `_m` suffix (e.g., `info_m` vs `info`)
+- Module-level functions (e.g., `log.info("msg", [])`) use a default logger
+- Logger-specific functions use the `logger` module directly (e.g., `logger.info(lgr, "msg", [])`)
+- All logging functions accept metadata as the last argument
 - Lazy variants use `_lazy` suffix (e.g., `debug_lazy`)
 
 ### Error Handling

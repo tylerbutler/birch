@@ -7,7 +7,7 @@ import birch/handler
 import birch/logger.{type Logger}
 
 pub fn main() {
-  log.info("=== Testing Support Demo ===")
+  log.info("=== Testing Support Demo ===", [])
 
   // Fixed timestamps
   demo_fixed_timestamp()
@@ -19,58 +19,58 @@ pub fn main() {
   demo_null_handler()
 
   log.reset_config()
-  log.info("Demo complete")
+  log.info("Demo complete", [])
 }
 
 /// Demonstrate fixed timestamps for testing.
 fn demo_fixed_timestamp() {
-  log.info("--- Fixed Timestamps ---")
+  log.info("--- Fixed Timestamps ---", [])
 
   let test_logger =
     log.new("test")
     |> log.with_time_provider(fn() { "2024-01-01T00:00:00.000Z" })
 
-  test_logger |> log.logger_info("This has a fixed timestamp", [])
-  test_logger |> log.logger_info("Same timestamp for this one", [])
+  test_logger |> logger.info("This has a fixed timestamp", [])
+  test_logger |> logger.info("Same timestamp for this one", [])
 
   // Reset to normal timestamps
   let normal_logger = test_logger |> log.without_time_provider()
-  normal_logger |> log.logger_info("Back to normal timestamps", [])
+  normal_logger |> logger.info("Back to normal timestamps", [])
 }
 
 /// Demonstrate caller ID capture.
 fn demo_caller_id() {
-  log.info("--- Caller ID Capture ---")
+  log.info("--- Caller ID Capture ---", [])
 
   let debug_logger =
     log.new("debug")
     |> log.with_caller_id_capture()
 
   debug_logger
-  |> log.logger_info("Check the caller_id in metadata", [#("extra", "value")])
+  |> logger.info("Check the caller_id in metadata", [#("extra", "value")])
 
   // Disable caller ID capture
   let normal_logger = debug_logger |> log.without_caller_id_capture()
-  normal_logger |> log.logger_info("No caller_id here", [])
+  normal_logger |> logger.info("No caller_id here", [])
 }
 
 /// Demonstrate null handler for silent testing.
 fn demo_null_handler() {
-  log.info("--- Null Handler ---")
+  log.info("--- Null Handler ---", [])
 
   // Save current config
-  log.info("About to configure null handler...")
+  log.info("About to configure null handler...", [])
 
   // Configure with null handler
   log.configure([log.config_handlers([handler.null()])])
 
   // These logs are silenced
-  log.info("This message is silenced")
-  log.error("Even errors are silenced")
+  log.info("This message is silenced", [])
+  log.error("Even errors are silenced", [])
 
   // Restore default config
   log.reset_config()
-  log.info("Logging restored after null handler demo")
+  log.info("Logging restored after null handler demo", [])
 }
 
 /// Create a logger for testing with deterministic output.

@@ -19,13 +19,13 @@ pub fn main() {
   ])
 
   // Log at each level with identifiable messages
-  log.debug("Debug message for testing")
-  log.info("Info message for testing")
-  log.warn("Warn message for testing")
-  log.error("Error message for testing")
+  log.debug("Debug message for testing", [])
+  log.info("Info message for testing", [])
+  log.warn("Warn message for testing", [])
+  log.error("Error message for testing", [])
 
   // Test with metadata
-  log.info_m("Message with metadata", [
+  log.info("Message with metadata", [
     #("request_id", "test-123"),
     #("user", "integration-test"),
   ])

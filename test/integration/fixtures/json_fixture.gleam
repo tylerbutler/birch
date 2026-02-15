@@ -19,13 +19,13 @@ pub fn main() {
   ])
 
   // Log at various levels
-  log.debug("JSON debug message")
-  log.info("JSON info message")
-  log.warn("JSON warn message")
-  log.error("JSON error message")
+  log.debug("JSON debug message", [])
+  log.info("JSON info message", [])
+  log.warn("JSON warn message", [])
+  log.error("JSON error message", [])
 
   // Log with metadata - should appear as additional JSON fields
-  log.info_m("JSON with metadata", [
+  log.info("JSON with metadata", [
     #("transaction_id", "txn-456"),
     #("amount", "100.50"),
   ])
