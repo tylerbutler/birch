@@ -329,13 +329,17 @@ generate-configs:
 check-configs-sync:
     commit-config-gen check
 
-# Generate changelog using git-cliff
-changelog:
-    git cliff -o CHANGELOG.md
+# Create a new changelog entry
+change:
+    changie new
 
-# Preview changelog without writing
+# Preview the next version changelog
 changelog-preview:
-    git cliff --unreleased
+    changie batch auto --dry-run
+
+# Generate CHANGELOG.md from version files
+changelog:
+    changie merge
 
 # ============================================================================
 # Documentation Site (Astro/Starlight)
