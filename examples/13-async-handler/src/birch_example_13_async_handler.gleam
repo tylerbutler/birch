@@ -3,6 +3,7 @@
 //// Demonstrates non-blocking logging with async handlers.
 
 import birch as log
+import birch/handler.{type Handler}
 import birch/handler/async
 import birch/handler/console
 
@@ -91,7 +92,7 @@ fn demo_flush() {
 }
 
 /// Create an async file handler for production.
-pub fn create_async_file_handler() -> log.LogHandler {
+pub fn create_async_file_handler() -> Handler {
   // In real code, you'd use a file handler here
   let base_handler = console.handler()
 

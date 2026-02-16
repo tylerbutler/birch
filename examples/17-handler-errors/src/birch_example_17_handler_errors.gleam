@@ -82,7 +82,7 @@ fn demo_graceful_degradation() {
 }
 
 /// Create a handler with silent error handling.
-pub fn create_safe_handler() -> log.LogHandler {
+pub fn create_safe_handler() -> handler.Handler {
   console.handler()
   |> handler.with_error_callback(fn(_err: handler.HandlerError) {
     // Silently ignore errors
@@ -94,14 +94,14 @@ pub fn create_safe_handler() -> log.LogHandler {
 /// Create a handler that reports errors to a monitoring callback.
 pub fn create_monitored_handler(
   on_error: fn(handler.HandlerError) -> Nil,
-) -> log.LogHandler {
+) -> handler.Handler {
   console.handler()
   |> handler.with_error_callback(on_error)
 }
 
 /// Example of creating a resilient handler with fallback behavior.
 /// In real usage, you might fall back to a simpler handler.
-pub fn create_resilient_handler() -> log.LogHandler {
+pub fn create_resilient_handler() -> handler.Handler {
   // Primary handler with error callback
   let primary =
     console.handler()
@@ -118,7 +118,7 @@ pub fn create_resilient_handler() -> log.LogHandler {
 }
 
 /// Create a custom handler that can fail (for demonstration).
-pub fn create_failing_handler() -> log.LogHandler {
+pub fn create_failing_handler() -> handler.Handler {
   handler.new(
     name: "failing",
     write: fn(_msg) {

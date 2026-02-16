@@ -3,6 +3,7 @@
 //// Demonstrates convenient error logging with Result types.
 
 import birch as log
+import birch/logger
 import simplifile
 
 pub fn main() {
@@ -47,11 +48,12 @@ fn demo_error_result_with_metadata() {
   let path = "/another/missing/file.txt"
   let result = simplifile.read(path)
 
+  let lgr = log.new("app")
   case result {
     Ok(_) -> Nil
     Error(_) -> {
       // Add context about what we were trying to do
-      log.error_result_m("Configuration load failed", result, [
+      logger.error_result(lgr, "Configuration load failed", result, [
         #("path", path),
         #("fallback", "using_defaults"),
       ])
@@ -69,9 +71,9 @@ fn demo_fatal_result() {
   log.fatal_result("Critical system failure", result)
 }
 
-/// Demonstrate logger_error_result for named loggers.
+/// Demonstrate logger.error_result for named loggers.
 fn demo_logger_error_result() {
-  log.info("--- logger_error_result ---")
+  log.info("--- logger.error_result ---")
 
   let db_logger =
     log.new("myapp.database")
@@ -80,7 +82,7 @@ fn demo_logger_error_result() {
   // Simulate a database error
   let result: Result(Int, String) = Error("Connection timeout after 30s")
 
-  log.logger_error_result(db_logger, "Query failed", result, [
+  logger.error_result(db_logger, "Query failed", result, [
     #("query", "SELECT * FROM users"),
     #("timeout_ms", "30000"),
   ])
@@ -88,13 +90,14 @@ fn demo_logger_error_result() {
 
 /// Example of using error_result in a real function.
 pub fn load_config(path: String) -> Result(String, String) {
+  let lgr = log.new("app")
   case simplifile.read(path) {
     Ok(content) -> {
-      log.info_m("Configuration loaded", [#("path", path)])
+      logger.info(lgr, "Configuration loaded", [#("path", path)])
       Ok(content)
     }
     Error(_) as result -> {
-      log.error_result_m("Failed to load configuration", result, [
+      logger.error_result(lgr, "Failed to load configuration", result, [
         #("path", path),
       ])
       Error("Failed to load configuration from " <> path)

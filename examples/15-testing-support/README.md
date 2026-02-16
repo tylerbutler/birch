@@ -21,13 +21,14 @@ Use `with_time_provider()` for deterministic test output:
 
 ```gleam
 import birch as log
+import birch/logger
 
 let test_logger =
   log.new("test")
   |> log.with_time_provider(fn() { "2024-01-01T00:00:00.000Z" })
 
 // All logs have the fixed timestamp
-test_logger |> log.logger_info("Test message", [])
+test_logger |> logger.info("Test message", [])
 ```
 
 ## Caller ID Capture

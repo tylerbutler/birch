@@ -30,12 +30,12 @@ fn demo_fixed_timestamp() {
     log.new("test")
     |> log.with_time_provider(fn() { "2024-01-01T00:00:00.000Z" })
 
-  test_logger |> log.logger_info("This has a fixed timestamp", [])
-  test_logger |> log.logger_info("Same timestamp for this one", [])
+  test_logger |> logger.info("This has a fixed timestamp", [])
+  test_logger |> logger.info("Same timestamp for this one", [])
 
   // Reset to normal timestamps
   let normal_logger = test_logger |> log.without_time_provider()
-  normal_logger |> log.logger_info("Back to normal timestamps", [])
+  normal_logger |> logger.info("Back to normal timestamps", [])
 }
 
 /// Demonstrate caller ID capture.
@@ -47,11 +47,11 @@ fn demo_caller_id() {
     |> log.with_caller_id_capture()
 
   debug_logger
-  |> log.logger_info("Check the caller_id in metadata", [#("extra", "value")])
+  |> logger.info("Check the caller_id in metadata", [#("extra", "value")])
 
   // Disable caller ID capture
   let normal_logger = debug_logger |> log.without_caller_id_capture()
-  normal_logger |> log.logger_info("No caller_id here", [])
+  normal_logger |> logger.info("No caller_id here", [])
 }
 
 /// Demonstrate null handler for silent testing.

@@ -6,6 +6,7 @@ import birch as log
 import birch/handler/console
 import birch/handler/json
 import birch/level
+import birch/logger
 
 pub fn main() {
   log.info("=== Global Config Demo ===")
@@ -52,8 +53,9 @@ fn demo_multiple_handlers() {
     log.config_handlers([console.handler(), json.handler()]),
   ])
 
+  let lgr = log.new("app")
   log.info("This goes to both console and JSON handlers")
-  log.info_m("With metadata", [#("key", "value")])
+  logger.info(lgr, "With metadata", [#("key", "value")])
 }
 
 /// Demonstrate global context.
@@ -66,8 +68,9 @@ fn demo_global_context() {
     log.config_context([#("app", "myapp"), #("version", "1.0.0")]),
   ])
 
+  let lgr = log.new("app")
   log.info("This includes global context")
-  log.info_m("Plus additional metadata", [#("request_id", "123")])
+  logger.info(lgr, "Plus additional metadata", [#("request_id", "123")])
 }
 
 /// Demonstrate runtime level changes.

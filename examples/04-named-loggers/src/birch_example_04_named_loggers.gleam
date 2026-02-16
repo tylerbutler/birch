@@ -33,9 +33,9 @@ fn demo_component_loggers() {
   let http_logger = log.new("myapp.http")
   let cache_logger = log.new("myapp.cache")
 
-  db_logger |> log.logger_info("Database connection established", [])
-  http_logger |> log.logger_info("HTTP server starting", [])
-  cache_logger |> log.logger_debug("Cache initialized", [])
+  db_logger |> logger.info("Database connection established", [])
+  http_logger |> logger.info("HTTP server starting", [])
+  cache_logger |> logger.debug("Cache initialized", [])
 }
 
 /// Logger with persistent context.
@@ -48,10 +48,10 @@ fn demo_logger_context() {
     |> log.with_context([#("worker_id", "worker-1"), #("queue", "high-priority")])
 
   // All messages include the context
-  worker_logger |> log.logger_info("Worker started", [])
-  worker_logger |> log.logger_debug("Polling for jobs", [])
+  worker_logger |> logger.info("Worker started", [])
+  worker_logger |> logger.debug("Polling for jobs", [])
   worker_logger
-  |> log.logger_info("Job completed", [#("job_id", "job-123"), #("duration_ms", "42")])
+  |> logger.info("Job completed", [#("job_id", "job-123"), #("duration_ms", "42")])
 }
 
 /// Simulate a multi-component application.
@@ -63,16 +63,16 @@ fn demo_application() {
   let http = create_http_logger()
 
   // Simulate startup
-  db |> log.logger_info("Connecting to database", [])
-  db |> log.logger_info("Connection pool initialized", [#("pool_size", "10")])
-  http |> log.logger_info("Starting HTTP server", [#("port", "8080")])
-  http |> log.logger_info("Server ready", [])
+  db |> logger.info("Connecting to database", [])
+  db |> logger.info("Connection pool initialized", [#("pool_size", "10")])
+  http |> logger.info("Starting HTTP server", [#("port", "8080")])
+  http |> logger.info("Server ready", [])
 
   // Simulate a request
-  http |> log.logger_debug("Request received", [#("method", "GET"), #("path", "/api/users")])
-  db |> log.logger_debug("Executing query", [#("query", "SELECT * FROM users")])
-  db |> log.logger_debug("Query completed", [#("rows", "25")])
-  http |> log.logger_info("Response sent", [#("status", "200"), #("duration_ms", "15")])
+  http |> logger.debug("Request received", [#("method", "GET"), #("path", "/api/users")])
+  db |> logger.debug("Executing query", [#("query", "SELECT * FROM users")])
+  db |> logger.debug("Query completed", [#("rows", "25")])
+  http |> logger.info("Response sent", [#("status", "200"), #("duration_ms", "15")])
 }
 
 /// Create a database logger for a module.
@@ -90,8 +90,8 @@ pub fn create_http_logger() -> Logger {
 /// Example of a function that takes a logger.
 /// This pattern allows callers to control logging behavior.
 pub fn process_with_logger(lgr: Logger, data: String) -> String {
-  lgr |> log.logger_debug("Processing data", [#("length", "5")])
+  lgr |> logger.debug("Processing data", [#("length", "5")])
   let result = "processed: " <> data
-  lgr |> log.logger_debug("Processing complete", [])
+  lgr |> logger.debug("Processing complete", [])
   result
 }

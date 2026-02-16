@@ -5,6 +5,7 @@
 
 import birch as log
 import birch/erlang_logger
+import birch/handler.{type Handler}
 
 pub fn main() {
   log.info("=== Erlang Logger Integration Demo ===")
@@ -57,7 +58,7 @@ fn demo_install_handler() {
 
 /// Create a handler that forwards to Erlang logger.
 /// Useful for OTP application integration.
-pub fn create_erlang_handler() -> log.LogHandler {
+pub fn create_erlang_handler() -> Handler {
   erlang_logger.forward_to_logger()
 }
 

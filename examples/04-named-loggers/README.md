@@ -5,7 +5,7 @@ This example demonstrates using named loggers to organize logs by component.
 ## What You'll Learn
 
 - Creating named loggers with `log.new()`
-- Using `logger_` prefixed functions for named loggers
+- Using `birch/logger` module functions for named loggers
 - Adding persistent context with `with_context()`
 - Logger naming conventions
 
@@ -18,28 +18,29 @@ gleam run --target javascript     # JavaScript
 
 ## Creating Named Loggers
 
-Use `log.new()` to create a named logger:
+Use `log.new()` to create a named logger, then use `birch/logger` module functions:
 
 ```gleam
 import birch as log
+import birch/logger
 
 let db_logger = log.new("myapp.database")
 let http_logger = log.new("myapp.http")
 
-// Use logger_ prefixed functions
-db_logger |> log.logger_info("Connected", [])
-http_logger |> log.logger_info("Server started", [])
+// Use birch/logger module functions
+db_logger |> logger.info("Connected", [])
+http_logger |> logger.info("Server started", [])
 ```
 
 ## Logger-specific Functions
 
-Named loggers use `logger_` prefixed functions:
+Named loggers use the `birch/logger` module:
 
 | Default Logger | Named Logger |
 |----------------|--------------|
-| `log.info()` | `log.logger_info()` |
-| `log.debug()` | `log.logger_debug()` |
-| `log.error()` | `log.logger_error()` |
+| `log.info()` | `logger.info()` |
+| `log.debug()` | `logger.debug()` |
+| `log.error()` | `logger.error()` |
 | etc. | etc. |
 
 ## Persistent Context
@@ -47,13 +48,13 @@ Named loggers use `logger_` prefixed functions:
 Add context that's included in all messages from a logger:
 
 ```gleam
-let logger =
+let lgr =
   log.new("myapp.worker")
   |> log.with_context([#("worker_id", "worker-1")])
 
 // All messages include worker_id
-logger |> log.logger_info("Processing", [])  // includes worker_id=worker-1
-logger |> log.logger_info("Complete", [])     // includes worker_id=worker-1
+lgr |> logger.info("Processing", [])  // includes worker_id=worker-1
+lgr |> logger.info("Complete", [])     // includes worker_id=worker-1
 ```
 
 ## Naming Conventions

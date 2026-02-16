@@ -4,7 +4,7 @@ This example demonstrates structured logging with key-value metadata.
 
 ## What You'll Learn
 
-- Adding metadata using `_m` variants (`info_m`, `debug_m`, etc.)
+- Adding metadata using named loggers (`logger.info`, `logger.debug`, etc.)
 - Metadata format: `List(#(String, String))`
 - How metadata appears in logs
 - Common metadata patterns
@@ -18,16 +18,18 @@ gleam run --target javascript     # JavaScript
 
 ## Adding Metadata
 
-Use the `_m` suffix variants to add metadata:
+Use named loggers with the `birch/logger` module to add metadata:
 
 ```gleam
 import birch as log
+import birch/logger
 
-// Simple message
+// Simple message (no metadata)
 log.info("User logged in")
 
-// Message with metadata
-log.info_m("User logged in", [
+// Message with metadata via named logger
+let lgr = log.new("app")
+lgr |> logger.info("User logged in", [
   #("user_id", "12345"),
   #("ip", "192.168.1.1"),
 ])
@@ -62,7 +64,8 @@ In JSON format (see [06-json-handler](../06-json-handler/)), metadata becomes JS
 ### Request Tracking
 
 ```gleam
-log.info_m("Processing request", [
+let lgr = log.new("app")
+lgr |> logger.info("Processing request", [
   #("request_id", request_id),
   #("method", "POST"),
   #("path", "/api/users"),
@@ -72,7 +75,7 @@ log.info_m("Processing request", [
 ### Performance Metrics
 
 ```gleam
-log.info_m("Query completed", [
+lgr |> logger.info("Query completed", [
   #("query", "SELECT * FROM users"),
   #("duration_ms", int.to_string(duration)),
   #("rows", int.to_string(row_count)),
@@ -82,7 +85,7 @@ log.info_m("Query completed", [
 ### Error Context
 
 ```gleam
-log.error_m("Failed to process payment", [
+lgr |> logger.error("Failed to process payment", [
   #("order_id", order_id),
   #("amount", float.to_string(amount)),
   #("error_code", code),
