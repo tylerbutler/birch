@@ -10,6 +10,7 @@
 import birch as log
 import birch/handler/console
 import birch/level
+import birch/logger
 
 pub fn main() {
   // Configure with debug level to capture all messages
@@ -25,7 +26,10 @@ pub fn main() {
   log.error("Error message for testing")
 
   // Test with metadata
-  log.info_m("Message with metadata", [
+  log.new("console-fixture")
+  |> log.with_handler(console.handler())
+  |> log.with_level(level.Debug)
+  |> logger.info("Message with metadata", [
     #("request_id", "test-123"),
     #("user", "integration-test"),
   ])

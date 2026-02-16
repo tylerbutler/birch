@@ -10,6 +10,7 @@
 import birch as log
 import birch/handler/json
 import birch/level
+import birch/logger
 
 pub fn main() {
   // Configure with JSON handler for easy parsing, and global context
@@ -23,7 +24,10 @@ pub fn main() {
   log.info("Basic message with global context")
 
   // Log with additional metadata - should merge with global context
-  log.info_m("Message with extra metadata", [#("request_id", "req-789")])
+  log.new("metadata-fixture")
+  |> log.with_handler(json.handler())
+  |> log.with_level(level.Debug)
+  |> logger.info("Message with extra metadata", [#("request_id", "req-789")])
 
   // Test scoped context
   log.with_scope([#("scope_id", "scope-abc")], fn() {
@@ -45,8 +49,9 @@ pub fn main() {
   let db_logger =
     log.new("myapp.database")
     |> log.with_context([#("component", "database")])
+    |> log.with_handler(json.handler())
 
-  log.logger_info(db_logger, "Database log", [#("query", "SELECT *")])
+  db_logger |> logger.info("Database log", [#("query", "SELECT *")])
 
   // Reset config for clean state
   log.reset_config()
