@@ -10,6 +10,7 @@
 import birch as log
 import birch/erlang_logger
 import birch/handler
+import birch/handler/console
 import birch/level
 import birch/logger
 import birch/record
@@ -283,4 +284,97 @@ pub fn configure_with_forward_handler_test() {
 
   // Reset for other tests
   log.reset_config()
+}
+
+// ============================================================================
+// Formatter Setup Tests
+// (Platform-specific - succeed on Erlang, error/no-op on JavaScript)
+// ============================================================================
+
+pub fn setup_configures_default_handler_test() {
+  // setup() should succeed on Erlang, error on JS
+  let result = erlang_logger.setup()
+
+  case is_erlang_target() {
+    True -> {
+      should.be_ok(result)
+    }
+    False -> {
+      let _ = should.be_error(result)
+      Nil
+    }
+  }
+}
+
+pub fn setup_with_fancy_config_test() {
+  // setup_with_config with fancy style should succeed on Erlang
+  let result = erlang_logger.setup_with_config(console.default_fancy_config())
+
+  case is_erlang_target() {
+    True -> {
+      should.be_ok(result)
+      // Restore simple style for subsequent tests
+      let _ = erlang_logger.setup()
+      Nil
+    }
+    False -> {
+      let _ = should.be_error(result)
+      Nil
+    }
+  }
+}
+
+pub fn setup_idempotent_test() {
+  // Calling setup twice should not error
+  case is_erlang_target() {
+    True -> {
+      let result1 = erlang_logger.setup()
+      should.be_ok(result1)
+
+      let result2 = erlang_logger.setup()
+      should.be_ok(result2)
+    }
+    False -> Nil
+  }
+}
+
+pub fn ensure_formatter_configured_does_not_crash_test() {
+  // ensure_formatter_configured should be safe to call multiple times
+  erlang_logger.ensure_formatter_configured()
+  erlang_logger.ensure_formatter_configured()
+}
+
+pub fn forward_raw_sends_structured_data_test() {
+  // The raw forward handler should not crash when sending structured data
+  let h = erlang_logger.forward_to_logger_raw()
+
+  let r =
+    record.new(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test.structured",
+      message: "Structured forward test",
+      metadata: [#("status", "200"), #("method", "GET")],
+    )
+
+  // Should not crash
+  handler.handle(h, r)
+}
+
+pub fn forward_raw_with_caller_id_test() {
+  // Test that caller_id is passed through without crashing
+  let h = erlang_logger.forward_to_logger_raw()
+
+  let r =
+    record.new(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Debug,
+      logger_name: "test.caller_id",
+      message: "With caller ID",
+      metadata: [],
+    )
+    |> record.with_caller_id("<0.123.0>")
+
+  // Should not crash
+  handler.handle(h, r)
 }

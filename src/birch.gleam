@@ -211,6 +211,7 @@ pub fn default_config() -> GlobalConfig {
 
 @target(erlang)
 fn default_handlers() -> List(Handler) {
+  erlang_logger.ensure_formatter_configured()
   [erlang_logger.forward_to_logger_raw()]
 }
 

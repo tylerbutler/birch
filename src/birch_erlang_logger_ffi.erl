@@ -10,7 +10,9 @@
 -module(birch_erlang_logger_ffi).
 
 %% API exports
--export([logger_log/2, install_handler/1, uninstall_handler/1]).
+-export([logger_log/2, logger_log_structured/5,
+         install_handler/1, uninstall_handler/1,
+         configure_default_handler_formatter/1, is_formatter_configured/0]).
 
 %% :logger handler callbacks
 -export([log/2, adding_handler/1, removing_handler/1, changing_config/3]).
@@ -54,6 +56,19 @@ logger_log(GleamLevel, Message) ->
     %% Use logger:log/2 with the level and message
     %% The message is already formatted by Gleam
     logger:log(Level, "~ts", [Message]),
+    nil.
+
+%% Log structured data to Erlang's :logger, preserving birch metadata.
+%% The birch_logger_formatter will detect these fields and reconstruct
+%% the LogRecord for formatting.
+-spec logger_log_structured(tuple(), binary(), binary(), list(), term()) -> nil.
+logger_log_structured(GleamLevel, Message, LoggerName, Metadata, CallerId) ->
+    Level = gleam_level_to_atom(GleamLevel),
+    logger:log(Level, "~ts", [Message], #{
+        birch_logger_name => LoggerName,
+        birch_metadata => Metadata,
+        birch_caller_id => CallerId
+    }),
     nil.
 
 %% ============================================================================
@@ -138,8 +153,8 @@ log(#{level := Level, msg := Msg, meta := Meta}, _Config) ->
     Metadata = format_metadata(Meta),
 
     %% Create LogRecord - must match Gleam's LogRecord type structure
-    %% LogRecord(timestamp, level, logger_name, message, metadata)
-    LogRecord = {log_record, Timestamp, GleamLevel, LoggerName, Message, Metadata},
+    %% LogRecord(timestamp, level, logger_name, message, metadata, caller_id)
+    LogRecord = {log_record, Timestamp, GleamLevel, LoggerName, Message, Metadata, none},
 
     %% Route to birch handlers via the global config
     route_to_gleam_handlers(LogRecord),
@@ -233,8 +248,9 @@ route_to_gleam_handlers(LogRecord) ->
     %% Try to get global config from birch_ffi
     case birch_ffi:get_global_config() of
         {ok, Config} ->
-            %% Config is a GlobalConfig record: {global_config, Level, Handlers, Context}
-            {global_config, _Level, Handlers, _Context} = Config,
+            %% Config is a GlobalConfig record:
+            %% {global_config, Level, Handlers, Context, OnError, Sampling}
+            {global_config, _Level, Handlers, _Context, _OnError, _Sampling} = Config,
             %% Call each handler with the record
             lists:foreach(fun(Handler) ->
                 try
@@ -254,16 +270,16 @@ route_to_gleam_handlers(LogRecord) ->
 %% Handle a LogRecord with a Handler
 %% This is a bit tricky since we need to call Gleam functions
 handle_with_handler(Handler, LogRecord) ->
-    %% The Handler type is: {handler, Name, MinLevel, Write, Format}
+    %% The Handler type is: {handler, Name, MinLevel, Write, Format, ErrorCallback}
     %% But it's opaque, so we need to extract the write function
     case Handler of
-        {handler, _Name, MinLevel, Write, _Format} ->
+        {handler, _Name, MinLevel, Write, _Format, _ErrorCallback} ->
             %% Check min level
             ShouldHandle = case MinLevel of
                 {error, nil} -> true;
                 {ok, MinLvl} ->
                     %% Compare levels - extract from LogRecord
-                    {log_record, _Ts, RecordLevel, _LoggerName, _Msg, _Meta} = LogRecord,
+                    {log_record, _Ts, RecordLevel, _LoggerName, _Msg, _Meta, _CallerId} = LogRecord,
                     compare_levels(RecordLevel, MinLvl)
             end,
             case ShouldHandle of
@@ -289,7 +305,7 @@ level_to_int(fatal) -> 5;
 level_to_int(_) -> 2. %% Default to info
 
 %% Format and print a LogRecord to stdout (fallback)
-format_and_print_record({log_record, Timestamp, Level, LoggerName, Message, Metadata}) ->
+format_and_print_record({log_record, Timestamp, Level, LoggerName, Message, Metadata, _CallerId}) ->
     LevelStr = case Level of
         trace -> <<"TRACE">>;
         debug -> <<"DEBUG">>;
@@ -307,3 +323,32 @@ format_metadata_str([]) -> <<>>;
 format_metadata_str(Metadata) ->
     Parts = [io_lib:format(" ~ts=~ts", [K, V]) || {K, V} <- Metadata],
     unicode:characters_to_binary([" |" | Parts]).
+
+%% ============================================================================
+%% Formatter configuration for :logger's default handler
+%% ============================================================================
+
+-define(FORMATTER_CONFIGURED_KEY, birch_formatter_configured).
+
+%% Configure the default :logger handler to use birch_logger_formatter
+%% with the given Gleam format function closure.
+-spec configure_default_handler_formatter(function()) -> {ok, nil} | {error, binary()}.
+configure_default_handler_formatter(FormatFn) ->
+    FormatterConfig = #{format_fn => FormatFn},
+    case logger:update_handler_config(default, formatter,
+            {birch_logger_formatter, FormatterConfig}) of
+        ok ->
+            persistent_term:put(?FORMATTER_CONFIGURED_KEY, true),
+            {ok, nil};
+        {error, Reason} ->
+            {error, list_to_binary(io_lib:format("~p", [Reason]))}
+    end.
+
+%% Check whether the birch formatter has been configured on the default handler.
+-spec is_formatter_configured() -> boolean().
+is_formatter_configured() ->
+    try persistent_term:get(?FORMATTER_CONFIGURED_KEY) of
+        true -> true
+    catch
+        error:badarg -> false
+    end.

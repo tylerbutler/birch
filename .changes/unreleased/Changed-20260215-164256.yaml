@@ -1,3 +1,3 @@
 kind: Changed
-body: Default to BEAM logger (:logger) on Erlang target instead of console handler, integrating birch with the standard OTP logging ecosystem. JavaScript target continues to use the console handler with colors.
+body: "Default to BEAM logger (:logger) on Erlang target with a custom birch formatter that applies birch's presentation (simple/fancy style, colors, metadata) to both birch and OTP/library logs. Auto-configures on first use with explicit `erlang_logger.setup()` and `setup_with_config()` API for customization. JavaScript target continues to use the console handler with colors."
 time: 2026-02-15T16:42:56.158606873-08:00
