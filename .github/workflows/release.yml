@@ -1,4 +1,4 @@
-name: Release
+name: Changie Release
 
 on:
   push:
@@ -13,12 +13,14 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ratchet:actions/checkout@v6
+        with:
+          token: ${{ secrets.RELEASE_PAT }}
 
-      - uses: tylerbutler/actions/changie-release@main
+      - uses: tylerbutler/actions/changie-release@7185ba0cb42ad94f2bd16355a320880766412c3b # ratchet:tylerbutler/actions/changie-release@main
         id: release
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RELEASE_PAT }}
           version-files: |
             gleam.toml:version
 

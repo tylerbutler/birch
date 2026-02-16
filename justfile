@@ -11,6 +11,7 @@ alias t := test
 alias f := format
 alias c := check
 alias d := docs
+alias cl := change
 alias g := generate-configs
 
 # Build the project (Erlang target)

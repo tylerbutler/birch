@@ -7,8 +7,14 @@ versionFooterPath: ""
 versionExt: md
 envPrefix: CHANGIE
 versionFormat: '## {{.Version}} - {{.Time.Format "2006-01-02"}}'
-kindFormat: '### {{.Kind}}'
-changeFormat: '- {{.Body}}'
+kindFormat: '#### {{.Kind}}'
+changeFormat: |-
+    - {{(splitn "\n" 2 .Body)._0}}{{with (splitn "\n" 2 .Body)._1 | default "" | trim}}
+
+      {{. | replace "\n\n" "<<PARA>>" | replace "\n" " " | replace "<<PARA>>" "\n\n"}}{{end}}
+body:
+    block: true
+    minLength: 1
 kinds:
     - label: Added
       auto: minor
@@ -21,6 +27,10 @@ kinds:
     - label: Performance
       auto: patch
     - label: Removed
+      auto: patch
+    - label: Reverted
+      auto: patch
+    - label: Dependencies
       auto: patch
     - label: Security
       auto: patch
