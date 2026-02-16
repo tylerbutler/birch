@@ -17,7 +17,7 @@ jobs:
     name: Test (${{ matrix.target }})
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ratchet:actions/checkout@v6
 
       - name: Setup environment
         uses: ./.github/actions/setup
@@ -42,7 +42,7 @@ jobs:
     name: Integration Test (${{ matrix.runtime }})
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ratchet:actions/checkout@v6
 
       - name: Setup environment
         uses: ./.github/actions/setup
@@ -51,13 +51,13 @@ jobs:
 
       - name: Setup Deno
         if: matrix.runtime == 'deno'
-        uses: denoland/setup-deno@v2
+        uses: denoland/setup-deno@e95548e56dfa95d4e1a28d6f422fafe75c4c26fb # ratchet:denoland/setup-deno@v2
         with:
           deno-version: v2.x
 
       - name: Setup Bun
         if: matrix.runtime == 'bun'
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@3d267786b128fe76c2f16a390aa2448b815359f3 # ratchet:oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
@@ -102,7 +102,7 @@ jobs:
     name: Example ${{ matrix.example }} (${{ matrix.target }})
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ratchet:actions/checkout@v6
 
       - name: Setup environment
         uses: ./.github/actions/setup
@@ -111,13 +111,13 @@ jobs:
 
       - name: Setup Deno
         if: matrix.target == 'deno'
-        uses: denoland/setup-deno@v2
+        uses: denoland/setup-deno@e95548e56dfa95d4e1a28d6f422fafe75c4c26fb # ratchet:denoland/setup-deno@v2
         with:
           deno-version: v2.x
 
       - name: Setup Bun
         if: matrix.target == 'bun'
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@3d267786b128fe76c2f16a390aa2448b815359f3 # ratchet:oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
@@ -140,7 +140,7 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ratchet:actions/checkout@v6
 
       - name: Setup environment
         uses: ./.github/actions/setup
