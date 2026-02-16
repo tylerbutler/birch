@@ -135,3 +135,111 @@ When modifying platform-specific code:
 - Follow Gleam's built-in formatter (`just format`)
 - Use doc comments (`///`) for all public functions and types
 - Use `Err` instead of `Error` for the error log level (avoids Result conflict)
+
+## Commit Conventions
+
+This project uses [conventional commits](https://www.conventionalcommits.org/). Commit types and rules are defined in `commit-types.json` (single source of truth).
+
+| Type | Description | In Changelog? |
+|------|-------------|---------------|
+| `feat` | A new feature | Yes (Features) |
+| `fix` | A bug fix | Yes (Bug Fixes) |
+| `perf` | Performance improvement | Yes (Performance) |
+| `refactor` | Code change (not fix or feature) | Yes (Code Refactoring) |
+| `docs` | Documentation only | No |
+| `style` | Code style (no logic change) | No |
+| `test` | Adding/correcting tests | No |
+| `build` | Build system or dependencies | No |
+| `ci` | CI configuration | No |
+| `chore` | Other changes | No |
+| `revert` | Reverts a previous commit | No |
+
+Commits with scopes `ci` or `deps` are excluded from the changelog regardless of type.
+
+If you edit `commit-types.json`, regenerate derived config files:
+
+```bash
+just generate-configs    # Regenerate commitlint and git-cliff configs
+just check-configs-sync  # Verify configs are in sync
+```
+
+This requires the `commit-config-gen` tool (`go install github.com/tylerbutler/commit-config-gen@latest`).
+
+## Release Process
+
+birch uses [changie](https://changie.dev/) for changelog management and a fully automated GitHub Actions pipeline for releases and publishing.
+
+### Overview
+
+```
+PR with change fragments → merge to main → release workflow creates release PR
+→ merge release PR → auto-tag → publish to Hex.pm
+```
+
+### 1. Adding Changelog Entries
+
+Every PR that includes user-facing changes should include a changie fragment. The PR validation workflow checks for this and comments on the PR if an entry is missing.
+
+```bash
+just change              # Create a new changelog entry (interactive)
+just changelog-preview   # Preview what the next version will look like
+```
+
+Changie will prompt you to select a **kind** which determines the version bump:
+
+| Kind | Version Bump |
+|------|-------------|
+| Added | minor |
+| Changed, Deprecated, Fixed, Performance, Removed, Reverted, Dependencies, Security | patch |
+
+Fragments are stored in `.changes/unreleased/` and committed with your PR.
+
+### 2. PR Validation
+
+The PR validation workflow (`.github/workflows/pr.yml`) runs on every PR and:
+
+- **Validates the PR title** against conventional commit format using commitlint
+- **Checks for changelog entries** and posts a preview comment if fragments are found, or a reminder if they're missing
+
+### 3. Release PR Creation
+
+The release workflow (`.github/workflows/release.yml`) runs on every push to `main` and can also be triggered manually. It:
+
+1. Checks for unreleased changie fragments in `.changes/unreleased/`
+2. If fragments exist, batches them into a versioned changelog entry (version auto-determined from changie kinds)
+3. Updates the version in `gleam.toml`
+4. Creates or updates a release PR with the changelog changes
+
+If no unreleased fragments are found, the workflow skips silently.
+
+### 4. Auto-tagging
+
+When the release PR is merged to `main`, the auto-tag workflow (`.github/workflows/auto-tag.yml`):
+
+1. Detects the new version from the merged PR
+2. Creates a Git tag (`v{version}`)
+3. Creates a GitHub Release from the tag
+
+### 5. Publishing to Hex.pm
+
+When a `v*` tag is pushed, the publish workflow (`.github/workflows/publish.yml`):
+
+1. Runs the full CI test suite (both Erlang and JavaScript targets)
+2. If tests pass, publishes the package to [Hex.pm](https://hex.pm/packages/birch)
+
+### Workflow Summary
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `ci.yml` | Push/PR to main | Tests, formatting, docs build |
+| `pr.yml` | PR opened/updated | Title validation, changelog check |
+| `release.yml` | Push to main | Creates release PR from changie fragments |
+| `auto-tag.yml` | Release PR merged | Creates Git tag and GitHub Release |
+| `publish.yml` | `v*` tag pushed | Publishes to Hex.pm |
+
+### Required Secrets
+
+| Secret | Purpose |
+|--------|---------|
+| `RELEASE_PAT` | GitHub PAT with `contents:write` and `pull-requests:write` (needed so release PRs trigger other workflows) |
+| `HEXPM_API_KEY` | API key for publishing to Hex.pm |
