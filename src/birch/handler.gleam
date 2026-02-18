@@ -40,11 +40,9 @@ pub opaque type Handler {
     /// Name of the handler for identification
     name: String,
     /// Minimum level for this handler (optional override)
-    min_level: Result(Level, Nil),
+    min_level: Option(Level),
     /// The function that writes log records
     write: fn(LogRecord) -> Nil,
-    /// Formatter to use
-    format: formatter.Formatter,
     /// Optional callback invoked when the handler encounters an error
     error_callback: Option(ErrorCallback),
   )
@@ -58,16 +56,15 @@ pub fn new(
 ) -> Handler {
   Handler(
     name: name,
-    min_level: Error(Nil),
+    min_level: None,
     write: fn(record) { write(format(record)) },
-    format: format,
     error_callback: None,
   )
 }
 
 /// Create a handler with a minimum level filter.
 pub fn with_min_level(handler: Handler, level: Level) -> Handler {
-  Handler(..handler, min_level: Ok(level))
+  Handler(..handler, min_level: Some(level))
 }
 
 /// Get the name of a handler.
@@ -78,8 +75,8 @@ pub fn name(handler: Handler) -> String {
 /// Check if a handler should process a log record at the given level.
 pub fn should_handle(handler: Handler, record_level: Level) -> Bool {
   case handler.min_level {
-    Ok(min) -> level.gte(record_level, min)
-    Error(Nil) -> True
+    Some(min) -> level.gte(record_level, min)
+    None -> True
   }
 }
 
@@ -125,9 +122,8 @@ pub fn handle_all(handlers: List(Handler), record: LogRecord) -> Nil {
 pub fn null() -> Handler {
   Handler(
     name: "null",
-    min_level: Error(Nil),
+    min_level: None,
     write: fn(_) { Nil },
-    format: fn(_) { "" },
     error_callback: None,
   )
 }
@@ -138,13 +134,7 @@ pub fn new_with_record_write(
   name name: String,
   write write: fn(LogRecord) -> Nil,
 ) -> Handler {
-  Handler(
-    name: name,
-    min_level: Error(Nil),
-    write: write,
-    format: fn(_) { "" },
-    error_callback: None,
-  )
+  Handler(name: name, min_level: None, write: write, error_callback: None)
 }
 
 /// Attach an error callback to a handler.

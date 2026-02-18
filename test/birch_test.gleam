@@ -2244,7 +2244,7 @@ pub fn module_level_error_result_test() {
   True |> should.be_true
 }
 
-pub fn module_level_error_result_m_test() {
+pub fn module_level_error_result_with_metadata_test() {
   // Reset config and use null handler
   log.reset_config()
   log.configure([
@@ -2252,9 +2252,12 @@ pub fn module_level_error_result_m_test() {
     log.config_level(level.Trace),
   ])
 
-  // Use module-level error_result_m with metadata
+  // Use logger.error_result with metadata directly
   let result: Result(String, String) = Error("permission denied")
-  log.error_result_m("Access denied", result, [#("path", "/etc/secrets")])
+  let lgr = log.new("test") |> log.with_handler(handler.null())
+  logger.error_result(lgr, "Access denied", result, [
+    #("path", "/etc/secrets"),
+  ])
 
   // Clean up
   log.reset_config()
@@ -2303,7 +2306,7 @@ pub fn log_module_with_time_provider_test() {
     |> log.with_time_provider(fn() { "1999-12-31T23:59:59.999Z" })
     |> log.with_handler(handler.null())
 
-  log.logger_info(lgr, "Y2K test", [])
+  logger.info(lgr, "Y2K test", [])
 
   // If we get here, the test passed
   True |> should.be_true
@@ -2370,7 +2373,7 @@ pub fn log_module_with_caller_id_capture_test() {
     |> log.with_caller_id_capture()
     |> log.with_handler(handler.null())
 
-  log.logger_info(lgr, "Test from module API", [])
+  logger.info(lgr, "Test from module API", [])
 
   // If we get here, the test passed
   True |> should.be_true
@@ -2391,7 +2394,7 @@ pub fn logger_all_advanced_features_combined_test() {
 
   // Log an error with result
   let result: Result(Int, String) = Error("test error")
-  log.logger_error_result(lgr, "Combined test failed", result, [
+  logger.error_result(lgr, "Combined test failed", result, [
     #("feature", "all"),
   ])
 
@@ -3017,7 +3020,7 @@ pub fn main_api_logger_log_test() {
     |> log.with_handler(handler.null())
 
   // Should not crash - logs at specified level
-  log.logger_log(lgr, level.Info, "Test message", [#("key", "value")])
+  logger.log(lgr, level.Info, "Test message", [#("key", "value")])
 }
 
 pub fn main_api_logger_trace_test() {
@@ -3027,7 +3030,7 @@ pub fn main_api_logger_trace_test() {
     |> log.with_handler(handler.null())
 
   // Should not crash
-  log.logger_trace(lgr, "Trace message", [])
+  logger.trace(lgr, "Trace message", [])
 }
 
 pub fn main_api_logger_debug_test() {
@@ -3037,7 +3040,7 @@ pub fn main_api_logger_debug_test() {
     |> log.with_handler(handler.null())
 
   // Should not crash
-  log.logger_debug(lgr, "Debug message", [#("detail", "test")])
+  logger.debug(lgr, "Debug message", [#("detail", "test")])
 }
 
 pub fn main_api_logger_warn_test() {
@@ -3046,7 +3049,7 @@ pub fn main_api_logger_warn_test() {
     |> log.with_handler(handler.null())
 
   // Should not crash
-  log.logger_warn(lgr, "Warning message", [])
+  logger.warn(lgr, "Warning message", [])
 }
 
 pub fn main_api_logger_error_test() {
@@ -3055,7 +3058,7 @@ pub fn main_api_logger_error_test() {
     |> log.with_handler(handler.null())
 
   // Should not crash
-  log.logger_error(lgr, "Error message", [#("code", "E001")])
+  logger.error(lgr, "Error message", [#("code", "E001")])
 }
 
 pub fn main_api_logger_fatal_test() {
@@ -3064,7 +3067,7 @@ pub fn main_api_logger_fatal_test() {
     |> log.with_handler(handler.null())
 
   // Should not crash
-  log.logger_fatal(lgr, "Fatal message", [])
+  logger.fatal(lgr, "Fatal message", [])
 }
 
 // ============================================================================
@@ -3086,17 +3089,14 @@ pub fn main_api_trace_test() {
   log.reset_config()
 }
 
-pub fn main_api_trace_m_test() {
-  log.reset_config()
-  log.configure([
-    log.config_level(level.Trace),
-    log.config_handlers([handler.null()]),
-  ])
+pub fn main_api_trace_with_metadata_test() {
+  let lgr =
+    log.new("test")
+    |> log.with_level(level.Trace)
+    |> log.with_handler(handler.null())
 
   // Should not crash
-  log.trace_m("Trace with metadata", [#("trace_id", "abc123")])
-
-  log.reset_config()
+  logger.trace(lgr, "Trace with metadata", [#("trace_id", "abc123")])
 }
 
 pub fn main_api_debug_test() {
@@ -3112,17 +3112,14 @@ pub fn main_api_debug_test() {
   log.reset_config()
 }
 
-pub fn main_api_debug_m_test() {
-  log.reset_config()
-  log.configure([
-    log.config_level(level.Debug),
-    log.config_handlers([handler.null()]),
-  ])
+pub fn main_api_debug_with_metadata_test() {
+  let lgr =
+    log.new("test")
+    |> log.with_level(level.Debug)
+    |> log.with_handler(handler.null())
 
   // Should not crash
-  log.debug_m("Debug with metadata", [#("debug_key", "debug_value")])
-
-  log.reset_config()
+  logger.debug(lgr, "Debug with metadata", [#("debug_key", "debug_value")])
 }
 
 pub fn main_api_info_test() {
@@ -3135,14 +3132,13 @@ pub fn main_api_info_test() {
   log.reset_config()
 }
 
-pub fn main_api_info_m_test() {
-  log.reset_config()
-  log.configure([log.config_handlers([handler.null()])])
+pub fn main_api_info_with_metadata_test() {
+  let lgr =
+    log.new("test")
+    |> log.with_handler(handler.null())
 
   // Should not crash
-  log.info_m("Info with metadata", [#("user", "alice")])
-
-  log.reset_config()
+  logger.info(lgr, "Info with metadata", [#("user", "alice")])
 }
 
 pub fn main_api_warn_test() {
@@ -3155,14 +3151,13 @@ pub fn main_api_warn_test() {
   log.reset_config()
 }
 
-pub fn main_api_warn_m_test() {
-  log.reset_config()
-  log.configure([log.config_handlers([handler.null()])])
+pub fn main_api_warn_with_metadata_test() {
+  let lgr =
+    log.new("test")
+    |> log.with_handler(handler.null())
 
   // Should not crash
-  log.warn_m("Warning with metadata", [#("warning_code", "W001")])
-
-  log.reset_config()
+  logger.warn(lgr, "Warning with metadata", [#("warning_code", "W001")])
 }
 
 pub fn main_api_error_test() {
@@ -3175,14 +3170,13 @@ pub fn main_api_error_test() {
   log.reset_config()
 }
 
-pub fn main_api_error_m_test() {
-  log.reset_config()
-  log.configure([log.config_handlers([handler.null()])])
+pub fn main_api_error_with_metadata_test() {
+  let lgr =
+    log.new("test")
+    |> log.with_handler(handler.null())
 
   // Should not crash
-  log.error_m("Error with metadata", [#("error_type", "validation")])
-
-  log.reset_config()
+  logger.error(lgr, "Error with metadata", [#("error_type", "validation")])
 }
 
 pub fn main_api_fatal_test() {
@@ -3195,14 +3189,13 @@ pub fn main_api_fatal_test() {
   log.reset_config()
 }
 
-pub fn main_api_fatal_m_test() {
-  log.reset_config()
-  log.configure([log.config_handlers([handler.null()])])
+pub fn main_api_fatal_with_metadata_test() {
+  let lgr =
+    log.new("test")
+    |> log.with_handler(handler.null())
 
   // Should not crash
-  log.fatal_m("Fatal with metadata", [#("critical", "true")])
-
-  log.reset_config()
+  logger.fatal(lgr, "Fatal with metadata", [#("critical", "true")])
 }
 
 // ============================================================================
@@ -3291,16 +3284,15 @@ pub fn main_api_fatal_result_with_ok_test() {
   log.reset_config()
 }
 
-pub fn main_api_fatal_result_m_test() {
-  log.reset_config()
-  log.configure([log.config_handlers([handler.null()])])
+pub fn main_api_fatal_result_with_metadata_test() {
+  let lgr =
+    log.new("test")
+    |> log.with_handler(handler.null())
 
   let result: Result(Int, String) = Error("Disk full")
 
   // Should not crash
-  log.fatal_result_m("Storage failure", result, [#("disk", "/dev/sda1")])
-
-  log.reset_config()
+  logger.fatal_result(lgr, "Storage failure", result, [#("disk", "/dev/sda1")])
 }
 
 pub fn main_api_logger_fatal_result_test() {
@@ -3311,7 +3303,7 @@ pub fn main_api_logger_fatal_result_test() {
   let result: Result(Int, String) = Error("Connection lost")
 
   // Should not crash
-  log.logger_fatal_result(lgr, "Database connection failed", result, [
+  logger.fatal_result(lgr, "Database connection failed", result, [
     #("host", "db.example.com"),
   ])
 }
@@ -3476,12 +3468,12 @@ pub fn main_api_is_scoped_context_available_js_test() {
 // ============================================================================
 
 pub fn main_api_type_reexports_test() {
-  // Test that type aliases work correctly
-  let _level: log.LogLevel = level.Info
-  let _handler: log.LogHandler = handler.null()
-  let _metadata: log.LogMetadata = [#("key", "value")]
+  // Test that canonical types work correctly
+  let _level: level.Level = level.Info
+  let _handler: handler.Handler = handler.null()
+  let _metadata: record.Metadata = [#("key", "value")]
 
-  // If this compiles, the type re-exports are working
+  // If this compiles, the types are working
   True |> should.be_true
 }
 

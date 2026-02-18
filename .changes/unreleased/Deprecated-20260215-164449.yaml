@@ -1,0 +1,3 @@
+kind: Deprecated
+body: Deprecate type aliases (LogLevel, LogHandler, LogMetadata, TimestampFormatter, Config), logger_* wrapper functions, _m suffix variants, config.empty(), config.get_on_error(), and erlang_logger.erlang_level_to_atom(). These will be removed in 1.0.
+time: 2026-02-15T16:44:49.313589557-08:00

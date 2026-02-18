@@ -6,8 +6,7 @@ This example demonstrates convenient error logging with Result types.
 
 - Using `error_result()` and `fatal_result()`
 - Automatic error value extraction
-- Metadata variants `_m`
-- Logger-specific variants
+- Logger-specific variants via `birch/logger` module
 
 ## Running the Example
 
@@ -24,7 +23,8 @@ Instead of manually extracting error values:
 case file.read("config.json") {
   Ok(content) -> parse_config(content)
   Error(err) -> {
-    log.error_m("Failed to read config", [#("error", string.inspect(err))])
+    let lgr = log.new("app")
+    lgr |> logger.error("Failed to read config", [#("error", string.inspect(err))])
     use_defaults()
   }
 }
@@ -46,12 +46,10 @@ case file.read("config.json") {
 
 | Function | Description |
 |----------|-------------|
-| `error_result(message, result)` | Log error with Result |
-| `error_result_m(message, result, metadata)` | With additional metadata |
-| `fatal_result(message, result)` | Log fatal with Result |
-| `fatal_result_m(message, result, metadata)` | With additional metadata |
-| `logger_error_result(logger, message, result, metadata)` | For named loggers |
-| `logger_fatal_result(logger, message, result, metadata)` | For named loggers |
+| `log.error_result(message, result)` | Log error with Result (default logger) |
+| `log.fatal_result(message, result)` | Log fatal with Result (default logger) |
+| `logger.error_result(lgr, message, result, metadata)` | For named loggers with metadata |
+| `logger.fatal_result(lgr, message, result, metadata)` | For named loggers with metadata |
 
 ## How It Works
 

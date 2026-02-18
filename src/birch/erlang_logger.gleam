@@ -112,6 +112,7 @@ pub fn erlang_level_to_gleam(erlang_level: ErlangLevel) -> Level {
 }
 
 /// Convert an Erlang level to its atom representation (for FFI).
+@deprecated("This is an internal FFI helper and will be removed")
 pub fn erlang_level_to_atom(erlang_level: ErlangLevel) -> String {
   case erlang_level {
     ErlangEmergency -> "emergency"
