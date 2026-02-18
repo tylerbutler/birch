@@ -26,12 +26,13 @@ The name "birch" comes from birch trees, whose white bark gleams in the light.
 - **Cross-platform**: Works on both Erlang and JavaScript targets
 - **Zero-configuration startup**: Just import and start logging
 - **Structured logging**: Key-value metadata on every log message
-- **Multiple handlers**: Console, file, JSON, async, or custom handlers
-- **Log rotation**: Size-based and time-based rotation for file handlers
+- **Multiple handlers**: Console, file, JSON, or custom handlers
 - **Color support**: Colored output for TTY terminals
 - **Lazy evaluation**: Avoid expensive string formatting when logs are filtered
 - **Scoped context**: Request-scoped metadata that propagates automatically
-- **Sampling**: Probabilistic sampling and rate limiting for high-volume scenarios
+- **Log rotation** *(experimental)*: Size-based and time-based rotation for file handlers
+- **Async handler** *(experimental)*: Non-blocking logging with buffered writes
+- **Sampling** *(experimental)*: Probabilistic sampling and rate limiting for high-volume scenarios
 
 ## Quick Start
 
@@ -251,6 +252,9 @@ let custom_handler =
 
 ### File Handler
 
+> [!NOTE]
+> File rotation is experimental and not planned for the 1.0 release.
+
 Write to files with optional rotation:
 
 ```gleam
@@ -279,7 +283,10 @@ let handler = file.handler(file.FileConfig(
 ))
 ```
 
-### Async Handler
+### Async Handler *(experimental)*
+
+> [!NOTE]
+> The async handler is experimental and not planned for the 1.0 release.
 
 Wrap any handler for non-blocking logging:
 
@@ -383,7 +390,10 @@ log.error_result_m("Database query failed", result, [
 ])
 ```
 
-## Sampling
+## Sampling *(experimental)*
+
+> [!NOTE]
+> Sampling is experimental and not planned for the 1.0 release.
 
 For high-volume logging, sample messages probabilistically:
 
@@ -474,7 +484,7 @@ Several logging libraries exist in the Gleam ecosystem. Here's how they compare:
 | Console output | ✅ | ✅ | ❌ | ✅ |
 | File output | ✅ | ✅ | ❌ | ❌ |
 | JSON output | ✅ | ✅ | ✅ | ✅ |
-| File rotation | ✅ | ❌ | ❌ | ❌ |
+| File rotation | 🧪 | ❌ | ❌ | ❌ |
 | Colored output | ✅ | ✅ | ❌ | ✅ |
 | Structured metadata | ✅ | ✅ | ✅ | ✅ |
 | Typed metadata values | ❌ | ❌ | ✅ | ✅ |
@@ -483,18 +493,12 @@ Several logging libraries exist in the Gleam ecosystem. Here's how they compare:
 | Scoped context | ✅ | ❌ | ❌ | ❌ |
 | Lazy evaluation | ✅ | ❌ | ❌ | ❌ |
 | Custom handlers | ✅ | ❌ | ❌ | ❌ |
-| Sampling | ✅ | ❌ | ❌ | ❌ |
+| Sampling | 🧪 | ❌ | ❌ | ❌ |
 | Stacktrace capture | ❌ | ❌ | ✅ | ❌ |
 | Erlang logger integration | ✅ | ✅ | ❌ | ❌ |
 | Wisp integration | ❌ | ❌ | ❌ | ✅ |
 | Zero-config startup | ✅ | ❌ | ❌ | ✅ |
 
-### When to Choose Each Library
-
-- **birch**: Applications needing file rotation, scoped context propagation, lazy evaluation, custom handlers, or Erlang logger integration with cross-platform support.
-- **glight**: Erlang-only applications that want a minimal wrapper around Erlang's standard logger module.
-- **glogg**: Applications requiring typed metadata fields (Int, Float, Bool, Duration) or stacktrace capture.
-- **palabres**: Wisp web applications that benefit from built-in middleware integration.
 
 ## Development
 

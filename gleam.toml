@@ -6,7 +6,12 @@ repository = { type = "github", user = "tylerbutler", repo = "birch" }
 gleam = ">= 1.7.0"
 
 # Internal modules are not part of the public API
-internal_modules = ["birch/internal", "birch/internal/*"]
+internal_modules = [
+  "birch/internal",
+  "birch/internal/*",
+  "birch/sampling",
+  "birch/handler/async",
+]
 
 [dependencies]
 gleam_stdlib = ">= 0.48.0 and < 2.0.0"
