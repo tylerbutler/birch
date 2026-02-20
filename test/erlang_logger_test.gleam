@@ -185,43 +185,6 @@ pub fn install_formatter_on_nonexistent_handler_test() {
 }
 
 // ============================================================================
-// Deprecated API Compatibility Tests
-// (Ensure deprecated functions still work via delegation)
-// ============================================================================
-
-pub fn deprecated_install_logger_handler_test() {
-  let result = erlang_logger.install_logger_handler()
-
-  case is_erlang_target() {
-    True -> {
-      should.be_ok(result)
-      let _ = erlang_logger.uninstall_logger_handler()
-      Nil
-    }
-    False -> {
-      let _ = should.be_error(result)
-      Nil
-    }
-  }
-}
-
-pub fn deprecated_uninstall_logger_handler_test() {
-  case is_erlang_target() {
-    True -> {
-      let _ = erlang_logger.install_logger_handler()
-      let result = erlang_logger.uninstall_logger_handler()
-      should.be_ok(result)
-    }
-    False -> {
-      let _ =
-        erlang_logger.uninstall_logger_handler()
-        |> should.be_error
-      Nil
-    }
-  }
-}
-
-// ============================================================================
 // Level Conversion Tests
 // (These are pure Gleam and work on both platforms)
 // ============================================================================
