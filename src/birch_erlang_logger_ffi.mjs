@@ -3,7 +3,7 @@
 // Erlang's :logger is not available on the JavaScript target.
 // These stubs provide graceful fallback behavior:
 // - logger_log: Falls back to console output
-// - install_handler/uninstall_handler: Return errors indicating unavailability
+// - install_formatter/remove_formatter: Return errors indicating unavailability
 
 import { Ok, Error } from "./gleam.mjs";
 
@@ -18,7 +18,6 @@ import { Ok, Error } from "./gleam.mjs";
  */
 export function logger_log(level, message) {
   // Map Erlang level to console method
-  // Level is a Gleam record like {erlang_info}
   const levelName = getLevelName(level);
 
   switch (levelName) {
@@ -50,12 +49,8 @@ export function logger_log(level, message) {
  * @returns {string} Level name
  */
 function getLevelName(level) {
-  // Gleam variants are objects with a constructor property
-  // e.g., { constructor: "ErlangInfo" } or similar
   if (typeof level === "object" && level !== null) {
-    // Check for the variant type
     if ("$" in level) {
-      // New Gleam format uses $ for variant name
       switch (level.$) {
         case "ErlangEmergency":
           return "emergency";
@@ -80,25 +75,30 @@ function getLevelName(level) {
 }
 
 /**
- * Install birch as an Erlang :logger handler.
+ * Install birch as a :logger formatter.
  *
  * This is not available on JavaScript - always returns an error.
  *
- * @param {string} handlerId - Handler ID (unused on JS)
+ * @param {string} _handlerId - Handler ID (unused on JS)
+ * @param {function} _formatFn - Format callback (unused on JS)
  * @returns {Error} Always returns an error
  */
-export function install_handler(_handlerId) {
-  return new Error("erlang:logger is not available on JavaScript target");
+export function install_formatter(_handlerId, _formatFn) {
+  return new Error(
+    "erlang:logger is not available on JavaScript target"
+  );
 }
 
 /**
- * Uninstall an Erlang :logger handler.
+ * Remove birch formatter from a :logger handler.
  *
  * This is not available on JavaScript - always returns an error.
  *
- * @param {string} handlerId - Handler ID (unused on JS)
+ * @param {string} _handlerId - Handler ID (unused on JS)
  * @returns {Error} Always returns an error
  */
-export function uninstall_handler(_handlerId) {
-  return new Error("erlang:logger is not available on JavaScript target");
+export function remove_formatter(_handlerId) {
+  return new Error(
+    "erlang:logger is not available on JavaScript target"
+  );
 }
