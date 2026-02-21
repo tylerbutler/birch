@@ -1,12 +1,10 @@
 kind: Changed
 body: |-
-    Default to BEAM `:logger` on Erlang target.
+    On Erlang, birch now uses OTP's built-in `:logger` system by default.
 
-    On Erlang, birch now forwards logs through OTP's `:logger` system by default instead of writing directly to the console. birch installs a `:logger` **formatter** (`format/2` callback) that applies birch's presentation (timestamps, colors, simple/fancy styles, metadata) to both birch-originated and OTP/library log events. The `:logger` handler controls output (console, file, etc.) while birch controls formatting.
+    Logs are routed through `:logger` instead of being written directly to the console. birch controls how log messages are formatted (timestamps, colors, metadata) while `:logger` controls where they go (console, file, etc.). This means birch-formatted output now applies to OTP and library log events too, giving you consistent formatting across your entire application.
 
-    `forward_to_logger_raw()` now sends structured metadata (logger name, metadata, caller ID) to `:logger` instead of pre-formatting the message, so the formatter can reconstruct full `LogRecord` values.
+    The `default_handler_id` constant changed from `"birch"` to `"default"`. The old value is still available as the deprecated `legacy_handler_id`.
 
-    `default_handler_id` changed from `"birch"` to `"default"` to reflect the target handler. The old value is preserved as the deprecated `legacy_handler_id` constant.
-
-    JavaScript target continues to use the console handler with colors.
+    The JavaScript target is unchanged and continues using the console handler with colors.
 time: 2026-02-15T16:42:56.158606873-08:00
