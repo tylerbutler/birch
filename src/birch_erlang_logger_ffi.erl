@@ -11,7 +11,7 @@
 -module(birch_erlang_logger_ffi).
 
 %% API exports
--export([logger_log/2, install_formatter/2, remove_formatter/1]).
+-export([logger_log/2, install_formatter/2, remove_formatter/1, is_formatter_configured/0]).
 
 %% :logger formatter callback
 -export([format/2]).
@@ -79,6 +79,14 @@ update_handler_formatter(HandlerId, Formatter) ->
             {error, <<"Handler not found: ", HandlerId/binary>>};
         {error, Reason} ->
             {error, iolist_to_binary(io_lib:format("~p", [Reason]))}
+    end.
+
+%% Check if the birch formatter is configured on the default :logger handler.
+-spec is_formatter_configured() -> boolean().
+is_formatter_configured() ->
+    case logger:get_handler_config(default) of
+        {ok, #{formatter := {birch_erlang_logger_ffi, _}}} -> true;
+        _ -> false
     end.
 
 %% ============================================================================

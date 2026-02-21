@@ -101,14 +101,24 @@ pub fn fancy_handler() -> Handler {
 
 /// Create a console handler with custom configuration.
 pub fn handler_with_config(config: ConsoleConfig) -> Handler {
-  let use_color = config.color && platform.is_stdout_tty()
-
   let write_fn = case config.target {
     Stdout -> io.println
     Stderr -> io.println_error
   }
 
-  let format_fn = case config.style {
+  let format_fn = build_format_fn(config)
+
+  handler.new(name: "console", write: write_fn, format: format_fn)
+}
+
+/// Build a format function from a ConsoleConfig.
+///
+/// This creates a formatter closure that can be used independently of a handler,
+/// for example when configuring the BEAM logger formatter via
+/// `erlang_logger.setup_with_config`.
+pub fn build_format_fn(config: ConsoleConfig) -> formatter.Formatter {
+  let use_color = config.color && platform.is_stdout_tty()
+  case config.style {
     Simple ->
       format_simple(
         use_color,
@@ -124,8 +134,6 @@ pub fn handler_with_config(config: ConsoleConfig) -> Handler {
         config.auto_indent_from_scopes,
       )
   }
-
-  handler.new(name: "console", write: write_fn, format: format_fn)
 }
 
 // ============================================================================

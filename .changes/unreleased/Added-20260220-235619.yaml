@@ -1,0 +1,10 @@
+kind: Added
+body: |-
+    New `:logger` formatter API in `birch/erlang_logger`.
+
+    `setup()` and `setup_with_config(config)` configure birch formatting on the default `:logger` handler. `ensure_formatter_configured()` provides idempotent setup (called automatically on first use).
+
+    `install_formatter()`, `install_formatter_with(format)`, and `install_formatter_on(handler_id, format)` install birch as a formatter on specific `:logger` handlers. `remove_formatter()` and `remove_formatter_from(handler_id)` restore OTP defaults.
+
+    `console.build_format_fn(config)` creates a formatter closure from a `ConsoleConfig`, usable independently of a handler (e.g., for `:logger` formatter configuration).
+time: 2026-02-20T23:56:19.000000000Z

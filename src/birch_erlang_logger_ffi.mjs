@@ -5,9 +5,9 @@
 // - logger_log: Falls back to console output
 // - install_formatter/remove_formatter: Return errors indicating unavailability
 
-import { Ok, Error } from "./gleam.mjs";
+import { Ok, Error as GleamError } from "./gleam.mjs";
 
-const UNAVAILABLE_ERROR = new Error(
+const UNAVAILABLE_ERROR = new GleamError(
   "erlang:logger is not available on JavaScript target",
 );
 
@@ -59,6 +59,13 @@ const LEVEL_NAMES = {
 
 /**
  * Extract level name from Gleam ErlangLevel type.
+ *
+ * TODO: Revisit this and see if there is a better way to accomplish this.
+ * Relies on Gleam's JS codegen representing custom type variants as objects
+ * with a `$` property containing the variant name (e.g., "ErlangEmergency").
+ * If this codegen convention changes, all levels will silently fall through
+ * to the "info" default.
+ *
  * @param {object} level - Gleam ErlangLevel variant
  * @returns {string} Level name
  */
@@ -67,6 +74,15 @@ function getLevelName(level) {
     return LEVEL_NAMES[level.$] ?? "info";
   }
   return "info";
+}
+
+/**
+ * Check if the birch formatter is configured on the default :logger handler.
+ *
+ * Always returns false on JavaScript since :logger is not available.
+ */
+export function is_formatter_configured() {
+  return false;
 }
 
 /**
