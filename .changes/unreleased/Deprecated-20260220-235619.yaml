@@ -1,4 +1,4 @@
 kind: Deprecated
 body: |-
-    Deprecate `install_logger_handler()`, `install_logger_handler_with_id()`, `uninstall_logger_handler()`, and `uninstall_logger_handler_with_id()` in `birch/erlang_logger`. Use `install_formatter()` / `remove_formatter()` instead.
+    The handler-based `:logger` functions in `birch/erlang_logger` are deprecated. Replace `install_logger_handler()` and `uninstall_logger_handler()` (and their `_with_id` variants) with `install_formatter()` / `remove_formatter()`. These will be removed in 1.0.
 time: 2026-02-20T23:56:19.000000000Z

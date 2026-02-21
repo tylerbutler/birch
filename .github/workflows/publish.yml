@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ratchet:actions/checkout@v6
 
       - name: Setup environment
-        uses: ./.github/actions/setup
+        uses: tylerbutler/actions/setup-gleam@595187399f4d5ca2d5a927473407e10edaa05434 # ratchet:tylerbutler/actions/setup-gleam@main
 
       - name: Publish to Hex.pm
         # Pipe confirmation for pre-1.0 semver warning (no flag exists to bypass)
