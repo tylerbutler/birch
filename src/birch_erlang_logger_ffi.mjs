@@ -70,51 +70,12 @@ function getLevelName(level) {
 }
 
 /**
- * Log structured data to :logger (fallback to console on JavaScript).
- *
- * On JavaScript, this ignores the structured metadata and falls back
- * to basic console logging with the message.
- */
-export function logger_log_structured(level, message, _loggerName, _metadata, _callerId) {
-  return logger_log(level, message);
-}
-
-/**
- * Configure the default :logger handler formatter.
- *
- * Not available on JavaScript - always returns an error.
- */
-export function configure_default_handler_formatter(_formatFn) {
-  return new Error("erlang:logger formatter is not available on JavaScript target");
-}
-
-/**
  * Check if the birch formatter is configured on the default :logger handler.
  *
  * Always returns false on JavaScript since :logger is not available.
  */
 export function is_formatter_configured() {
   return false;
-}
-
-/**
- * Install birch as an Erlang :logger handler.
- *
- * This is not available on JavaScript - always returns an error.
- *
- * @param {string} handlerId - Handler ID (unused on JS)
- * @returns {Error} Always returns an error
- */
-export function install_handler(_handlerId) {
-  return UNAVAILABLE_ERROR;
-}
-
-/**
- * Uninstall birch :logger handler.
- * Not available on JavaScript - always returns an error.
- */
-export function uninstall_handler(_handlerId) {
-  return UNAVAILABLE_ERROR;
 }
 
 /**
