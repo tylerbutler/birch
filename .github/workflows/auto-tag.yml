@@ -7,6 +7,6 @@ on:
 
 jobs:
   auto-tag:
-    uses: tylerbutler/actions/.github/workflows/auto-tag.yml@595187399f4d5ca2d5a927473407e10edaa05434 # ratchet:tylerbutler/actions/.github/workflows/auto-tag.yml@main
+    uses: tylerbutler/actions/.github/workflows/auto-tag.yml@c697a813534c6364a835de8e2ed2c4e0c3638bbe # ratchet:tylerbutler/actions/.github/workflows/auto-tag.yml@main
     with:
       create-release: true
