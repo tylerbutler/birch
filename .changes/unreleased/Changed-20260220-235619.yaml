@@ -1,0 +1,8 @@
+kind: Changed
+body: |-
+    Invert :logger integration to use BEAM's formatter callback instead of handler callback.
+
+    birch now provides a :logger **formatter** (via `format/2`) rather than installing itself as a :logger **handler**. The existing BEAM handler controls output (console, file, etc.) while birch controls formatting. This eliminates brittle manual Gleam record construction and opaque type access in the Erlang FFI.
+
+    New API: `install_formatter()`, `install_formatter_with(format)`, `install_formatter_on(handler_id, format)`, `remove_formatter()`, `remove_formatter_from(handler_id)`.
+time: 2026-02-20T23:56:19.000000000Z

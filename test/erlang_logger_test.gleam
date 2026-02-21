@@ -5,10 +5,11 @@
 ////
 //// - **Level conversion tests**: Pure Gleam, work on both platforms
 //// - **Forward handler tests**: Work on both (uses console.log on JS)
-//// - **Install/uninstall tests**: Only succeed on Erlang, expect errors on JS
+//// - **Formatter install/remove tests**: Only succeed on Erlang, expect errors on JS
 
 import birch as log
 import birch/erlang_logger
+import birch/formatter
 import birch/handler
 import birch/level
 import birch/logger
@@ -74,37 +75,35 @@ pub fn forward_to_logger_with_all_levels_test() {
 }
 
 // ============================================================================
-// Install :logger Handler Tests
+// Install Formatter Tests
 // (These tests are platform-specific - succeed on Erlang, error on JavaScript)
 // ============================================================================
 
 /// Helper to check if we're running on Erlang.
 /// Uses the install result as a platform indicator.
 fn is_erlang_target() -> Bool {
-  // Try to install a test handler - if it succeeds, we're on Erlang
-  let result =
-    erlang_logger.install_logger_handler_with_id("birch_platform_check")
+  // Try to install formatter - if it succeeds, we're on Erlang
+  let result = erlang_logger.install_formatter()
   case result {
     Ok(_) -> {
       // Clean up and return true
-      let _ =
-        erlang_logger.uninstall_logger_handler_with_id("birch_platform_check")
+      let _ = erlang_logger.remove_formatter()
       True
     }
     Error(_) -> False
   }
 }
 
-pub fn install_logger_handler_test() {
+pub fn install_formatter_test() {
   // The install function should return Ok on Erlang, Error on JS
-  let result = erlang_logger.install_logger_handler()
+  let result = erlang_logger.install_formatter()
 
   case is_erlang_target() {
     True -> {
       // On Erlang, should succeed
       should.be_ok(result)
       // Clean up
-      let _ = erlang_logger.uninstall_logger_handler()
+      let _ = erlang_logger.remove_formatter()
       Nil
     }
     False -> {
@@ -115,75 +114,70 @@ pub fn install_logger_handler_test() {
   }
 }
 
-pub fn install_and_uninstall_logger_handler_test() {
-  // Test install/uninstall cycle
+pub fn install_and_remove_formatter_test() {
+  // Test install/remove cycle
   case is_erlang_target() {
     True -> {
-      let install_result = erlang_logger.install_logger_handler()
+      let install_result = erlang_logger.install_formatter()
       should.be_ok(install_result)
 
-      let uninstall_result = erlang_logger.uninstall_logger_handler()
-      should.be_ok(uninstall_result)
+      let remove_result = erlang_logger.remove_formatter()
+      should.be_ok(remove_result)
     }
     False -> {
       // On JavaScript, both should return errors
       let _ =
-        erlang_logger.install_logger_handler()
+        erlang_logger.install_formatter()
         |> should.be_error
 
       let _ =
-        erlang_logger.uninstall_logger_handler()
+        erlang_logger.remove_formatter()
         |> should.be_error
       Nil
     }
   }
 }
 
-pub fn install_logger_handler_with_custom_id_test() {
+pub fn install_formatter_with_custom_format_test() {
   case is_erlang_target() {
     True -> {
-      // On Erlang, should be able to install with custom ID
-      let result =
-        erlang_logger.install_logger_handler_with_id("birch_custom_test")
+      // On Erlang, should be able to install with a custom formatter
+      let result = erlang_logger.install_formatter_with(formatter.simple)
       should.be_ok(result)
 
       // Clean up
-      let _ =
-        erlang_logger.uninstall_logger_handler_with_id("birch_custom_test")
+      let _ = erlang_logger.remove_formatter()
       Nil
     }
     False -> {
       // On JavaScript, should return error
       let _ =
-        erlang_logger.install_logger_handler_with_id("birch_custom_test")
+        erlang_logger.install_formatter_with(formatter.simple)
         |> should.be_error
       Nil
     }
   }
 }
 
-pub fn install_logger_handler_twice_fails_test() {
+pub fn install_formatter_on_nonexistent_handler_test() {
   case is_erlang_target() {
     True -> {
-      // On Erlang, installing twice should fail the second time
-      let result1 = erlang_logger.install_logger_handler()
-      should.be_ok(result1)
-
-      let result2 = erlang_logger.install_logger_handler()
-      let _ = should.be_error(result2)
-
-      // Clean up
-      let _ = erlang_logger.uninstall_logger_handler()
+      // Installing on a non-existent handler should fail
+      let result =
+        erlang_logger.install_formatter_on(
+          "nonexistent_handler",
+          formatter.human_readable,
+        )
+      let _ = should.be_error(result)
       Nil
     }
     False -> {
-      // On JavaScript, both installs fail with the same error
+      // On JavaScript, always errors
       let _ =
-        erlang_logger.install_logger_handler()
-        |> should.be_error
-
-      let _ =
-        erlang_logger.install_logger_handler()
+        erlang_logger.install_formatter_on(
+          "nonexistent_handler",
+          formatter.human_readable,
+        )
         |> should.be_error
       Nil
     }
