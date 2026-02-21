@@ -1,13 +1,15 @@
 //// Erlang :logger integration for birch.
 ////
-//// This module provides optional integration with Erlang's built-in :logger
+//// This module provides integration with Erlang's built-in :logger
 //// system, allowing birch to:
 ////
-//// 1. **Forward to :logger**: Create a handler that sends birch records
+//// 1. **Forward to :logger**: Create a birch handler that sends birch records
 ////    to Erlang's :logger system (useful for integrating with OTP applications)
 ////
-//// 2. **Receive from :logger**: Install birch as an Erlang :logger handler
-////    to receive logs from OTP applications and process them with birch handlers
+//// 2. **Format for :logger**: Install birch as a **formatter** on an existing
+////    :logger handler, so that OTP/Erlang log events are formatted using
+////    birch's formatting pipeline. This is the idiomatic OTP way — the :logger
+////    handler controls output (console, file, etc.) while birch controls formatting.
 ////
 //// **Note**: These features are only available on the Erlang target. On JavaScript,
 //// the functions will return errors indicating the feature is unavailable.
@@ -29,16 +31,17 @@
 //// }
 //// ```
 ////
-//// ## Example: Receive logs from OTP applications
+//// ## Example: Format OTP logs with birch
 ////
 //// ```gleam
 //// import birch/erlang_logger
+//// import birch/formatter
 ////
 //// pub fn main() {
-////   // Install birch as an Erlang :logger handler
-////   case erlang_logger.install_logger_handler() {
+////   // Install birch as the formatter on the default :logger handler
+////   case erlang_logger.install_formatter() {
 ////     Ok(Nil) -> {
-////       // Logs from OTP applications will now be processed by birch
+////       // OTP log messages are now formatted by birch's human_readable formatter
 ////     }
 ////     Error(reason) -> {
 ////       // Handle error (e.g., on JavaScript target)
@@ -49,7 +52,9 @@
 
 import birch/formatter
 import birch/handler.{type Handler}
+import birch/handler/console
 import birch/level.{type Level}
+import birch/record
 
 // ============================================================================
 // Erlang Log Level Type
@@ -153,7 +158,6 @@ pub fn forward_to_logger_with_formatter(format: formatter.Formatter) -> Handler 
   handler.new(name: "erlang:logger", write: forward_write, format: format)
 }
 
-// Forward a log message to Erlang's :logger (via FFI)
 fn forward_write(message: String) -> Nil {
   do_logger_log(ErlangInfo, message)
 }
@@ -163,32 +167,30 @@ fn forward_write(message: String) -> Nil {
 // ============================================================================
 
 /// Create a handler that forwards birch records to :logger with proper
-/// level mapping (not just the formatted message).
+/// level mapping and structured metadata.
 ///
-/// This handler passes the full LogRecord to :logger, preserving the log level
-/// and metadata. Use this when you want :logger to receive structured log data.
+/// This handler passes structured data to :logger, preserving the log level,
+/// logger name, metadata, and caller ID. The birch_logger_formatter installed
+/// on the default handler will then apply birch's formatting.
 pub fn forward_to_logger_raw() -> Handler {
-  handler.new_with_record_write(name: "erlang:logger:raw", write: fn(record) {
-    let erlang_level = gleam_level_to_erlang(record.level)
-    let message = formatter.human_readable(record)
+  handler.new_with_record_write(name: "erlang:logger:raw", write: fn(r) {
+    let erlang_level = gleam_level_to_erlang(r.level)
+    let message = formatter.human_readable(r)
     do_logger_log(erlang_level, message)
   })
 }
 
 // ============================================================================
-// Install birch as :logger Handler
+// Formatter Setup for :logger's Default Handler
 // ============================================================================
 
-/// Default handler ID used when installing birch as a :logger handler.
-pub const default_handler_id = "birch"
-
-/// Install birch as an Erlang :logger handler.
+/// Configure the BEAM logger's default handler to use birch formatting.
 ///
-/// Once installed, logs from OTP applications (and Erlang code using :logger)
-/// will be processed by birch's configured handlers.
+/// This installs birch's simple-style formatter on `:logger`'s default handler,
+/// so both birch logs and OTP/library logs get birch-style formatting
+/// (pipe-delimited with colors, timestamps, and metadata).
 ///
-/// Returns `Ok(Nil)` on success, or `Error(reason)` if installation fails.
-/// On JavaScript, always returns `Error("erlang:logger is not available on JavaScript target")`.
+/// On JavaScript, returns an error since `:logger` is not available.
 ///
 /// ## Example
 ///
@@ -196,37 +198,201 @@ pub const default_handler_id = "birch"
 /// import birch/erlang_logger
 ///
 /// pub fn main() {
-///   case erlang_logger.install_logger_handler() {
-///     Ok(Nil) -> io.println("Installed birch as :logger handler")
-///     Error(reason) -> io.println("Failed: " <> reason)
+///   // Explicitly set up birch formatting on :logger
+///   let assert Ok(Nil) = erlang_logger.setup()
+/// }
+/// ```
+pub fn setup() -> Result(Nil, String) {
+  setup_with_config(console.default_config())
+}
+
+/// Configure the BEAM logger's default handler with custom formatting.
+///
+/// Accepts a `ConsoleConfig` to control the style (simple/fancy),
+/// level formatter, colors, timestamps, etc.
+///
+/// ## Example
+///
+/// ```gleam
+/// import birch/erlang_logger
+/// import birch/handler/console
+///
+/// pub fn main() {
+///   // Use fancy style with icons for all logs
+///   let assert Ok(Nil) =
+///     erlang_logger.setup_with_config(console.default_fancy_config())
+/// }
+/// ```
+pub fn setup_with_config(config: console.ConsoleConfig) -> Result(Nil, String) {
+  let format_fn = console.build_format_fn(config)
+  install_formatter_on(default_handler_id, format_fn)
+}
+
+/// Ensure the birch formatter is configured on the default :logger handler.
+///
+/// This is idempotent — it configures the formatter on first call and
+/// no-ops on subsequent calls. Called automatically when birch's default
+/// configuration is used on the Erlang target.
+pub fn ensure_formatter_configured() -> Nil {
+  case do_is_formatter_configured() {
+    True -> Nil
+    False -> {
+      let _ = setup()
+      Nil
+    }
+  }
+}
+
+// ============================================================================
+// Install birch as :logger Formatter
+// ============================================================================
+
+/// The default handler ID for the BEAM's built-in :logger handler.
+pub const default_handler_id = "default"
+
+/// Type for the format callback function passed to the Erlang formatter.
+///
+/// The Erlang `format/2` callback extracts raw data from the :logger event
+/// (timestamp, level, logger name, message, metadata) and calls this function
+/// to produce the formatted output string.
+pub type FormatCallback =
+  fn(String, Level, String, String, record.Metadata) -> String
+
+/// Install birch as the formatter on the default :logger handler,
+/// using birch's `human_readable` formatter.
+///
+/// This is the recommended way to integrate birch with OTP's logging system.
+/// The :logger handler continues to control output (console, file, etc.),
+/// while birch controls how log messages are formatted.
+///
+/// Returns `Ok(Nil)` on success, or `Error(reason)` if installation fails.
+/// On JavaScript, always returns `Error(...)` since :logger is not available.
+///
+/// ## Example
+///
+/// ```gleam
+/// import birch/erlang_logger
+///
+/// pub fn main() {
+///   case erlang_logger.install_formatter() {
+///     Ok(Nil) -> {
+///       // OTP logs are now formatted by birch
+///     }
+///     Error(reason) -> {
+///       io.println("Failed: " <> reason)
+///     }
 ///   }
 /// }
 /// ```
+pub fn install_formatter() -> Result(Nil, String) {
+  install_formatter_on(default_handler_id, formatter.human_readable)
+}
+
+/// Install birch as the formatter on the default :logger handler
+/// with a custom birch formatter.
+///
+/// ## Example
+///
+/// ```gleam
+/// import birch/erlang_logger
+/// import birch/formatter
+///
+/// // Use the simple formatter for OTP logs
+/// erlang_logger.install_formatter_with(formatter.simple)
+/// ```
+pub fn install_formatter_with(
+  format: formatter.Formatter,
+) -> Result(Nil, String) {
+  install_formatter_on(default_handler_id, format)
+}
+
+/// Install birch as the formatter on a specific :logger handler.
+///
+/// Use this when you have multiple :logger handlers and want birch
+/// formatting on a specific one.
+///
+/// ## Example
+///
+/// ```gleam
+/// import birch/erlang_logger
+/// import birch/formatter
+///
+/// // Install on a custom handler
+/// erlang_logger.install_formatter_on("my_file_handler", formatter.human_readable)
+/// ```
+pub fn install_formatter_on(
+  handler_id: String,
+  format: formatter.Formatter,
+) -> Result(Nil, String) {
+  do_install_formatter(handler_id, make_format_callback(format))
+}
+
+/// Remove birch as the formatter from the default :logger handler,
+/// restoring OTP's default formatter.
+///
+/// Returns `Ok(Nil)` on success, or `Error(reason)` if removal fails.
+pub fn remove_formatter() -> Result(Nil, String) {
+  remove_formatter_from(default_handler_id)
+}
+
+/// Remove birch as the formatter from a specific :logger handler,
+/// restoring OTP's default formatter.
+pub fn remove_formatter_from(handler_id: String) -> Result(Nil, String) {
+  do_remove_formatter(handler_id)
+}
+
+/// Build the format callback that the Erlang formatter will invoke.
+fn make_format_callback(format: formatter.Formatter) -> FormatCallback {
+  fn(
+    timestamp: String,
+    lvl: Level,
+    logger_name: String,
+    message: String,
+    metadata: record.Metadata,
+  ) -> String {
+    record.new(
+      timestamp: timestamp,
+      level: lvl,
+      logger_name: logger_name,
+      message: message,
+      metadata: metadata,
+    )
+    |> format
+  }
+}
+
+// ============================================================================
+// Deprecated: Legacy Handler-Based API
+// ============================================================================
+
+/// The handler ID previously used when installing birch as a :logger handler.
+@deprecated("Use install_formatter() instead of install_logger_handler()")
+pub const legacy_handler_id = "birch"
+
+/// Install birch as an Erlang :logger handler.
+@deprecated("Use install_formatter() instead")
 pub fn install_logger_handler() -> Result(Nil, String) {
-  install_logger_handler_with_id(default_handler_id)
+  install_formatter()
 }
 
 /// Install birch as an Erlang :logger handler with a custom handler ID.
-///
-/// This is useful if you want to install multiple instances or avoid conflicts
-/// with other handlers.
+@deprecated("Use install_formatter_on() instead")
 pub fn install_logger_handler_with_id(handler_id: String) -> Result(Nil, String) {
-  do_install_logger_handler(handler_id)
+  install_formatter_on(handler_id, formatter.human_readable)
 }
 
 /// Uninstall the birch :logger handler.
-///
-/// Removes the handler installed by `install_logger_handler()`.
-/// Returns `Ok(Nil)` on success, or `Error(reason)` if removal fails.
+@deprecated("Use remove_formatter() instead")
 pub fn uninstall_logger_handler() -> Result(Nil, String) {
-  uninstall_logger_handler_with_id(default_handler_id)
+  remove_formatter()
 }
 
 /// Uninstall a birch :logger handler with a specific ID.
+@deprecated("Use remove_formatter_from() instead")
 pub fn uninstall_logger_handler_with_id(
   handler_id: String,
 ) -> Result(Nil, String) {
-  do_uninstall_logger_handler(handler_id)
+  remove_formatter_from(handler_id)
 }
 
 // ============================================================================
@@ -238,12 +404,20 @@ pub fn uninstall_logger_handler_with_id(
 @external(javascript, "../birch_erlang_logger_ffi.mjs", "logger_log")
 fn do_logger_log(level: ErlangLevel, message: String) -> Nil
 
-/// Install birch as a :logger handler.
-@external(erlang, "birch_erlang_logger_ffi", "install_handler")
-@external(javascript, "../birch_erlang_logger_ffi.mjs", "install_handler")
-fn do_install_logger_handler(handler_id: String) -> Result(Nil, String)
+/// Check if the birch formatter is already configured on the default handler.
+@external(erlang, "birch_erlang_logger_ffi", "is_formatter_configured")
+@external(javascript, "../birch_erlang_logger_ffi.mjs", "is_formatter_configured")
+fn do_is_formatter_configured() -> Bool
 
-/// Uninstall a :logger handler.
-@external(erlang, "birch_erlang_logger_ffi", "uninstall_handler")
-@external(javascript, "../birch_erlang_logger_ffi.mjs", "uninstall_handler")
-fn do_uninstall_logger_handler(handler_id: String) -> Result(Nil, String)
+/// Install birch as a :logger formatter on the specified handler.
+@external(erlang, "birch_erlang_logger_ffi", "install_formatter")
+@external(javascript, "../birch_erlang_logger_ffi.mjs", "install_formatter")
+fn do_install_formatter(
+  handler_id: String,
+  format_fn: FormatCallback,
+) -> Result(Nil, String)
+
+/// Remove birch formatter from a :logger handler, restoring defaults.
+@external(erlang, "birch_erlang_logger_ffi", "remove_formatter")
+@external(javascript, "../birch_erlang_logger_ffi.mjs", "remove_formatter")
+fn do_remove_formatter(handler_id: String) -> Result(Nil, String)

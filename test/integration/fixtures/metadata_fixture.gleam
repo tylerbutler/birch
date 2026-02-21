@@ -46,6 +46,7 @@ pub fn main() {
   let db_logger =
     log.new("myapp.database")
     |> log.with_context([#("component", "database")])
+    |> log.with_handler(json.handler())
 
   logger.info(db_logger, "Database log", [#("query", "SELECT *")])
 

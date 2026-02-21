@@ -70,7 +70,7 @@ fn demo_fatal_result() {
   log.fatal_result("Critical system failure", result, [])
 }
 
-/// Demonstrate logger_error_result for named loggers.
+/// Demonstrate logger.error_result for named loggers.
 fn demo_logger_error_result() {
   log.info("--- logger_error_result ---", [])
 

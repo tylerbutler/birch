@@ -32,6 +32,10 @@ pub type SampleConfig {
 
 /// Global configuration that affects the default logger and
 /// application-wide settings.
+///
+/// **Planned breaking change:** The `sampling` field will change from
+/// `Result(SampleConfig, Nil)` to `Option(SampleConfig)` in a future release.
+/// Migrate from `Ok(config)` / `Error(Nil)` to `Some(config)` / `None`.
 pub type GlobalConfig {
   GlobalConfig(
     /// Minimum log level for the default logger
