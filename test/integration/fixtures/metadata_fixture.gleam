@@ -21,21 +21,18 @@ pub fn main() {
   ])
 
   // Basic log - should include global context
-  log.info("Basic message with global context")
+  log.info("Basic message with global context", [])
 
   // Log with additional metadata - should merge with global context
-  log.new("metadata-fixture")
-  |> log.with_handler(json.handler())
-  |> log.with_level(level.Debug)
-  |> logger.info("Message with extra metadata", [#("request_id", "req-789")])
+  log.info("Message with extra metadata", [#("request_id", "req-789")])
 
   // Test scoped context
   log.with_scope([#("scope_id", "scope-abc")], fn() {
-    log.info("Inside scoped context")
+    log.info("Inside scoped context", [])
 
     // Nested scope
     log.with_scope([#("nested", "true")], fn() {
-      log.info("Inside nested scope")
+      log.info("Inside nested scope", [])
       Nil
     })
 
@@ -43,7 +40,7 @@ pub fn main() {
   })
 
   // After scope - should not have scope context
-  log.info("After scoped context")
+  log.info("After scoped context", [])
 
   // Named logger with its own context
   let db_logger =
@@ -51,7 +48,7 @@ pub fn main() {
     |> log.with_context([#("component", "database")])
     |> log.with_handler(json.handler())
 
-  db_logger |> logger.info("Database log", [#("query", "SELECT *")])
+  logger.info(db_logger, "Database log", [#("query", "SELECT *")])
 
   // Reset config for clean state
   log.reset_config()

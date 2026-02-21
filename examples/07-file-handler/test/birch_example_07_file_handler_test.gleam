@@ -20,7 +20,7 @@ pub fn file_handler_creates_file_test() {
     file.handler(file.FileConfig(path: test_path, rotation: file.NoRotation))
 
   log.configure([log.config_handlers([h])])
-  log.info("Test message")
+  log.info("Test message", [])
 
   // Verify file was created
   simplifile.is_file(test_path)

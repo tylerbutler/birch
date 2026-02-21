@@ -14,7 +14,7 @@ pub fn forward_to_logger_creates_handler_test() {
   // Should be able to use it without error
   log.configure([log.config_handlers([handler])])
 
-  log.info("Test message through Erlang logger")
+  log.info("Test message through Erlang logger", [])
 
   log.reset_config()
 }
@@ -24,7 +24,7 @@ pub fn create_erlang_handler_test() {
 
   // Should create a valid handler
   log.configure([log.config_handlers([handler])])
-  log.info("Using example handler")
+  log.info("Using example handler", [])
   log.reset_config()
 }
 

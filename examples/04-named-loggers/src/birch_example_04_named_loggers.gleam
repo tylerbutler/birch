@@ -10,7 +10,7 @@ pub fn main() {
   // Enable debug to see more output
   log.set_level(level.Debug)
 
-  log.info("=== Named Loggers Demo ===")
+  log.info("=== Named Loggers Demo ===", [])
 
   // Create component loggers
   demo_component_loggers()
@@ -27,7 +27,7 @@ pub fn main() {
 
 /// Create loggers for different components.
 fn demo_component_loggers() {
-  log.info("--- Component Loggers ---")
+  log.info("--- Component Loggers ---", [])
 
   let db_logger = log.new("myapp.database")
   let http_logger = log.new("myapp.http")
@@ -40,7 +40,7 @@ fn demo_component_loggers() {
 
 /// Logger with persistent context.
 fn demo_logger_context() {
-  log.info("--- Logger Context ---")
+  log.info("--- Logger Context ---", [])
 
   // Create a logger with persistent context
   let worker_logger =
@@ -56,7 +56,7 @@ fn demo_logger_context() {
 
 /// Simulate a multi-component application.
 fn demo_application() {
-  log.info("--- Application Simulation ---")
+  log.info("--- Application Simulation ---", [])
 
   // Create component modules
   let db = create_database_logger()

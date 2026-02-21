@@ -11,7 +11,7 @@ import gleam/io
 import gleam/string
 
 pub fn main() {
-  log.info("=== Custom Handlers Demo ===")
+  log.info("=== Custom Handlers Demo ===", [])
 
   // Simple custom handler
   demo_simple_handler()
@@ -24,12 +24,12 @@ pub fn main() {
 
   // Reset to defaults
   log.reset_config()
-  log.info("Demo complete")
+  log.info("Demo complete", [])
 }
 
 /// Demonstrate a simple custom handler.
 fn demo_simple_handler() {
-  log.info("--- Simple Custom Handler ---")
+  log.info("--- Simple Custom Handler ---", [])
 
   let simple_handler =
     handler.new(
@@ -39,12 +39,12 @@ fn demo_simple_handler() {
     )
 
   log.configure([log.config_handlers([simple_handler])])
-  log.info("This uses a simple custom handler")
+  log.info("This uses a simple custom handler", [])
 }
 
 /// Demonstrate a custom formatter.
 fn demo_custom_format() {
-  log.info("--- Custom Formatter ---")
+  log.info("--- Custom Formatter ---", [])
 
   let custom_handler =
     handler.new(
@@ -54,15 +54,15 @@ fn demo_custom_format() {
     )
 
   log.configure([log.config_handlers([custom_handler])])
-  log.debug("Debug message")
-  log.info("Info message")
-  log.warn("Warning message")
-  log.error("Error message")
+  log.debug("Debug message", [])
+  log.info("Info message", [])
+  log.warn("Warning message", [])
+  log.error("Error message", [])
 }
 
 /// Demonstrate using multiple handlers.
 fn demo_multiple_handlers() {
-  log.info("--- Multiple Handlers ---")
+  log.info("--- Multiple Handlers ---", [])
 
   // A handler that prefixes messages
   let prefix_handler =
@@ -81,7 +81,7 @@ fn demo_multiple_handlers() {
     )
 
   log.configure([log.config_handlers([prefix_handler, upper_handler])])
-  log.info("This goes to both handlers")
+  log.info("This goes to both handlers", [])
 }
 
 /// Custom formatter that uses emoji for log levels.

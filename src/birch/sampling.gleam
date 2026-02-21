@@ -33,6 +33,7 @@ import birch/config.{type SampleConfig, SampleConfig}
 import birch/level.{type Level}
 import gleam/float
 import gleam/int
+import gleam/option.{type Option, None, Some}
 import gleam/time/timestamp
 
 // Note: We use float.random() from stdlib for probabilistic sampling
@@ -83,14 +84,14 @@ pub fn should_sample(sample_config: SampleConfig, log_level: Level) -> Bool {
 
 /// Check if a log should be sampled, given an optional SampleConfig.
 ///
-/// If no config is provided (Error), always returns True (log everything).
+/// If no config is provided (None), always returns True (log everything).
 pub fn should_sample_with_config(
-  maybe_config: Result(SampleConfig, Nil),
+  maybe_config: Option(SampleConfig),
   log_level: Level,
 ) -> Bool {
   case maybe_config {
-    Error(Nil) -> True
-    Ok(sample_config) -> should_sample(sample_config, log_level)
+    None -> True
+    Some(sample_config) -> should_sample(sample_config, log_level)
   }
 }
 

@@ -7,7 +7,7 @@ import birch/handler
 import birch/logger.{type Logger}
 
 pub fn main() {
-  log.info("=== Testing Support Demo ===")
+  log.info("=== Testing Support Demo ===", [])
 
   // Fixed timestamps
   demo_fixed_timestamp()
@@ -19,12 +19,12 @@ pub fn main() {
   demo_null_handler()
 
   log.reset_config()
-  log.info("Demo complete")
+  log.info("Demo complete", [])
 }
 
 /// Demonstrate fixed timestamps for testing.
 fn demo_fixed_timestamp() {
-  log.info("--- Fixed Timestamps ---")
+  log.info("--- Fixed Timestamps ---", [])
 
   let test_logger =
     log.new("test")
@@ -40,7 +40,7 @@ fn demo_fixed_timestamp() {
 
 /// Demonstrate caller ID capture.
 fn demo_caller_id() {
-  log.info("--- Caller ID Capture ---")
+  log.info("--- Caller ID Capture ---", [])
 
   let debug_logger =
     log.new("debug")
@@ -56,21 +56,21 @@ fn demo_caller_id() {
 
 /// Demonstrate null handler for silent testing.
 fn demo_null_handler() {
-  log.info("--- Null Handler ---")
+  log.info("--- Null Handler ---", [])
 
   // Save current config
-  log.info("About to configure null handler...")
+  log.info("About to configure null handler...", [])
 
   // Configure with null handler
   log.configure([log.config_handlers([handler.null()])])
 
   // These logs are silenced
-  log.info("This message is silenced")
-  log.error("Even errors are silenced")
+  log.info("This message is silenced", [])
+  log.error("Even errors are silenced", [])
 
   // Restore default config
   log.reset_config()
-  log.info("Logging restored after null handler demo")
+  log.info("Logging restored after null handler demo", [])
 }
 
 /// Create a logger for testing with deterministic output.

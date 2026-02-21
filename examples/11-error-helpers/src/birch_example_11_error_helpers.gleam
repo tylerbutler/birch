@@ -7,7 +7,7 @@ import birch/logger
 import simplifile
 
 pub fn main() {
-  log.info("=== Error Helpers Demo ===")
+  log.info("=== Error Helpers Demo ===", [])
 
   // Basic error_result
   demo_error_result()
@@ -22,38 +22,37 @@ pub fn main() {
   demo_logger_error_result()
 
   log.reset_config()
-  log.info("Demo complete")
+  log.info("Demo complete", [])
 }
 
 /// Demonstrate basic error_result usage.
 fn demo_error_result() {
-  log.info("--- Basic error_result ---")
+  log.info("--- Basic error_result ---", [])
 
   // Simulate a file operation that fails
   let result = simplifile.read("/nonexistent/file.txt")
 
   case result {
-    Ok(content) -> log.info("File content: " <> content)
+    Ok(content) -> log.info("File content: " <> content, [])
     Error(_) -> {
       // The error value is automatically extracted and logged
-      log.error_result("Failed to read file", result)
+      log.error_result("Failed to read file", result, [])
     }
   }
 }
 
 /// Demonstrate error_result with additional metadata.
 fn demo_error_result_with_metadata() {
-  log.info("--- error_result with metadata ---")
+  log.info("--- error_result with metadata ---", [])
 
   let path = "/another/missing/file.txt"
   let result = simplifile.read(path)
 
-  let lgr = log.new("app")
   case result {
     Ok(_) -> Nil
     Error(_) -> {
       // Add context about what we were trying to do
-      logger.error_result(lgr, "Configuration load failed", result, [
+      log.error_result("Configuration load failed", result, [
         #("path", path),
         #("fallback", "using_defaults"),
       ])
@@ -63,17 +62,17 @@ fn demo_error_result_with_metadata() {
 
 /// Demonstrate fatal_result for critical errors.
 fn demo_fatal_result() {
-  log.info("--- fatal_result ---")
+  log.info("--- fatal_result ---", [])
 
   // Simulate a critical failure
   let result: Result(String, String) = Error("Database connection lost")
 
-  log.fatal_result("Critical system failure", result)
+  log.fatal_result("Critical system failure", result, [])
 }
 
 /// Demonstrate logger.error_result for named loggers.
 fn demo_logger_error_result() {
-  log.info("--- logger.error_result ---")
+  log.info("--- logger_error_result ---", [])
 
   let db_logger =
     log.new("myapp.database")
@@ -90,14 +89,13 @@ fn demo_logger_error_result() {
 
 /// Example of using error_result in a real function.
 pub fn load_config(path: String) -> Result(String, String) {
-  let lgr = log.new("app")
   case simplifile.read(path) {
     Ok(content) -> {
-      logger.info(lgr, "Configuration loaded", [#("path", path)])
+      log.info("Configuration loaded", [#("path", path)])
       Ok(content)
     }
     Error(_) as result -> {
-      logger.error_result(lgr, "Failed to load configuration", result, [
+      log.error_result("Failed to load configuration", result, [
         #("path", path),
       ])
       Error("Failed to load configuration from " <> path)

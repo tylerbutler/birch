@@ -3,13 +3,12 @@
 //// Demonstrates JSON output for log aggregation systems.
 
 import birch as log
-import birch/handler.{type Handler}
+import birch/handler
 import birch/handler/json
-import birch/logger
 import gleam/json as gjson
 
 pub fn main() {
-  log.info("=== JSON Handler Demo ===")
+  log.info("=== JSON Handler Demo ===", [])
 
   // Default JSON handler
   demo_default_json()
@@ -22,17 +21,16 @@ pub fn main() {
 
   // Reset to defaults
   log.reset_config()
-  log.info("Demo complete")
+  log.info("Demo complete", [])
 }
 
 /// Demonstrate the default JSON handler.
 fn demo_default_json() {
   log.configure([log.config_handlers([json.handler()])])
 
-  let lgr = log.new("app")
-  log.info("Default JSON format")
-  logger.info(lgr, "With metadata", [#("user_id", "12345"), #("action", "login")])
-  log.error("Error message")
+  log.info("Default JSON format", [])
+  log.info("With metadata", [#("user_id", "12345"), #("action", "login")])
+  log.error("Error message", [])
 }
 
 /// Demonstrate custom JSON with builder pattern.
@@ -52,9 +50,8 @@ fn demo_custom_json() {
 
   log.configure([log.config_handlers([custom_handler])])
 
-  let lgr = log.new("app")
-  log.info("Custom JSON with service info")
-  logger.info(lgr, "Request processed", [#("status", "200"), #("duration_ms", "42")])
+  log.info("Custom JSON with service info", [])
+  log.info("Request processed", [#("status", "200"), #("duration_ms", "42")])
 }
 
 /// Demonstrate minimal JSON format.
@@ -70,9 +67,8 @@ fn demo_minimal_json() {
 
   log.configure([log.config_handlers([minimal_handler])])
 
-  let lgr = log.new("app")
-  log.info("Minimal JSON (no logger name or metadata)")
-  logger.info(lgr, "Metadata is ignored", [#("key", "value")])
+  log.info("Minimal JSON (no logger name or metadata)", [])
+  log.info("Metadata is ignored", [#("key", "value")])
 }
 
 /// Create a JSON handler for a microservice.
@@ -81,7 +77,7 @@ pub fn create_service_json_handler(
   service: String,
   version: String,
   env: String,
-) -> Handler {
+) -> handler.Handler {
   json.standard_builder()
   |> json.add_custom(fn(_record) {
     [

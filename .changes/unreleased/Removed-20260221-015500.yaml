@@ -1,0 +1,12 @@
+kind: Removed
+body: |-
+    Remove deprecated APIs planned for removal before 1.0.
+
+    Type aliases removed from `birch` module: `LogLevel`, `LogHandler`, `LogMetadata`, `TimestampFormatter`, `Config`. Use `birch/level.Level`, `birch/handler.Handler`, `birch/record.Metadata`, `birch/logger.TimestampFormatter`, and `birch/config.GlobalConfig` directly instead.
+
+    Logger wrapper functions removed from `birch` module: `logger_log`, `logger_trace`, `logger_debug`, `logger_info`, `logger_warn`, `logger_error`, `logger_fatal`, `logger_error_result`, `logger_fatal_result`. Use `birch/logger` functions directly instead.
+
+    Metadata suffix variants removed: `trace_m`, `debug_m`, `info_m`, `warn_m`, `error_m`, `fatal_m`, `error_result_m`, `fatal_result_m`. The base functions now always accept a metadata parameter (pass `[]` for no metadata).
+
+    Configuration helpers removed: `config.empty()` and `config.get_on_error()`. Use `birch.default_config()` or construct `GlobalConfig` directly; access `config.on_error` field directly.
+time: 2026-02-21T01:55:00.000000000Z

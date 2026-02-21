@@ -28,8 +28,8 @@ pub fn silence_logging_test() {
   testing_support.silence_logging()
 
   // Should not crash even when silenced
-  log.info("Silenced message")
-  log.error("Silenced error")
+  log.info("Silenced message", [])
+  log.error("Silenced error", [])
 
   // Restore
   log.reset_config()

@@ -8,7 +8,7 @@
 //// import birch as log
 ////
 //// pub fn main() {
-////   log.info("Application starting")
+////   log.info("Application starting", [])
 ////   log.debug("Debug info", [#("key", "value")])
 //// }
 //// ```
@@ -17,9 +17,10 @@
 ////
 //// ```gleam
 //// import birch as log
+//// import birch/logger
 ////
-//// let logger = log.new("myapp.database")
-//// logger |> log.logger_info("Connected", [])
+//// let lgr = log.new("myapp.database")
+//// lgr |> logger.info("Connected", [])
 //// ```
 ////
 //// ## Configuration
@@ -50,31 +51,6 @@ import birch/record.{type Metadata}
 import birch/sampling
 import birch/scope
 import gleam/option.{None}
-
-// Re-export types for convenience
-@deprecated("Use birch/level.Level directly instead")
-pub type LogLevel =
-  Level
-
-@deprecated("Use birch/handler.Handler directly instead")
-pub type LogHandler =
-  Handler
-
-@deprecated("Use birch/record.Metadata directly instead")
-pub type LogMetadata =
-  Metadata
-
-/// Custom timestamp formatter function type.
-/// Re-exported from logger module for convenience.
-@deprecated("Use birch/logger.TimestampFormatter directly instead")
-pub type TimestampFormatter =
-  logger.TimestampFormatter
-
-/// Global configuration for the default logger.
-/// Re-exported from config module for convenience.
-@deprecated("Use birch/config.GlobalConfig directly instead")
-pub type Config =
-  GlobalConfig
 
 // ============================================================================
 // Global Configuration API
@@ -210,7 +186,7 @@ pub fn default_config() -> GlobalConfig {
     handlers: default_handlers(),
     context: [],
     on_error: None,
-    sampling: Error(Nil),
+    sampling: None,
   )
 }
 
@@ -328,57 +304,6 @@ pub fn without_caller_id_capture(lgr: Logger) -> Logger {
 }
 
 // ============================================================================
-// Logger-specific Logging Functions
-// ============================================================================
-
-/// Log a message at the specified level using a specific logger.
-@deprecated("Use birch/logger.log() directly instead")
-pub fn logger_log(
-  lgr: Logger,
-  log_level: Level,
-  message: String,
-  metadata: Metadata,
-) -> Nil {
-  logger.log(lgr, log_level, message, metadata)
-}
-
-/// Log a trace message using a specific logger.
-@deprecated("Use birch/logger.trace() directly instead")
-pub fn logger_trace(lgr: Logger, message: String, metadata: Metadata) -> Nil {
-  logger.trace(lgr, message, metadata)
-}
-
-/// Log a debug message using a specific logger.
-@deprecated("Use birch/logger.debug() directly instead")
-pub fn logger_debug(lgr: Logger, message: String, metadata: Metadata) -> Nil {
-  logger.debug(lgr, message, metadata)
-}
-
-/// Log an info message using a specific logger.
-@deprecated("Use birch/logger.info() directly instead")
-pub fn logger_info(lgr: Logger, message: String, metadata: Metadata) -> Nil {
-  logger.info(lgr, message, metadata)
-}
-
-/// Log a warning message using a specific logger.
-@deprecated("Use birch/logger.warn() directly instead")
-pub fn logger_warn(lgr: Logger, message: String, metadata: Metadata) -> Nil {
-  logger.warn(lgr, message, metadata)
-}
-
-/// Log an error message using a specific logger.
-@deprecated("Use birch/logger.error() directly instead")
-pub fn logger_error(lgr: Logger, message: String, metadata: Metadata) -> Nil {
-  logger.error(lgr, message, metadata)
-}
-
-/// Log a fatal message using a specific logger.
-@deprecated("Use birch/logger.fatal() directly instead")
-pub fn logger_fatal(lgr: Logger, message: String, metadata: Metadata) -> Nil {
-  logger.fatal(lgr, message, metadata)
-}
-
-// ============================================================================
 // Simple Module-Level Logging Functions
 // ============================================================================
 
@@ -389,16 +314,7 @@ fn should_sample(log_level: Level) -> Bool {
 }
 
 /// Log a trace message using the default logger.
-pub fn trace(message: String) -> Nil {
-  case should_sample(level.Trace) {
-    False -> Nil
-    True -> logger.trace(default_logger(), message, [])
-  }
-}
-
-/// Log a trace message with metadata using the default logger.
-@deprecated("Use trace(message, metadata) instead - the _m suffix variants are being removed")
-pub fn trace_m(message: String, metadata: Metadata) -> Nil {
+pub fn trace(message: String, metadata: Metadata) -> Nil {
   case should_sample(level.Trace) {
     False -> Nil
     True -> logger.trace(default_logger(), message, metadata)
@@ -406,16 +322,7 @@ pub fn trace_m(message: String, metadata: Metadata) -> Nil {
 }
 
 /// Log a debug message using the default logger.
-pub fn debug(message: String) -> Nil {
-  case should_sample(level.Debug) {
-    False -> Nil
-    True -> logger.debug(default_logger(), message, [])
-  }
-}
-
-/// Log a debug message with metadata using the default logger.
-@deprecated("Use debug(message, metadata) instead - the _m suffix variants are being removed")
-pub fn debug_m(message: String, metadata: Metadata) -> Nil {
+pub fn debug(message: String, metadata: Metadata) -> Nil {
   case should_sample(level.Debug) {
     False -> Nil
     True -> logger.debug(default_logger(), message, metadata)
@@ -423,16 +330,7 @@ pub fn debug_m(message: String, metadata: Metadata) -> Nil {
 }
 
 /// Log an info message using the default logger.
-pub fn info(message: String) -> Nil {
-  case should_sample(level.Info) {
-    False -> Nil
-    True -> logger.info(default_logger(), message, [])
-  }
-}
-
-/// Log an info message with metadata using the default logger.
-@deprecated("Use info(message, metadata) instead - the _m suffix variants are being removed")
-pub fn info_m(message: String, metadata: Metadata) -> Nil {
+pub fn info(message: String, metadata: Metadata) -> Nil {
   case should_sample(level.Info) {
     False -> Nil
     True -> logger.info(default_logger(), message, metadata)
@@ -440,16 +338,7 @@ pub fn info_m(message: String, metadata: Metadata) -> Nil {
 }
 
 /// Log a warning message using the default logger.
-pub fn warn(message: String) -> Nil {
-  case should_sample(level.Warn) {
-    False -> Nil
-    True -> logger.warn(default_logger(), message, [])
-  }
-}
-
-/// Log a warning message with metadata using the default logger.
-@deprecated("Use warn(message, metadata) instead - the _m suffix variants are being removed")
-pub fn warn_m(message: String, metadata: Metadata) -> Nil {
+pub fn warn(message: String, metadata: Metadata) -> Nil {
   case should_sample(level.Warn) {
     False -> Nil
     True -> logger.warn(default_logger(), message, metadata)
@@ -457,16 +346,7 @@ pub fn warn_m(message: String, metadata: Metadata) -> Nil {
 }
 
 /// Log an error message using the default logger.
-pub fn error(message: String) -> Nil {
-  case should_sample(level.Err) {
-    False -> Nil
-    True -> logger.error(default_logger(), message, [])
-  }
-}
-
-/// Log an error message with metadata using the default logger.
-@deprecated("Use error(message, metadata) instead - the _m suffix variants are being removed")
-pub fn error_m(message: String, metadata: Metadata) -> Nil {
+pub fn error(message: String, metadata: Metadata) -> Nil {
   case should_sample(level.Err) {
     False -> Nil
     True -> logger.error(default_logger(), message, metadata)
@@ -474,16 +354,7 @@ pub fn error_m(message: String, metadata: Metadata) -> Nil {
 }
 
 /// Log a fatal message using the default logger.
-pub fn fatal(message: String) -> Nil {
-  case should_sample(level.Fatal) {
-    False -> Nil
-    True -> logger.fatal(default_logger(), message, [])
-  }
-}
-
-/// Log a fatal message with metadata using the default logger.
-@deprecated("Use fatal(message, metadata) instead - the _m suffix variants are being removed")
-pub fn fatal_m(message: String, metadata: Metadata) -> Nil {
+pub fn fatal(message: String, metadata: Metadata) -> Nil {
   case should_sample(level.Fatal) {
     False -> Nil
     True -> logger.fatal(default_logger(), message, metadata)
@@ -528,21 +399,12 @@ pub fn info_lazy(message_fn: fn() -> String) -> Nil {
 /// case file.read("config.json") {
 ///   Ok(content) -> parse_config(content)
 ///   Error(_) as result -> {
-///     log.error_result("Failed to read config file", result)
+///     log.error_result("Failed to read config file", result, [])
 ///     use_defaults()
 ///   }
 /// }
 /// ```
-pub fn error_result(message: String, result: Result(a, e)) -> Nil {
-  case should_sample(level.Err) {
-    False -> Nil
-    True -> logger.error_result(default_logger(), message, result, [])
-  }
-}
-
-/// Log an error message with an associated Result and metadata.
-@deprecated("Use error_result(message, result, metadata) instead - the _m suffix variants are being removed")
-pub fn error_result_m(
+pub fn error_result(
   message: String,
   result: Result(a, e),
   metadata: Metadata,
@@ -557,16 +419,7 @@ pub fn error_result_m(
 ///
 /// If the result is an Error, the error value is automatically included
 /// in the metadata under the "error" key.
-pub fn fatal_result(message: String, result: Result(a, e)) -> Nil {
-  case should_sample(level.Fatal) {
-    False -> Nil
-    True -> logger.fatal_result(default_logger(), message, result, [])
-  }
-}
-
-/// Log a fatal message with an associated Result and metadata.
-@deprecated("Use fatal_result(message, result, metadata) instead - the _m suffix variants are being removed")
-pub fn fatal_result_m(
+pub fn fatal_result(
   message: String,
   result: Result(a, e),
   metadata: Metadata,
@@ -575,28 +428,6 @@ pub fn fatal_result_m(
     False -> Nil
     True -> logger.fatal_result(default_logger(), message, result, metadata)
   }
-}
-
-/// Log an error message with an associated Result using a specific logger.
-@deprecated("Use birch/logger.error_result() directly instead")
-pub fn logger_error_result(
-  lgr: Logger,
-  message: String,
-  result: Result(a, e),
-  metadata: Metadata,
-) -> Nil {
-  logger.error_result(lgr, message, result, metadata)
-}
-
-/// Log a fatal message with an associated Result using a specific logger.
-@deprecated("Use birch/logger.fatal_result() directly instead")
-pub fn logger_fatal_result(
-  lgr: Logger,
-  message: String,
-  result: Result(a, e),
-  metadata: Metadata,
-) -> Nil {
-  logger.fatal_result(lgr, message, result, metadata)
 }
 
 // ============================================================================
@@ -619,9 +450,9 @@ pub fn logger_fatal_result(
 /// pub fn handle_request(request_id: String) {
 ///   log.with_scope([#("request_id", request_id)], fn() {
 ///     // All logs in this block include request_id
-///     log.info("processing request")
+///     log.info("processing request", [])
 ///     do_work()
-///     log.info("request complete")
+///     log.info("request complete", [])
 ///   })
 /// }
 /// ```

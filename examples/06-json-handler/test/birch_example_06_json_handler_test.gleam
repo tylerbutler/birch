@@ -18,6 +18,6 @@ pub fn logging_with_json_handler_test() {
   // Configure with JSON handler and log
   log.reset_config()
   log.configure([log.config_handlers([json_handler.create_service_json_handler("test", "0.0.0", "test")])])
-  log.info("Test message")
+  log.info("Test message", [])
   |> should.equal(Nil)
 }

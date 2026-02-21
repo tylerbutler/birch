@@ -20,12 +20,12 @@ pub fn main() {
     log.config_level(level.Trace),
   ])
 
-  log.trace("Trace level message")
-  log.debug("Debug level message")
-  log.info("Info level message")
-  log.warn("Warning level message")
-  log.error("Error level message")
-  log.fatal("Fatal level message")
+  log.trace("Trace level message", [])
+  log.debug("Debug level message", [])
+  log.info("Info level message", [])
+  log.warn("Warning level message", [])
+  log.error("Error level message", [])
+  log.fatal("Fatal level message", [])
 
   // =========================================================================
   // Simple Style without timestamps
@@ -39,12 +39,12 @@ pub fn main() {
     log.config_level(level.Trace),
   ])
 
-  log.trace("Trace level message")
-  log.debug("Debug level message")
-  log.info("Info level message")
-  log.warn("Warning level message")
-  log.error("Error level message")
-  log.fatal("Fatal level message")
+  log.trace("Trace level message", [])
+  log.debug("Debug level message", [])
+  log.info("Info level message", [])
+  log.warn("Warning level message", [])
+  log.error("Error level message", [])
+  log.fatal("Fatal level message", [])
 
   // =========================================================================
   // Fancy Style (compact with icons)
@@ -56,12 +56,12 @@ pub fn main() {
     log.config_level(level.Trace),
   ])
 
-  log.trace("Trace level message")
-  log.debug("Debug level message")
-  log.info("Info level message")
-  log.warn("Warning level message")
-  log.error("Error level message")
-  log.fatal("Fatal level message")
+  log.trace("Trace level message", [])
+  log.debug("Debug level message", [])
+  log.info("Info level message", [])
+  log.warn("Warning level message", [])
+  log.error("Error level message", [])
+  log.fatal("Fatal level message", [])
 
   // =========================================================================
   // Fancy Style with timestamps
@@ -75,12 +75,12 @@ pub fn main() {
     log.config_level(level.Trace),
   ])
 
-  log.trace("Trace level message")
-  log.debug("Debug level message")
-  log.info("Info level message")
-  log.warn("Warning level message")
-  log.error("Error level message")
-  log.fatal("Fatal level message")
+  log.trace("Trace level message", [])
+  log.debug("Debug level message", [])
+  log.info("Info level message", [])
+  log.warn("Warning level message", [])
+  log.error("Error level message", [])
+  log.fatal("Fatal level message", [])
 
   // =========================================================================
   // Badge Style
@@ -97,12 +97,12 @@ pub fn main() {
     log.config_level(level.Trace),
   ])
 
-  log.trace("Trace with badge")
-  log.debug("Debug with badge")
-  log.info("Info with badge")
-  log.warn("Warning with badge")
-  log.error("Error with badge")
-  log.fatal("Fatal with badge")
+  log.trace("Trace with badge", [])
+  log.debug("Debug with badge", [])
+  log.info("Info with badge", [])
+  log.warn("Warning with badge", [])
+  log.error("Error with badge", [])
+  log.fatal("Fatal with badge", [])
 
   // =========================================================================
   // Label Style without icons
@@ -121,12 +121,12 @@ pub fn main() {
     log.config_level(level.Trace),
   ])
 
-  log.trace("Trace level message")
-  log.debug("Debug level message")
-  log.info("Info level message")
-  log.warn("Warning level message")
-  log.error("Error level message")
-  log.fatal("Fatal level message")
+  log.trace("Trace level message", [])
+  log.debug("Debug level message", [])
+  log.info("Info level message", [])
+  log.warn("Warning level message", [])
+  log.error("Error level message", [])
+  log.fatal("Fatal level message", [])
 
   // =========================================================================
   // With Metadata
@@ -138,12 +138,12 @@ pub fn main() {
     log.config_level(level.Info),
   ])
 
-  log.info_m("Request received", [#("method", "GET"), #("path", "/api/users")])
-  log.warn_m("Slow query detected", [
+  log.info("Request received", [#("method", "GET"), #("path", "/api/users")])
+  log.warn("Slow query detected", [
     #("duration_ms", "1523"),
     #("table", "users"),
   ])
-  log.error_m("Connection failed", [
+  log.error("Connection failed", [
     #("host", "db.example.com"),
     #("port", "5432"),
   ])
@@ -275,12 +275,12 @@ pub fn main() {
     log.config_level(level.Trace),
   ])
 
-  log.trace("Trace with emoji")
-  log.debug("Debug with emoji")
-  log.info("Info with emoji")
-  log.warn("Warning with emoji")
-  log.error("Error with emoji")
-  log.fatal("Fatal with emoji")
+  log.trace("Trace with emoji", [])
+  log.debug("Debug with emoji", [])
+  log.info("Info with emoji", [])
+  log.warn("Warning with emoji", [])
+  log.error("Error with emoji", [])
+  log.fatal("Fatal with emoji", [])
 
   // =========================================================================
   // No Colors (for piping/redirection)
@@ -295,12 +295,12 @@ pub fn main() {
     log.config_level(level.Trace),
   ])
 
-  log.trace("Trace level message")
-  log.debug("Debug level message")
-  log.info("Info level message")
-  log.warn("Warning level message")
-  log.error("Error level message")
-  log.fatal("Fatal level message")
+  log.trace("Trace level message", [])
+  log.debug("Debug level message", [])
+  log.info("Info level message", [])
+  log.warn("Warning level message", [])
+  log.error("Error level message", [])
+  log.fatal("Fatal level message", [])
 
   // =========================================================================
   // Auto-Indent from Scopes
@@ -318,29 +318,29 @@ pub fn main() {
     log.config_level(level.Info),
   ])
 
-  log.info("Outside any scope - no indentation")
+  log.info("Outside any scope - no indentation", [])
 
   log.with_scope([#("request_id", "req-123")], fn() {
-    log.info("Level 1 scope - indented once")
+    log.info("Level 1 scope - indented once", [])
 
     log.with_scope([#("step", "validation")], fn() {
-      log.info("Level 2 scope - indented twice")
-      log.warn("Warnings are also indented at level 2")
+      log.info("Level 2 scope - indented twice", [])
+      log.warn("Warnings are also indented at level 2", [])
 
       log.with_scope([#("substep", "schema_check")], fn() {
-        log.info("Level 3 scope - indented three times")
+        log.info("Level 3 scope - indented three times", [])
         Nil
       })
 
-      log.info("Back to level 2")
+      log.info("Back to level 2", [])
       Nil
     })
 
-    log.info("Back to level 1")
+    log.info("Back to level 1", [])
     Nil
   })
 
-  log.info("Back outside scope - no indentation")
+  log.info("Back outside scope - no indentation", [])
 
   // Reset
   log.reset_config()

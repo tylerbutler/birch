@@ -22,7 +22,7 @@ pub fn create_http_logger_test() {
 }
 
 pub fn process_with_logger_test() {
-  let logger = log.new("test")
-  named_loggers.process_with_logger(logger, "hello")
+  let lgr = log.new("test")
+  named_loggers.process_with_logger(lgr, "hello")
   |> should.equal("processed: hello")
 }

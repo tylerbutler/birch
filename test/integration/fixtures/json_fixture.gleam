@@ -10,7 +10,6 @@
 import birch as log
 import birch/handler/json
 import birch/level
-import birch/logger
 
 pub fn main() {
   // Configure with JSON handler
@@ -20,16 +19,13 @@ pub fn main() {
   ])
 
   // Log at various levels
-  log.debug("JSON debug message")
-  log.info("JSON info message")
-  log.warn("JSON warn message")
-  log.error("JSON error message")
+  log.debug("JSON debug message", [])
+  log.info("JSON info message", [])
+  log.warn("JSON warn message", [])
+  log.error("JSON error message", [])
 
   // Log with metadata - should appear as additional JSON fields
-  log.new("json-fixture")
-  |> log.with_handler(json.handler())
-  |> log.with_level(level.Debug)
-  |> logger.info("JSON with metadata", [
+  log.info("JSON with metadata", [
     #("transaction_id", "txn-456"),
     #("amount", "100.50"),
   ])
