@@ -1,6 +1,6 @@
 kind: Added
 body: |-
-    New formatter API in `birch/erlang_logger` for integrating with BEAM's `:logger`.
+    Formatter API in `birch/erlang_logger`
 
     - `setup()` and `setup_with_config(config)` — configure birch formatting on the default `:logger` handler. Formatting is also set up automatically on first use via `ensure_formatter_configured()`.
     - `install_formatter()`, `install_formatter_with(format)`, `install_formatter_on(handler_id, format)` — install birch formatting on specific `:logger` handlers.
