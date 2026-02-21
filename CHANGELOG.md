@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.3.0 - 2026-02-21
+
+
+#### Added
+
+##### Formatter API in `birch/erlang_logger`
+
+- `setup()` and `setup_with_config(config)` — configure birch formatting on the default `:logger` handler. Formatting is also set up automatically on first use via `ensure_formatter_configured()`.
+- `install_formatter()`, `install_formatter_with(format)`, `install_formatter_on(handler_id, format)` — install birch formatting on specific `:logger` handlers.
+- `remove_formatter()`, `remove_formatter_from(handler_id)` — restore OTP default formatting.
+- `console.build_format_fn(config)` — create a standalone formatter closure from a `ConsoleConfig`, useful for custom `:logger` configurations.
+
+
+#### Changed
+
+##### Default to OTP `:logger` on Erlang
+
+Logs are now routed through `:logger` instead of being written directly to the console. birch controls how log messages are formatted (timestamps, colors, metadata) while `:logger` controls where they go (console, file, etc.). This means birch-formatted output now applies to OTP and library log events too, giving you consistent formatting across your entire application.
+
+The `default_handler_id` constant changed from `"birch"` to `"default"`. The old value is still available as the deprecated `legacy_handler_id`.
+
+The JavaScript target is unchanged and continues using the console handler with colors.
+
+##### Use BEAM formatter callback instead of handler callback for `:logger` integration
+
+birch plugs into `:logger` as a **formatter** rather than a **handler**. This means your existing BEAM handler configuration (console, file, etc.) stays in control of output, and birch just handles how messages look. This is a simpler, more compatible approach that works better alongside other OTP logging tools.
+
+See the new `install_formatter()` / `remove_formatter()` functions in `birch/erlang_logger`.
+
+
+#### Deprecated
+
+##### Legacy API aliases and wrappers
+
+The following are deprecated and will be removed in 1.0:
+- **Type aliases**: `LogLevel`, `LogHandler`, `LogMetadata`, `TimestampFormatter`, `Config` — use the underlying types directly.
+- **Logger wrapper functions**: `logger_info`, `logger_debug`, etc. — use the logger methods directly.
+- **`_m` suffix variants**: `info_m`, `debug_m`, etc. — use the standard functions with metadata parameter.
+- **Other**: `config.empty()`, `config.get_on_error()`, `erlang_logger.erlang_level_to_atom()`.
+
+##### Handler-based `:logger` functions in `birch/erlang_logger`
+
+Replace `install_logger_handler()` and `uninstall_logger_handler()` (and their `_with_id` variants) with `install_formatter()` / `remove_formatter()`. These will be removed in 1.0.
+
+
 ## v0.2.1 - 2026-02-15
 
 ### Features
