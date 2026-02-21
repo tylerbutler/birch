@@ -1,8 +1,8 @@
 kind: Changed
 body: |-
-    On Erlang, birch now uses OTP's built-in `:logger` system by default.
+    Default to OTP `:logger` on Erlang
 
-    Logs are routed through `:logger` instead of being written directly to the console. birch controls how log messages are formatted (timestamps, colors, metadata) while `:logger` controls where they go (console, file, etc.). This means birch-formatted output now applies to OTP and library log events too, giving you consistent formatting across your entire application.
+    Logs are now routed through `:logger` instead of being written directly to the console. birch controls how log messages are formatted (timestamps, colors, metadata) while `:logger` controls where they go (console, file, etc.). This means birch-formatted output now applies to OTP and library log events too, giving you consistent formatting across your entire application.
 
     The `default_handler_id` constant changed from `"birch"` to `"default"`. The old value is still available as the deprecated `legacy_handler_id`.
 
