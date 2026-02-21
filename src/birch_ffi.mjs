@@ -662,6 +662,145 @@ export function is_scope_context_available() {
 
 
 // ============================================================================
+// Scoped Logger Override
+// ============================================================================
+
+// Scoped logger state (separate from scope context)
+let scopedLoggerState = {
+  initialized: false,
+  asyncLocalStorage: null,
+  asyncLocalStorageAvailable: false,
+  // Stack-based fallback for non-Node.js environments
+  fallbackStack: [],
+};
+
+/**
+ * Initialize the scoped logger system (lazy initialization).
+ */
+function initScopedLogger() {
+  if (scopedLoggerState.initialized) {
+    return;
+  }
+  scopedLoggerState.initialized = true;
+
+  // Try to use AsyncLocalStorage in Node.js
+  if (typeof process !== "undefined" && process.versions?.node) {
+    try {
+      const async_hooks = await_import_or_require("node:async_hooks");
+      if (async_hooks?.AsyncLocalStorage) {
+        scopedLoggerState.asyncLocalStorage = new async_hooks.AsyncLocalStorage();
+        scopedLoggerState.asyncLocalStorageAvailable = true;
+      }
+    } catch (e) {
+      scopedLoggerState.asyncLocalStorageAvailable = false;
+    }
+  }
+}
+
+/**
+ * Try to synchronously import or require a module.
+ */
+function await_import_or_require(mod) {
+  try {
+    return require(mod);
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Get the current scoped logger override.
+ * @returns {Result} Ok(Logger) if set, Error(nil) otherwise
+ */
+export function get_scoped_logger() {
+  initScopedLogger();
+
+  if (
+    scopedLoggerState.asyncLocalStorageAvailable &&
+    scopedLoggerState.asyncLocalStorage
+  ) {
+    const store = scopedLoggerState.asyncLocalStorage.getStore();
+    if (store && store.logger !== undefined) {
+      return new Ok(store.logger);
+    }
+    return new Error(undefined);
+  }
+
+  // Fallback
+  const stack = scopedLoggerState.fallbackStack;
+  if (stack.length > 0) {
+    return new Ok(stack[stack.length - 1]);
+  }
+  return new Error(undefined);
+}
+
+/**
+ * Set the scoped logger override (fallback only).
+ */
+export function set_scoped_logger(logger) {
+  initScopedLogger();
+
+  if (
+    scopedLoggerState.asyncLocalStorageAvailable &&
+    scopedLoggerState.asyncLocalStorage
+  ) {
+    // For AsyncLocalStorage, this is handled by run_with_scoped_logger
+    return undefined;
+  }
+
+  // Fallback
+  scopedLoggerState.fallbackStack.push(logger);
+  return undefined;
+}
+
+/**
+ * Clear the scoped logger override (fallback only).
+ */
+export function clear_scoped_logger() {
+  initScopedLogger();
+
+  if (
+    scopedLoggerState.asyncLocalStorageAvailable &&
+    scopedLoggerState.asyncLocalStorage
+  ) {
+    // For AsyncLocalStorage, this is handled by run_with_scoped_logger
+    return undefined;
+  }
+
+  // Fallback
+  scopedLoggerState.fallbackStack.pop();
+  return undefined;
+}
+
+/**
+ * Run a function with a scoped logger override.
+ * This properly handles AsyncLocalStorage.run() for Node.js.
+ * @param {*} logger - The Logger to use as override
+ * @param {function} callback - Function to run with the scoped logger
+ * @returns {*} The result of the callback
+ */
+export function run_with_scoped_logger(logger, callback) {
+  initScopedLogger();
+
+  if (
+    scopedLoggerState.asyncLocalStorageAvailable &&
+    scopedLoggerState.asyncLocalStorage
+  ) {
+    const newStore = { logger: logger };
+    return scopedLoggerState.asyncLocalStorage.run(newStore, callback);
+  }
+
+  // Fallback for non-Node.js environments: use stack-based approach
+  scopedLoggerState.fallbackStack.push(logger);
+  try {
+    return callback();
+  } finally {
+    scopedLoggerState.fallbackStack.pop();
+  }
+}
+
+
+// ============================================================================
 // Process/Thread ID
 // ============================================================================
 

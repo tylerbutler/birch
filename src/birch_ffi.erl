@@ -5,6 +5,7 @@
          compress_file_gzip/2, safe_call/1,
          get_scope_context/0, set_scope_context/1, is_scope_context_available/0,
          get_scope_depth/0, set_scope_depth/1,
+         get_scoped_logger/0, set_scoped_logger/1, clear_scoped_logger/0,
          get_actor_registry/0, set_actor_registry/1,
          get_caller_id/0]).
 
@@ -316,6 +317,32 @@ set_scope_depth(Depth) ->
 %% Scoped context is always available on Erlang (uses process dictionary).
 is_scope_context_available() ->
     true.
+
+
+%% ============================================================================
+%% Scoped Logger Override
+%% ============================================================================
+
+%% Key for scoped logger in process dictionary
+-define(SCOPED_LOGGER_KEY, birch_scoped_logger).
+
+%% Get the current scoped logger override.
+%% Returns {ok, Logger} if a scoped logger is set, {error, nil} otherwise.
+get_scoped_logger() ->
+    case erlang:get(?SCOPED_LOGGER_KEY) of
+        undefined -> {error, nil};
+        Logger -> {ok, Logger}
+    end.
+
+%% Set the scoped logger override.
+set_scoped_logger(Logger) ->
+    erlang:put(?SCOPED_LOGGER_KEY, Logger),
+    nil.
+
+%% Clear the scoped logger override.
+clear_scoped_logger() ->
+    erlang:erase(?SCOPED_LOGGER_KEY),
+    nil.
 
 
 %% ============================================================================
