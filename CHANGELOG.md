@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.2.2 - 2026-02-21
+
+
+#### Changed
+
+- Invert :logger integration to use BEAM's formatter callback instead of handler callback.
+
+  birch now provides a :logger **formatter** (via `format/2`) rather than installing itself as a :logger **handler**. The existing BEAM handler controls output (console, file, etc.) while birch controls formatting. This eliminates brittle manual Gleam record construction and opaque type access in the Erlang FFI.
+
+New API: `install_formatter()`, `install_formatter_with(format)`, `install_formatter_on(handler_id, format)`, `remove_formatter()`, `remove_formatter_from(handler_id)`.
+
+#### Deprecated
+
+- Deprecate type aliases (LogLevel, LogHandler, LogMetadata, TimestampFormatter, Config), logger_* wrapper functions, _m suffix variants, config.empty(), config.get_on_error(), and erlang_logger.erlang_level_to_atom(). These will be removed in 1.0.
+- Deprecate `install_logger_handler()`, `install_logger_handler_with_id()`, `uninstall_logger_handler()`, and `uninstall_logger_handler_with_id()` in `birch/erlang_logger`. Use `install_formatter()` / `remove_formatter()` instead.
+
 ## v0.2.1 - 2026-02-15
 
 ### Features
