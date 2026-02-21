@@ -157,7 +157,6 @@ pub fn forward_to_logger_with_formatter(format: formatter.Formatter) -> Handler 
   handler.new(name: "erlang:logger", write: forward_write, format: format)
 }
 
-// Forward a log message to Erlang's :logger (via FFI)
 fn forward_write(message: String) -> Nil {
   do_logger_log(ErlangInfo, message)
 }
@@ -260,8 +259,7 @@ pub fn install_formatter_on(
   handler_id: String,
   format: formatter.Formatter,
 ) -> Result(Nil, String) {
-  let callback = make_format_callback(format)
-  do_install_formatter(handler_id, callback)
+  do_install_formatter(handler_id, make_format_callback(format))
 }
 
 /// Remove birch as the formatter from the default :logger handler,
@@ -279,10 +277,6 @@ pub fn remove_formatter_from(handler_id: String) -> Result(Nil, String) {
 }
 
 /// Build the format callback that the Erlang formatter will invoke.
-///
-/// This function creates a closure that takes the pre-extracted fields
-/// from a :logger event (timestamp, level, logger name, message, metadata)
-/// and constructs a birch LogRecord, then formats it.
 fn make_format_callback(format: formatter.Formatter) -> FormatCallback {
   fn(
     timestamp: String,
@@ -291,15 +285,14 @@ fn make_format_callback(format: formatter.Formatter) -> FormatCallback {
     message: String,
     metadata: record.Metadata,
   ) -> String {
-    let r =
-      record.new(
-        timestamp: timestamp,
-        level: lvl,
-        logger_name: logger_name,
-        message: message,
-        metadata: metadata,
-      )
-    format(r)
+    record.new(
+      timestamp: timestamp,
+      level: lvl,
+      logger_name: logger_name,
+      message: message,
+      metadata: metadata,
+    )
+    |> format
   }
 }
 
@@ -307,40 +300,29 @@ fn make_format_callback(format: formatter.Formatter) -> FormatCallback {
 // Deprecated: Legacy Handler-Based API
 // ============================================================================
 
-/// Default handler ID used when installing birch as a :logger handler.
-///
-/// **Deprecated**: Use `default_handler_id` and the formatter-based API instead.
+/// The handler ID previously used when installing birch as a :logger handler.
 @deprecated("Use install_formatter() instead of install_logger_handler()")
 pub const legacy_handler_id = "birch"
 
 /// Install birch as an Erlang :logger handler.
-///
-/// **Deprecated**: Use `install_formatter()` instead. The formatter-based approach
-/// is cleaner — birch controls formatting while the BEAM handler controls output.
 @deprecated("Use install_formatter() instead")
 pub fn install_logger_handler() -> Result(Nil, String) {
   install_formatter()
 }
 
 /// Install birch as an Erlang :logger handler with a custom handler ID.
-///
-/// **Deprecated**: Use `install_formatter_on(handler_id, formatter.human_readable)` instead.
 @deprecated("Use install_formatter_on() instead")
 pub fn install_logger_handler_with_id(handler_id: String) -> Result(Nil, String) {
   install_formatter_on(handler_id, formatter.human_readable)
 }
 
 /// Uninstall the birch :logger handler.
-///
-/// **Deprecated**: Use `remove_formatter()` instead.
 @deprecated("Use remove_formatter() instead")
 pub fn uninstall_logger_handler() -> Result(Nil, String) {
   remove_formatter()
 }
 
 /// Uninstall a birch :logger handler with a specific ID.
-///
-/// **Deprecated**: Use `remove_formatter_from(handler_id)` instead.
 @deprecated("Use remove_formatter_from() instead")
 pub fn uninstall_logger_handler_with_id(
   handler_id: String,

@@ -7,9 +7,6 @@
 %%
 %% The :logger formatter behavior requires implementing:
 %% - format(LogEvent, FmtConfig) -> unicode:chardata()
-%%
-%% This is the idiomatic OTP approach: the :logger handler controls output
-%% (console, file, etc.) while birch controls formatting.
 
 -module(birch_erlang_logger_ffi).
 
@@ -51,12 +48,9 @@ erlang_level_to_gleam(_) -> info.
 %% ============================================================================
 
 %% Log a message to Erlang's :logger at the specified level.
-%% Called from Gleam's erlang_logger module.
 -spec logger_log(tuple(), binary()) -> nil.
 logger_log(GleamLevel, Message) ->
     Level = gleam_level_to_atom(GleamLevel),
-    %% Use logger:log/2 with the level and message
-    %% The message is already formatted by Gleam
     logger:log(Level, "~ts", [Message]),
     nil.
 
@@ -66,27 +60,19 @@ logger_log(GleamLevel, Message) ->
 
 %% Install birch as the formatter on an existing :logger handler.
 %% FormatFn is a Gleam function: fn(String, Level, String, String, Metadata) -> String
-%% Returns {ok, nil} on success, {error, Reason} on failure.
 -spec install_formatter(binary(), function()) -> {ok, nil} | {error, binary()}.
 install_formatter(HandlerId, FormatFn) ->
-    Id = binary_to_atom(HandlerId, utf8),
-    FmtConfig = #{format_fn => FormatFn},
-    case logger:update_handler_config(Id, formatter, {?MODULE, FmtConfig}) of
-        ok ->
-            {ok, nil};
-        {error, {not_found, _}} ->
-            {error, <<"Handler not found: ", HandlerId/binary>>};
-        {error, Reason} ->
-            {error, iolist_to_binary(io_lib:format("~p", [Reason]))}
-    end.
+    update_handler_formatter(HandlerId, {?MODULE, #{format_fn => FormatFn}}).
 
 %% Remove birch formatter from a :logger handler, restoring OTP's default.
 -spec remove_formatter(binary()) -> {ok, nil} | {error, binary()}.
 remove_formatter(HandlerId) ->
+    update_handler_formatter(HandlerId, {logger_formatter, #{single_line => true}}).
+
+%% Update the formatter config on a :logger handler.
+update_handler_formatter(HandlerId, Formatter) ->
     Id = binary_to_atom(HandlerId, utf8),
-    %% Restore the default OTP formatter (logger_formatter with single_line)
-    DefaultFmt = {logger_formatter, #{single_line => true}},
-    case logger:update_handler_config(Id, formatter, DefaultFmt) of
+    case logger:update_handler_config(Id, formatter, Formatter) of
         ok ->
             {ok, nil};
         {error, {not_found, _}} ->
@@ -100,30 +86,26 @@ remove_formatter(HandlerId) ->
 %% ============================================================================
 
 %% Called by the :logger handler to format a log event.
-%% This is the core of the inverted integration: instead of birch acting as
-%% a handler that receives events and routes them, birch acts as a formatter
-%% that the existing handler calls to produce output.
 %%
 %% The format_fn stored in Config is a Gleam function that takes:
 %%   (Timestamp, Level, LoggerName, Message, Metadata) -> String
 -spec format(logger:log_event(), #{format_fn => function()}) -> unicode:chardata().
 format(#{level := Level, msg := Msg, meta := Meta}, #{format_fn := FormatFn}) ->
-    Message = format_msg(Msg),
-    Timestamp = format_timestamp(maps:get(time, Meta, undefined)),
-    LoggerName = format_logger_name(Meta),
-    GleamLevel = erlang_level_to_gleam(Level),
-    Metadata = format_metadata(Meta),
-    %% Call the Gleam format callback
-    Formatted = FormatFn(Timestamp, GleamLevel, LoggerName, Message, Metadata),
+    Formatted = FormatFn(
+        format_timestamp(maps:get(time, Meta, undefined)),
+        erlang_level_to_gleam(Level),
+        format_logger_name(Meta),
+        format_msg(Msg),
+        format_metadata(Meta)
+    ),
     [Formatted, $\n];
 
 %% Fallback: no format_fn in config, use a basic format
 format(#{level := Level, msg := Msg, meta := Meta}, _Config) ->
-    Message = format_msg(Msg),
-    Timestamp = format_timestamp(maps:get(time, Meta, undefined)),
-    LoggerName = format_logger_name(Meta),
-    LevelStr = level_to_string(Level),
-    [Timestamp, <<" | ">>, LevelStr, <<" | ">>, LoggerName, <<" | ">>, Message, $\n].
+    [format_timestamp(maps:get(time, Meta, undefined)), <<" | ">>,
+     level_to_string(Level), <<" | ">>,
+     format_logger_name(Meta), <<" | ">>,
+     format_msg(Msg), $\n].
 
 %% ============================================================================
 %% Helper functions
@@ -147,14 +129,12 @@ format_msg(Msg) ->
 
 %% Format timestamp to ISO 8601
 format_timestamp(undefined) ->
-    %% Get current time if not provided
     {{Year, Month, Day}, {Hour, Minute, Second}} = calendar:universal_time(),
     {_, _, Micro} = os:timestamp(),
     Millis = Micro div 1000,
     iolist_to_binary(io_lib:format("~4..0B-~2..0B-~2..0BT~2..0B:~2..0B:~2..0B.~3..0BZ",
         [Year, Month, Day, Hour, Minute, Second, Millis]));
 format_timestamp(MicroSecs) when is_integer(MicroSecs) ->
-    %% Convert microseconds since epoch to datetime
     Secs = MicroSecs div 1000000,
     Micro = MicroSecs rem 1000000,
     Millis = Micro div 1000,
@@ -177,34 +157,31 @@ format_logger_name(Meta) ->
             end
     end.
 
-%% Format metadata to Gleam format
-%% Returns a list of {Key, Value} tuples where both are binaries
+%% Format metadata to Gleam format.
+%% Returns a list of {Key, Value} tuples where both are binaries.
 format_metadata(Meta) ->
-    %% Filter out internal :logger metadata and convert to Gleam format
     InternalKeys = [time, mfa, file, line, gl, pid, domain, report_cb],
     lists:filtermap(fun({Key, Value}) ->
         case lists:member(Key, InternalKeys) of
             true -> false;
             false ->
-                KeyBin = case Key of
-                    K when is_atom(K) -> atom_to_binary(K, utf8);
-                    K when is_binary(K) -> K;
-                    K -> iolist_to_binary(io_lib:format("~p", [K]))
-                end,
-                ValueBin = case Value of
-                    V when is_binary(V) -> V;
-                    V when is_list(V) ->
-                        try unicode:characters_to_binary(V)
-                        catch _:_ -> iolist_to_binary(io_lib:format("~p", [V]))
-                        end;
-                    V when is_atom(V) -> atom_to_binary(V, utf8);
-                    V when is_integer(V) -> integer_to_binary(V);
-                    V when is_float(V) -> float_to_binary(V);
-                    V -> iolist_to_binary(io_lib:format("~p", [V]))
-                end,
-                {true, {KeyBin, ValueBin}}
+                {true, {to_binary_key(Key), to_binary_value(Value)}}
         end
     end, maps:to_list(Meta)).
+
+to_binary_key(K) when is_atom(K) -> atom_to_binary(K, utf8);
+to_binary_key(K) when is_binary(K) -> K;
+to_binary_key(K) -> iolist_to_binary(io_lib:format("~p", [K])).
+
+to_binary_value(V) when is_binary(V) -> V;
+to_binary_value(V) when is_list(V) ->
+    try unicode:characters_to_binary(V)
+    catch _:_ -> iolist_to_binary(io_lib:format("~p", [V]))
+    end;
+to_binary_value(V) when is_atom(V) -> atom_to_binary(V, utf8);
+to_binary_value(V) when is_integer(V) -> integer_to_binary(V);
+to_binary_value(V) when is_float(V) -> float_to_binary(V);
+to_binary_value(V) -> iolist_to_binary(io_lib:format("~p", [V])).
 
 %% Convert Erlang level atom to display string (fallback formatter only)
 level_to_string(emergency) -> <<"FATAL">>;

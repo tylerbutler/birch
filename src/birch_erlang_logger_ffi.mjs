@@ -7,6 +7,10 @@
 
 import { Ok, Error } from "./gleam.mjs";
 
+const UNAVAILABLE_ERROR = new Error(
+  "erlang:logger is not available on JavaScript target",
+);
+
 /**
  * Log a message (fallback to console on JavaScript).
  *
@@ -17,7 +21,6 @@ import { Ok, Error } from "./gleam.mjs";
  * @param {string} message - The formatted log message
  */
 export function logger_log(level, message) {
-  // Map Erlang level to console method
   const levelName = getLevelName(level);
 
   switch (levelName) {
@@ -43,62 +46,41 @@ export function logger_log(level, message) {
   return undefined; // nil
 }
 
+const LEVEL_NAMES = {
+  ErlangEmergency: "emergency",
+  ErlangAlert: "alert",
+  ErlangCritical: "critical",
+  ErlangError: "error",
+  ErlangWarning: "warning",
+  ErlangNotice: "notice",
+  ErlangInfo: "info",
+  ErlangDebug: "debug",
+};
+
 /**
  * Extract level name from Gleam ErlangLevel type.
  * @param {object} level - Gleam ErlangLevel variant
  * @returns {string} Level name
  */
 function getLevelName(level) {
-  if (typeof level === "object" && level !== null) {
-    if ("$" in level) {
-      switch (level.$) {
-        case "ErlangEmergency":
-          return "emergency";
-        case "ErlangAlert":
-          return "alert";
-        case "ErlangCritical":
-          return "critical";
-        case "ErlangError":
-          return "error";
-        case "ErlangWarning":
-          return "warning";
-        case "ErlangNotice":
-          return "notice";
-        case "ErlangInfo":
-          return "info";
-        case "ErlangDebug":
-          return "debug";
-      }
-    }
+  if (typeof level === "object" && level !== null && "$" in level) {
+    return LEVEL_NAMES[level.$] ?? "info";
   }
-  return "info"; // Default
+  return "info";
 }
 
 /**
  * Install birch as a :logger formatter.
- *
- * This is not available on JavaScript - always returns an error.
- *
- * @param {string} _handlerId - Handler ID (unused on JS)
- * @param {function} _formatFn - Format callback (unused on JS)
- * @returns {Error} Always returns an error
+ * Not available on JavaScript - always returns an error.
  */
 export function install_formatter(_handlerId, _formatFn) {
-  return new Error(
-    "erlang:logger is not available on JavaScript target"
-  );
+  return UNAVAILABLE_ERROR;
 }
 
 /**
  * Remove birch formatter from a :logger handler.
- *
- * This is not available on JavaScript - always returns an error.
- *
- * @param {string} _handlerId - Handler ID (unused on JS)
- * @returns {Error} Always returns an error
+ * Not available on JavaScript - always returns an error.
  */
 export function remove_formatter(_handlerId) {
-  return new Error(
-    "erlang:logger is not available on JavaScript target"
-  );
+  return UNAVAILABLE_ERROR;
 }
