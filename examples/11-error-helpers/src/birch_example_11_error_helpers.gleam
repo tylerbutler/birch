@@ -4,6 +4,7 @@
 
 import birch as log
 import birch/logger
+import birch/meta
 import simplifile
 
 pub fn main() {
@@ -54,8 +55,8 @@ fn demo_error_result_with_metadata() {
     Error(_) -> {
       // Add context about what we were trying to do
       logger.error_result(lgr, "Configuration load failed", result, [
-        #("path", path),
-        #("fallback", "using_defaults"),
+        meta.string("path", path),
+        meta.string("fallback", "using_defaults"),
       ])
     }
   }
@@ -77,14 +78,14 @@ fn demo_logger_error_result() {
 
   let db_logger =
     log.new("myapp.database")
-    |> log.with_context([#("component", "database")])
+    |> log.with_context([meta.string("component", "database")])
 
   // Simulate a database error
   let result: Result(Int, String) = Error("Connection timeout after 30s")
 
   logger.error_result(db_logger, "Query failed", result, [
-    #("query", "SELECT * FROM users"),
-    #("timeout_ms", "30000"),
+    meta.string("query", "SELECT * FROM users"),
+    meta.string("timeout_ms", "30000"),
   ])
 }
 
@@ -93,12 +94,12 @@ pub fn load_config(path: String) -> Result(String, String) {
   let lgr = log.new("app")
   case simplifile.read(path) {
     Ok(content) -> {
-      logger.info(lgr, "Configuration loaded", [#("path", path)])
+      logger.info(lgr, "Configuration loaded", [meta.string("path", path)])
       Ok(content)
     }
     Error(_) as result -> {
       logger.error_result(lgr, "Failed to load configuration", result, [
-        #("path", path),
+        meta.string("path", path),
       ])
       Error("Failed to load configuration from " <> path)
     }
