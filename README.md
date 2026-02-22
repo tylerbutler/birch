@@ -38,7 +38,7 @@ The name "birch" comes from birch trees, whose white bark gleams in the light.
 
 ```gleam
 import birch as log
-import birch/meta
+import birch/meta as m
 
 pub fn main() {
   // Simple logging
@@ -47,15 +47,15 @@ pub fn main() {
   log.error("Something went wrong")
 
   // With typed metadata
-  log.info("User logged in")
-  // Or using a named logger with metadata:
   let lgr = log.new("myapp")
   lgr |> log.logger_info("User logged in", [
-    meta.string("user_id", "123"),
-    meta.string("ip", "192.168.1.1"),
+    m.string("user_id", "123"),
+    m.string("ip", "192.168.1.1"),
   ])
 }
 ```
+
+> **Tip:** `import birch/meta as m` keeps metadata concise. All examples in this README use `m.` for brevity, but `meta.` works identically.
 
 ## Installation
 
@@ -73,7 +73,7 @@ Configure the default logger with custom settings:
 ```gleam
 import birch as log
 import birch/level
-import birch/meta
+import birch/meta as m
 import birch/handler/console
 import birch/handler/json
 
@@ -82,7 +82,7 @@ pub fn main() {
   log.configure([
     log.config_level(level.Debug),
     log.config_handlers([console.handler(), json.handler()]),
-    log.config_context([meta.string("app", "myapp"), meta.string("env", "production")]),
+    log.config_context([m.string("app", "myapp"), m.string("env", "production")]),
   ])
 
   // All logs now include the context and go to both handlers
@@ -130,18 +130,18 @@ Add persistent context to a logger:
 
 ```gleam
 import birch as log
-import birch/meta
+import birch/meta as m
 
 pub fn handle_request(request_id: String) {
   let logger = log.new("myapp.http")
     |> log.with_context([
-      meta.string("request_id", request_id),
-      meta.string("service", "api"),
+      m.string("request_id", request_id),
+      m.string("service", "api"),
     ])
 
   // All logs from this logger include the context
   logger |> log.logger_info("Processing request", [])
-  logger |> log.logger_info("Request complete", [meta.int("status", 200)])
+  logger |> log.logger_info("Request complete", [m.int("status", 200)])
 }
 ```
 
@@ -151,10 +151,10 @@ Automatically attach metadata to all logs within a scope:
 
 ```gleam
 import birch as log
-import birch/meta
+import birch/meta as m
 
 pub fn handle_request(request_id: String) {
-  log.with_scope([meta.string("request_id", request_id)], fn() {
+  log.with_scope([m.string("request_id", request_id)], fn() {
     // All logs in this block include request_id automatically
     log.info("Processing request")
     do_work()  // Logs in nested functions also include request_id
@@ -166,10 +166,10 @@ pub fn handle_request(request_id: String) {
 Scopes can be nested, with inner scopes adding to outer scope context:
 
 ```gleam
-log.with_scope([meta.string("request_id", "123")], fn() {
+log.with_scope([m.string("request_id", "123")], fn() {
   log.info("Start")  // request_id=123
 
-  log.with_scope([meta.string("step", "validation")], fn() {
+  log.with_scope([m.string("step", "validation")], fn() {
     log.info("Validating")  // request_id=123 step=validation
   })
 
@@ -383,7 +383,7 @@ Log errors with automatic metadata extraction:
 
 ```gleam
 import birch as log
-import birch/meta
+import birch/meta as m
 
 case file.read("config.json") {
   Ok(content) -> parse_config(content)
@@ -397,8 +397,8 @@ case file.read("config.json") {
 // With additional metadata (using a named logger)
 let lgr = log.new("myapp.db")
 lgr |> log.logger_error_result("Database query failed", result, [
-  meta.string("query", "SELECT * FROM users"),
-  meta.string("table", "users"),
+  m.string("query", "SELECT * FROM users"),
+  m.string("table", "users"),
 ])
 ```
 
