@@ -11,6 +11,7 @@ import birch as log
 import birch/handler/console
 import birch/level
 import birch/logger
+import birch/meta
 
 pub fn main() {
   // Configure with debug level to capture all messages
@@ -30,8 +31,8 @@ pub fn main() {
   |> log.with_handler(console.handler())
   |> log.with_level(level.Debug)
   |> logger.info("Message with metadata", [
-    #("request_id", "test-123"),
-    #("user", "integration-test"),
+    meta.string("request_id", "test-123"),
+    meta.string("user", "integration-test"),
   ])
 
   // Reset config for clean state

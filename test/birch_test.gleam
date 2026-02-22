@@ -9,7 +9,8 @@ import birch/internal/platform
 import birch/level
 import birch/level_formatter
 import birch/logger
-import birch/record
+import birch/meta
+import birch/record.{BoolVal, FloatVal, IntVal, StringVal}
 import birch/sampling
 import birch/scope
 import gleam/json as gleam_json
@@ -99,7 +100,7 @@ pub fn record_creation_test() {
       level: level.Info,
       logger_name: "test",
       message: "Hello",
-      metadata: [#("key", "value")],
+      metadata: [meta.string("key", "value")],
     )
 
   r.timestamp
@@ -115,7 +116,7 @@ pub fn record_creation_test() {
   |> should.equal("Hello")
 
   r.metadata
-  |> should.equal([#("key", "value")])
+  |> should.equal([meta.string("key", "value")])
 }
 
 pub fn record_with_metadata_test() {
@@ -127,10 +128,10 @@ pub fn record_with_metadata_test() {
       message: "Hello",
       metadata: [],
     )
-    |> record.with_metadata([#("new_key", "new_value")])
+    |> record.with_metadata([meta.string("new_key", "new_value")])
 
   r.metadata
-  |> should.equal([#("new_key", "new_value")])
+  |> should.equal([meta.string("new_key", "new_value")])
 }
 
 pub fn record_get_metadata_test() {
@@ -140,17 +141,62 @@ pub fn record_get_metadata_test() {
       level: level.Info,
       logger_name: "test",
       message: "Hello",
-      metadata: [#("key1", "value1"), #("key2", "value2")],
+      metadata: [meta.string("key1", "value1"), meta.string("key2", "value2")],
     )
 
   record.get_metadata(r, "key1")
-  |> should.equal(Ok("value1"))
+  |> should.equal(Ok(StringVal("value1")))
 
   record.get_metadata(r, "key2")
-  |> should.equal(Ok("value2"))
+  |> should.equal(Ok(StringVal("value2")))
 
   record.get_metadata(r, "missing")
   |> should.equal(Error(Nil))
+}
+
+// ============================================================================
+// Meta Module Tests
+// ============================================================================
+
+pub fn meta_string_test() {
+  meta.string("key", "value")
+  |> should.equal(#("key", StringVal("value")))
+}
+
+pub fn meta_int_test() {
+  meta.int("count", 42)
+  |> should.equal(#("count", IntVal(42)))
+}
+
+pub fn meta_float_test() {
+  meta.float("rate", 3.14)
+  |> should.equal(#("rate", FloatVal(3.14)))
+}
+
+pub fn meta_bool_test() {
+  meta.bool("active", True)
+  |> should.equal(#("active", BoolVal(True)))
+}
+
+// ============================================================================
+// MetadataValue to String Tests
+// ============================================================================
+
+pub fn metadata_value_to_string_test() {
+  record.metadata_value_to_string(StringVal("hello"))
+  |> should.equal("hello")
+
+  record.metadata_value_to_string(IntVal(42))
+  |> should.equal("42")
+
+  record.metadata_value_to_string(FloatVal(3.14))
+  |> should.equal("3.14")
+
+  record.metadata_value_to_string(BoolVal(True))
+  |> should.equal("true")
+
+  record.metadata_value_to_string(BoolVal(False))
+  |> should.equal("false")
 }
 
 // ============================================================================
@@ -164,7 +210,10 @@ pub fn formatter_human_readable_test() {
       level: level.Info,
       logger_name: "myapp.http",
       message: "Request complete",
-      metadata: [#("method", "POST"), #("path", "/api/users")],
+      metadata: [
+        meta.string("method", "POST"),
+        meta.string("path", "/api/users"),
+      ],
     )
 
   let formatted = formatter.human_readable(r)
@@ -205,7 +254,7 @@ pub fn formatter_simple_test() {
 }
 
 pub fn formatter_metadata_with_spaces_test() {
-  let metadata = [#("path", "/api/users with spaces")]
+  let metadata = [meta.string("path", "/api/users with spaces")]
 
   let formatted = formatter.format_metadata(metadata)
 
@@ -240,7 +289,10 @@ pub fn logger_with_level_test() {
 pub fn logger_with_context_test() {
   let lgr =
     logger.new("test")
-    |> logger.with_context([#("service", "api"), #("version", "1.0")])
+    |> logger.with_context([
+      meta.string("service", "api"),
+      meta.string("version", "1.0"),
+    ])
 
   logger.get_context(lgr)
   |> list.length
@@ -352,7 +404,7 @@ pub fn json_format_test() {
       level: level.Info,
       logger_name: "myapp.http",
       message: "Request complete",
-      metadata: [#("method", "POST")],
+      metadata: [meta.string("method", "POST")],
     )
 
   let formatted = json.format_json(r)
@@ -376,6 +428,29 @@ pub fn json_format_test() {
   formatted
   |> string.contains("\"method\":\"POST\"")
   |> should.be_true
+}
+
+pub fn json_typed_metadata_test() {
+  let rec =
+    record.new(
+      timestamp: "2024-01-01T00:00:00.000Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "typed",
+      metadata: [
+        meta.int("count", 42),
+        meta.float("rate", 3.14),
+        meta.bool("active", True),
+        meta.string("name", "test"),
+      ],
+    )
+  let output = json.format_json(rec)
+  // Verify integers are not quoted in JSON
+  output |> string.contains("\"count\":42") |> should.be_true
+  // Verify booleans are not quoted
+  output |> string.contains("\"active\":true") |> should.be_true
+  // Verify strings are still quoted
+  output |> string.contains("\"name\":\"test\"") |> should.be_true
 }
 
 // ============================================================================
@@ -495,7 +570,10 @@ pub fn json_builder_add_metadata_test() {
       level: level.Info,
       logger_name: "test",
       message: "Hello",
-      metadata: [#("method", "GET"), #("path", "/api/users")],
+      metadata: [
+        meta.string("method", "GET"),
+        meta.string("path", "/api/users"),
+      ],
     )
 
   let formatted = format(r)
@@ -580,7 +658,7 @@ pub fn json_standard_builder_test() {
       level: level.Info,
       logger_name: "myapp.http",
       message: "Request complete",
-      metadata: [#("method", "POST")],
+      metadata: [meta.string("method", "POST")],
     )
 
   let formatted = format(r)
@@ -615,7 +693,7 @@ pub fn json_standard_builder_matches_format_json_test() {
       level: level.Info,
       logger_name: "myapp.http",
       message: "Request complete",
-      metadata: [#("method", "POST")],
+      metadata: [meta.string("method", "POST")],
     )
 
   let format_json_output = json.format_json(r)
@@ -792,10 +870,10 @@ pub fn main_api_new_test() {
 pub fn main_api_with_context_test() {
   let lgr =
     log.new("myapp")
-    |> log.with_context([#("env", "test")])
+    |> log.with_context([meta.string("env", "test")])
 
   logger.get_context(lgr)
-  |> should.equal([#("env", "test")])
+  |> should.equal([meta.string("env", "test")])
 }
 
 pub fn main_api_with_level_test() {
@@ -874,12 +952,15 @@ pub fn config_set_handlers_test() {
 pub fn config_set_context_test() {
   // Configure with default context
   log.configure([
-    log.config_context([#("app", "test"), #("env", "testing")]),
+    log.config_context([
+      meta.string("app", "test"),
+      meta.string("env", "testing"),
+    ]),
   ])
 
   let config = log.get_config()
   config.context
-  |> should.equal([#("app", "test"), #("env", "testing")])
+  |> should.equal([meta.string("app", "test"), meta.string("env", "testing")])
 
   // Reset to default
   log.reset_config()
@@ -891,7 +972,7 @@ pub fn config_multiple_options_test() {
   log.configure([
     log.config_level(level.Warn),
     log.config_handlers([null_handler]),
-    log.config_context([#("service", "api")]),
+    log.config_context([meta.string("service", "api")]),
   ])
 
   let config = log.get_config()
@@ -901,7 +982,7 @@ pub fn config_multiple_options_test() {
   |> list.length
   |> should.equal(1)
   config.context
-  |> should.equal([#("service", "api")])
+  |> should.equal([meta.string("service", "api")])
 
   // Reset to default
   log.reset_config()
@@ -1265,7 +1346,7 @@ pub fn set_level_preserves_other_config_test() {
   let null_handler = handler.null()
   log.configure([
     log.config_handlers([null_handler]),
-    log.config_context([#("app", "test")]),
+    log.config_context([meta.string("app", "test")]),
   ])
 
   // Set level (should preserve other settings)
@@ -1287,7 +1368,7 @@ pub fn set_level_preserves_other_config_test() {
   |> should.equal("null")
 
   config.context
-  |> should.equal([#("app", "test")])
+  |> should.equal([meta.string("app", "test")])
 
   // Reset for other tests
   log.reset_config()
@@ -1727,7 +1808,7 @@ pub fn handler_get_error_callback_test() {
 
 pub fn scope_with_scope_returns_work_result_test() {
   // with_scope should return the result of the work function
-  let result = log.with_scope([#("request_id", "123")], fn() { 42 })
+  let result = log.with_scope([meta.string("request_id", "123")], fn() { 42 })
 
   result
   |> should.equal(42)
@@ -1735,7 +1816,8 @@ pub fn scope_with_scope_returns_work_result_test() {
 
 pub fn scope_with_scope_string_result_test() {
   // with_scope should work with any return type
-  let result = log.with_scope([#("trace_id", "abc")], fn() { "hello" })
+  let result =
+    log.with_scope([meta.string("trace_id", "abc")], fn() { "hello" })
 
   result
   |> should.equal("hello")
@@ -1744,14 +1826,14 @@ pub fn scope_with_scope_string_result_test() {
 pub fn scope_get_scope_context_inside_scope_test() {
   // Inside a scope, get_scope_context should return the scope's context
   // (including internal metadata like _scope_highlight_keys)
-  log.with_scope([#("request_id", "req-123")], fn() {
+  log.with_scope([meta.string("request_id", "req-123")], fn() {
     let ctx = log.get_scope_context()
     // Filter out internal keys for comparison
     let visible_ctx =
       ctx
       |> list.filter(fn(pair) { !string.starts_with(pair.0, "_") })
     visible_ctx
-    |> should.equal([#("request_id", "req-123")])
+    |> should.equal([meta.string("request_id", "req-123")])
   })
 }
 
@@ -1766,25 +1848,25 @@ pub fn scope_get_scope_context_outside_scope_test() {
 
 pub fn scope_nested_scopes_test() {
   // Nested scopes should combine context, with inner values taking precedence
-  log.with_scope([#("outer", "value1")], fn() {
+  log.with_scope([meta.string("outer", "value1")], fn() {
     // First scope has outer context
     let outer_ctx = log.get_scope_context()
     outer_ctx
     |> list.key_find("outer")
-    |> should.equal(Ok("value1"))
+    |> should.equal(Ok(StringVal("value1")))
 
     // Nested scope adds more context
-    log.with_scope([#("inner", "value2")], fn() {
+    log.with_scope([meta.string("inner", "value2")], fn() {
       let inner_ctx = log.get_scope_context()
 
       // Both keys should be present
       inner_ctx
       |> list.key_find("outer")
-      |> should.equal(Ok("value1"))
+      |> should.equal(Ok(StringVal("value1")))
 
       inner_ctx
       |> list.key_find("inner")
-      |> should.equal(Ok("value2"))
+      |> should.equal(Ok(StringVal("value2")))
     })
 
     // After inner scope ends, only outer context remains
@@ -1795,27 +1877,27 @@ pub fn scope_nested_scopes_test() {
 
     after_inner_ctx
     |> list.key_find("outer")
-    |> should.equal(Ok("value1"))
+    |> should.equal(Ok(StringVal("value1")))
   })
 }
 
 pub fn scope_nested_scopes_shadow_test() {
   // Inner scope with same key should shadow outer scope
-  log.with_scope([#("key", "outer_value")], fn() {
-    log.with_scope([#("key", "inner_value")], fn() {
+  log.with_scope([meta.string("key", "outer_value")], fn() {
+    log.with_scope([meta.string("key", "inner_value")], fn() {
       let ctx = log.get_scope_context()
 
       // The inner value should come first (shadow the outer)
       ctx
       |> list.key_find("key")
-      |> should.equal(Ok("inner_value"))
+      |> should.equal(Ok(StringVal("inner_value")))
     })
 
     // After inner scope, original value restored
     let ctx = log.get_scope_context()
     ctx
     |> list.key_find("key")
-    |> should.equal(Ok("outer_value"))
+    |> should.equal(Ok(StringVal("outer_value")))
   })
 }
 
@@ -1834,32 +1916,36 @@ pub fn scope_is_available_test() {
 pub fn scope_multiple_metadata_pairs_test() {
   // with_scope should support multiple key-value pairs
   log.with_scope(
-    [#("request_id", "123"), #("user_id", "456"), #("trace_id", "789")],
+    [
+      meta.string("request_id", "123"),
+      meta.string("user_id", "456"),
+      meta.string("trace_id", "789"),
+    ],
     fn() {
       let ctx = log.get_scope_context()
 
       ctx
       |> list.key_find("request_id")
-      |> should.equal(Ok("123"))
+      |> should.equal(Ok(StringVal("123")))
 
       ctx
       |> list.key_find("user_id")
-      |> should.equal(Ok("456"))
+      |> should.equal(Ok(StringVal("456")))
 
       ctx
       |> list.key_find("trace_id")
-      |> should.equal(Ok("789"))
+      |> should.equal(Ok(StringVal("789")))
     },
   )
 }
 
 pub fn scope_context_cleared_after_scope_test() {
   // Ensure context is properly cleaned up after scope ends
-  log.with_scope([#("temp_key", "temp_value")], fn() {
+  log.with_scope([meta.string("temp_key", "temp_value")], fn() {
     // Inside scope, context exists
     log.get_scope_context()
     |> list.key_find("temp_key")
-    |> should.equal(Ok("temp_value"))
+    |> should.equal(Ok(StringVal("temp_value")))
   })
 
   // After scope ends, context should be empty (no visible metadata)
@@ -1874,12 +1960,12 @@ pub fn scope_context_included_in_log_records_test() {
 
   // Create a mutable reference to capture log records (using list accumulator pattern)
   // We'll use a logger with a null handler and verify scope context is read
-  log.with_scope([#("request_id", "test-123")], fn() {
+  log.with_scope([meta.string("request_id", "test-123")], fn() {
     // Get the scope context which should be included in logs
     let ctx = log.get_scope_context()
     ctx
     |> list.key_find("request_id")
-    |> should.equal(Ok("test-123"))
+    |> should.equal(Ok(StringVal("test-123")))
     // The log functions will include this context
     // (actual verification would require a capturing handler)
   })
@@ -2188,7 +2274,7 @@ pub fn logger_error_result_with_error_test() {
   // Log an error result - should not crash
   let result: Result(Int, String) = Error("connection refused")
   logger.error_result(lgr, "Database connection failed", result, [
-    #("host", "localhost"),
+    meta.string("host", "localhost"),
   ])
 
   // If we get here, the test passed (no crash)
@@ -2256,7 +2342,7 @@ pub fn module_level_error_result_with_metadata_test() {
   let result: Result(String, String) = Error("permission denied")
   let lgr = log.new("test") |> log.with_handler(handler.null())
   logger.error_result(lgr, "Access denied", result, [
-    #("path", "/etc/secrets"),
+    meta.string("path", "/etc/secrets"),
   ])
 
   // Clean up
@@ -2395,7 +2481,7 @@ pub fn logger_all_advanced_features_combined_test() {
   // Log an error with result
   let result: Result(Int, String) = Error("test error")
   logger.error_result(lgr, "Combined test failed", result, [
-    #("feature", "all"),
+    meta.string("feature", "all"),
   ])
 
   // If we get here, the test passed
@@ -2489,7 +2575,7 @@ pub fn console_handler_handles_log_record_test() {
       level: level.Info,
       logger_name: "myapp.http",
       message: "Request received",
-      metadata: [#("user_id", "123")],
+      metadata: [meta.string("user_id", "123")],
     )
 
   // This should not crash
@@ -2666,12 +2752,12 @@ pub fn scope_depth_tracking_test() {
   |> should.equal(0)
 
   // Inside one scope, depth should be 1
-  scope.with_scope([#("key1", "value1")], fn() {
+  scope.with_scope([meta.string("key1", "value1")], fn() {
     scope.get_depth()
     |> should.equal(1)
 
     // Inside nested scope, depth should be 2
-    scope.with_scope([#("key2", "value2")], fn() {
+    scope.with_scope([meta.string("key2", "value2")], fn() {
       scope.get_depth()
       |> should.equal(2)
       Nil
@@ -2725,22 +2811,22 @@ pub fn console_write_fail_test() {
 
 pub fn console_success_with_metadata_test() {
   // Should not crash
-  console.success("Build completed!", [#("duration", "5s")])
+  console.success("Build completed!", [meta.string("duration", "5s")])
 }
 
 pub fn console_start_with_metadata_test() {
   // Should not crash
-  console.start("Building project...", [#("target", "release")])
+  console.start("Building project...", [meta.string("target", "release")])
 }
 
 pub fn console_ready_with_metadata_test() {
   // Should not crash
-  console.ready("Server listening on port 3000", [#("port", "3000")])
+  console.ready("Server listening on port 3000", [meta.string("port", "3000")])
 }
 
 pub fn console_fail_with_metadata_test() {
   // Should not crash
-  console.fail("Could not connect to cache", [#("host", "localhost")])
+  console.fail("Could not connect to cache", [meta.string("host", "localhost")])
 }
 
 // ============================================================================
@@ -3020,7 +3106,7 @@ pub fn main_api_logger_log_test() {
     |> log.with_handler(handler.null())
 
   // Should not crash - logs at specified level
-  logger.log(lgr, level.Info, "Test message", [#("key", "value")])
+  logger.log(lgr, level.Info, "Test message", [meta.string("key", "value")])
 }
 
 pub fn main_api_logger_trace_test() {
@@ -3040,7 +3126,7 @@ pub fn main_api_logger_debug_test() {
     |> log.with_handler(handler.null())
 
   // Should not crash
-  logger.debug(lgr, "Debug message", [#("detail", "test")])
+  logger.debug(lgr, "Debug message", [meta.string("detail", "test")])
 }
 
 pub fn main_api_logger_warn_test() {
@@ -3058,7 +3144,7 @@ pub fn main_api_logger_error_test() {
     |> log.with_handler(handler.null())
 
   // Should not crash
-  logger.error(lgr, "Error message", [#("code", "E001")])
+  logger.error(lgr, "Error message", [meta.string("code", "E001")])
 }
 
 pub fn main_api_logger_fatal_test() {
@@ -3096,7 +3182,7 @@ pub fn main_api_trace_with_metadata_test() {
     |> log.with_handler(handler.null())
 
   // Should not crash
-  logger.trace(lgr, "Trace with metadata", [#("trace_id", "abc123")])
+  logger.trace(lgr, "Trace with metadata", [meta.string("trace_id", "abc123")])
 }
 
 pub fn main_api_debug_test() {
@@ -3119,7 +3205,9 @@ pub fn main_api_debug_with_metadata_test() {
     |> log.with_handler(handler.null())
 
   // Should not crash
-  logger.debug(lgr, "Debug with metadata", [#("debug_key", "debug_value")])
+  logger.debug(lgr, "Debug with metadata", [
+    meta.string("debug_key", "debug_value"),
+  ])
 }
 
 pub fn main_api_info_test() {
@@ -3138,7 +3226,7 @@ pub fn main_api_info_with_metadata_test() {
     |> log.with_handler(handler.null())
 
   // Should not crash
-  logger.info(lgr, "Info with metadata", [#("user", "alice")])
+  logger.info(lgr, "Info with metadata", [meta.string("user", "alice")])
 }
 
 pub fn main_api_warn_test() {
@@ -3157,7 +3245,9 @@ pub fn main_api_warn_with_metadata_test() {
     |> log.with_handler(handler.null())
 
   // Should not crash
-  logger.warn(lgr, "Warning with metadata", [#("warning_code", "W001")])
+  logger.warn(lgr, "Warning with metadata", [
+    meta.string("warning_code", "W001"),
+  ])
 }
 
 pub fn main_api_error_test() {
@@ -3176,7 +3266,9 @@ pub fn main_api_error_with_metadata_test() {
     |> log.with_handler(handler.null())
 
   // Should not crash
-  logger.error(lgr, "Error with metadata", [#("error_type", "validation")])
+  logger.error(lgr, "Error with metadata", [
+    meta.string("error_type", "validation"),
+  ])
 }
 
 pub fn main_api_fatal_test() {
@@ -3195,7 +3287,7 @@ pub fn main_api_fatal_with_metadata_test() {
     |> log.with_handler(handler.null())
 
   // Should not crash
-  logger.fatal(lgr, "Fatal with metadata", [#("critical", "true")])
+  logger.fatal(lgr, "Fatal with metadata", [meta.string("critical", "true")])
 }
 
 // ============================================================================
@@ -3292,7 +3384,9 @@ pub fn main_api_fatal_result_with_metadata_test() {
   let result: Result(Int, String) = Error("Disk full")
 
   // Should not crash
-  logger.fatal_result(lgr, "Storage failure", result, [#("disk", "/dev/sda1")])
+  logger.fatal_result(lgr, "Storage failure", result, [
+    meta.string("disk", "/dev/sda1"),
+  ])
 }
 
 pub fn main_api_logger_fatal_result_test() {
@@ -3304,7 +3398,7 @@ pub fn main_api_logger_fatal_result_test() {
 
   // Should not crash
   logger.fatal_result(lgr, "Database connection failed", result, [
-    #("host", "db.example.com"),
+    meta.string("host", "db.example.com"),
   ])
 }
 
@@ -3343,12 +3437,18 @@ pub fn main_api_config_context_test() {
   log.reset_config()
 
   log.configure([
-    log.config_context([#("env", "production"), #("version", "1.0")]),
+    log.config_context([
+      meta.string("env", "production"),
+      meta.string("version", "1.0"),
+    ]),
   ])
 
   let cfg = log.get_config()
   cfg.context
-  |> should.equal([#("env", "production"), #("version", "1.0")])
+  |> should.equal([
+    meta.string("env", "production"),
+    meta.string("version", "1.0"),
+  ])
 
   log.reset_config()
 }
@@ -3414,14 +3514,14 @@ pub fn main_api_get_level_test() {
 
 pub fn main_api_with_scope_test() {
   let result =
-    log.with_scope([#("request_id", "req-123")], fn() {
+    log.with_scope([meta.string("request_id", "req-123")], fn() {
       // Inside scope - filter out internal keys (prefixed with _)
       log.get_scope_context()
       |> list.filter(fn(pair) { !string.starts_with(pair.0, "_") })
     })
 
   result
-  |> should.equal([#("request_id", "req-123")])
+  |> should.equal([meta.string("request_id", "req-123")])
 }
 
 pub fn main_api_get_scope_context_outside_test() {
@@ -3448,12 +3548,12 @@ pub fn main_api_is_scoped_context_available_js_test() {
     True -> {
       // Scoped context should work when available
       let result =
-        log.with_scope([#("test_key", "test_value")], fn() {
+        log.with_scope([meta.string("test_key", "test_value")], fn() {
           log.get_scope_context()
           |> list.filter(fn(pair) { !string.starts_with(pair.0, "_") })
         })
       result
-      |> should.equal([#("test_key", "test_value")])
+      |> should.equal([meta.string("test_key", "test_value")])
     }
     False -> {
       // Fallback behavior - scope still works but uses stack-based approach
@@ -3471,7 +3571,7 @@ pub fn main_api_type_reexports_test() {
   // Test that canonical types work correctly
   let _level: level.Level = level.Info
   let _handler: handler.Handler = handler.null()
-  let _metadata: record.Metadata = [#("key", "value")]
+  let _metadata: record.Metadata = [meta.string("key", "value")]
 
   // If this compiles, the types are working
   True |> should.be_true
@@ -3487,7 +3587,7 @@ pub fn main_api_default_logger_inherits_config_test() {
   // Configure global settings
   log.configure([
     log.config_level(level.Debug),
-    log.config_context([#("app", "test-app")]),
+    log.config_context([meta.string("app", "test-app")]),
     log.config_handlers([handler.null()]),
   ])
 
@@ -3498,7 +3598,7 @@ pub fn main_api_default_logger_inherits_config_test() {
   |> should.equal(level.Debug)
 
   logger.get_context(lgr)
-  |> should.equal([#("app", "test-app")])
+  |> should.equal([meta.string("app", "test-app")])
 
   log.reset_config()
 }
