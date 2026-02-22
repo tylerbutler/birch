@@ -1,0 +1,5 @@
+kind: Added
+body: |-
+    Scoped default logger override (#59)
+    New \`birch.with_logger(lgr, fn() { ... })\` function temporarily overrides the default logger within a scope. Useful for silencing logs in subsystems (e.g., TUI apps) without affecting the rest of the application. Composes with \`with_scope\`.
+time: 2026-02-22T12:52:43.720739726-08:00

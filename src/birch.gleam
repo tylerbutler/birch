@@ -229,14 +229,35 @@ fn default_handlers() -> List(Handler) {
 // Default Logger Operations
 // ============================================================================
 
+/// Get the scoped logger override, if one is active.
+@external(erlang, "birch_ffi", "get_scoped_logger")
+@external(javascript, "./birch_ffi.mjs", "get_scoped_logger")
+fn get_scoped_logger() -> Result(Logger, Nil)
+
+/// Set the scoped logger override (Erlang process dictionary).
+@external(erlang, "birch_ffi", "set_scoped_logger")
+@external(javascript, "./birch_ffi.mjs", "set_scoped_logger")
+fn set_scoped_logger(lgr: Logger) -> Nil
+
+/// Clear the scoped logger override (Erlang process dictionary).
+@external(erlang, "birch_ffi", "clear_scoped_logger")
+@external(javascript, "./birch_ffi.mjs", "clear_scoped_logger")
+fn clear_scoped_logger() -> Nil
+
 /// The default logger used by module-level logging functions.
-/// This logger reads its configuration from the global config.
+/// Returns a scoped logger override if one is active (via `with_logger`),
+/// otherwise builds from the global config.
 fn default_logger() -> Logger {
-  let cfg = get_config()
-  logger.new("app")
-  |> logger.with_level(cfg.level)
-  |> logger.with_handlers(cfg.handlers)
-  |> logger.with_context(cfg.context)
+  case get_scoped_logger() {
+    Ok(lgr) -> lgr
+    Error(Nil) -> {
+      let cfg = get_config()
+      logger.new("app")
+      |> logger.with_level(cfg.level)
+      |> logger.with_handlers(cfg.handlers)
+      |> logger.with_context(cfg.context)
+    }
+  }
 }
 
 /// Create a new named logger.
@@ -655,6 +676,54 @@ pub fn get_scope_context() -> Metadata {
 /// propagate to nested async operations.
 pub fn is_scoped_context_available() -> Bool {
   scope.is_available()
+}
+
+// ============================================================================
+// Scoped Logger Override
+// ============================================================================
+
+/// Execute a function with a different default logger.
+///
+/// All module-level logging functions (`birch.info`, `birch.error`, etc.)
+/// will use the provided logger instead of the global default within the scope.
+///
+/// This is useful for silencing logs in a subsystem (e.g., a TUI) without
+/// affecting the rest of the application:
+///
+/// ```gleam
+/// import birch as log
+/// import birch/handler
+///
+/// let silent = log.new("tui") |> log.with_handlers([handler.null()])
+///
+/// log.with_logger(silent, fn() {
+///   // log.info("...") is silenced here
+///   start_tui()
+/// })
+/// // Outside the block, the original default logger is used
+/// ```
+///
+/// Scopes can be nested, with the innermost `with_logger` taking precedence.
+/// Composes with `with_scope`: scoped context metadata is still applied to
+/// the overridden logger.
+///
+/// ## Platform Support
+///
+/// - **Erlang:** Uses the process dictionary. Each process has its own override.
+/// - **JavaScript (Node.js):** Uses AsyncLocalStorage for async propagation.
+/// - **JavaScript (Other):** Falls back to save/restore; may not propagate to async operations.
+@external(javascript, "./birch_ffi.mjs", "run_with_logger")
+pub fn with_logger(lgr: Logger, work: fn() -> a) -> a {
+  // Erlang implementation: use process dictionary
+  let previous = get_scoped_logger()
+  set_scoped_logger(lgr)
+  let result = work()
+  // Restore previous state
+  case previous {
+    Ok(prev) -> set_scoped_logger(prev)
+    Error(Nil) -> clear_scoped_logger()
+  }
+  result
 }
 
 // ============================================================================
