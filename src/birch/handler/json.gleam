@@ -21,7 +21,9 @@
 import birch/formatter
 import birch/handler.{type Handler}
 import birch/level
-import birch/record.{type LogRecord}
+import birch/record.{
+  type LogRecord, type MetadataValue, BoolVal, FloatVal, IntVal, StringVal,
+}
 import gleam/io
 import gleam/json.{type Json}
 import gleam/list
@@ -92,12 +94,22 @@ pub fn add_message(b: JsonBuilder) -> JsonBuilder {
   add_field(b, fn(r) { [#("message", json.string(r.message))] })
 }
 
+/// Convert a MetadataValue to a typed JSON value.
+fn metadata_value_to_json(value: MetadataValue) -> Json {
+  case value {
+    StringVal(s) -> json.string(s)
+    IntVal(i) -> json.int(i)
+    FloatVal(f) -> json.float(f)
+    BoolVal(b) -> json.bool(b)
+  }
+}
+
 /// Add all metadata fields to the JSON output.
 /// Each metadata key-value pair becomes a JSON field.
 /// Output: `"method": "POST", "path": "/api/users"`
 pub fn add_metadata(b: JsonBuilder) -> JsonBuilder {
   add_field(b, fn(r) {
-    list.map(r.metadata, fn(pair) { #(pair.0, json.string(pair.1)) })
+    list.map(r.metadata, fn(pair) { #(pair.0, metadata_value_to_json(pair.1)) })
   })
 }
 
@@ -204,7 +216,9 @@ pub fn format_json(record: LogRecord) -> String {
   ]
 
   let metadata_fields =
-    list.map(record.metadata, fn(pair) { #(pair.0, json.string(pair.1)) })
+    list.map(record.metadata, fn(pair) {
+      #(pair.0, metadata_value_to_json(pair.1))
+    })
 
   list.append(base_fields, metadata_fields)
   |> json.object
