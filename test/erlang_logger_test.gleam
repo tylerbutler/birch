@@ -14,6 +14,7 @@ import birch/handler
 import birch/handler/console
 import birch/level
 import birch/logger
+import birch/meta
 import birch/record
 import gleam/list
 import gleeunit/should
@@ -42,7 +43,7 @@ pub fn forward_to_logger_handler_can_handle_records_test() {
       level: level.Info,
       logger_name: "test.erlang_logger",
       message: "Test message for :logger",
-      metadata: [#("key", "value")],
+      metadata: [meta.string("key", "value")],
     )
 
   // Should not crash
@@ -251,7 +252,7 @@ pub fn logger_with_forward_handler_test() {
 
   // Should be able to log without crashing
   logger.info(lgr, "Message forwarded to Erlang :logger", [
-    #("source", "birch"),
+    meta.string("source", "birch"),
   ])
 }
 
@@ -348,7 +349,7 @@ pub fn forward_raw_sends_structured_data_test() {
       level: level.Info,
       logger_name: "test.structured",
       message: "Structured forward test",
-      metadata: [#("status", "200"), #("method", "GET")],
+      metadata: [meta.string("status", "200"), meta.string("method", "GET")],
     )
 
   // Should not crash

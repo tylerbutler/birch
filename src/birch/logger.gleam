@@ -12,7 +12,7 @@ import birch/erlang_logger
 @target(javascript)
 import birch/handler/console
 import birch/level.{type Level}
-import birch/record.{type Metadata}
+import birch/record.{type Metadata, StringVal}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
@@ -478,10 +478,10 @@ pub fn fatal_result(
 }
 
 /// Extract error metadata from a Result.
-/// Returns empty list for Ok, or [#("error", inspected_value)] for Error.
+/// Returns empty list for Ok, or [#("error", StringVal(inspected_value))] for Error.
 fn extract_error_metadata(result: Result(a, e)) -> Metadata {
   case result {
     Ok(_) -> []
-    Error(e) -> [#("error", string.inspect(e))]
+    Error(e) -> [#("error", StringVal(string.inspect(e)))]
   }
 }

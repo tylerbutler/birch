@@ -7,6 +7,7 @@ import birch/handler.{type Handler}
 import birch/handler/file
 import birch/handler/json
 import birch/logger
+import birch/meta
 import simplifile
 
 pub fn main() {
@@ -121,7 +122,7 @@ fn demo_json_file(dir: String) {
   log.configure([log.config_handlers([handler])])
   let lgr = log.new("app")
   log.info("This file contains JSON-formatted logs")
-  logger.info(lgr, "Great for log aggregation", [#("key", "value")])
+  logger.info(lgr, "Great for log aggregation", [meta.string("key", "value")])
 }
 
 /// Create a production-ready file handler.

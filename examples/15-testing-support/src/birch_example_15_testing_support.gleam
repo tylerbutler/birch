@@ -5,6 +5,7 @@
 import birch as log
 import birch/handler
 import birch/logger.{type Logger}
+import birch/meta
 
 pub fn main() {
   log.info("=== Testing Support Demo ===")
@@ -47,7 +48,7 @@ fn demo_caller_id() {
     |> log.with_caller_id_capture()
 
   debug_logger
-  |> logger.info("Check the caller_id in metadata", [#("extra", "value")])
+  |> logger.info("Check the caller_id in metadata", [meta.string("extra", "value")])
 
   // Disable caller ID capture
   let normal_logger = debug_logger |> log.without_caller_id_capture()
@@ -77,7 +78,7 @@ fn demo_null_handler() {
 pub fn test_logger(name: String) -> Logger {
   log.new(name)
   |> log.with_time_provider(fn() { "TEST-TIMESTAMP" })
-  |> log.with_context([#("test", "true")])
+  |> log.with_context([meta.string("test", "true")])
 }
 
 /// Create a logger with caller ID for debugging concurrent code.

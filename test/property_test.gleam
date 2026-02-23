@@ -4,7 +4,7 @@
 
 import birch/formatter
 import birch/level.{Debug, Err, Fatal, Info, Trace, Warn}
-import birch/record
+import birch/record.{StringVal}
 import gleam/list
 import gleam/order
 import gleam/string
@@ -148,12 +148,13 @@ pub fn level_compare_antisymmetric_test() {
 // Record Property Tests
 // ============================================================================
 
-/// Generator for simple metadata (non-empty key-value pairs)
+/// Generator for simple metadata (non-empty key-value pairs with StringVal)
 fn metadata_generator() -> qcheck.Generator(record.Metadata) {
   let pair_gen =
-    qcheck.tuple2(
+    qcheck.map2(
       qcheck.non_empty_string_from(qcheck.alphanumeric_ascii_codepoint()),
       qcheck.string_from(qcheck.printable_ascii_codepoint()),
+      fn(key, value) { #(key, StringVal(value)) },
     )
 
   qcheck.generic_list(pair_gen, qcheck.bounded_int(0, 5))
@@ -192,12 +193,12 @@ pub fn record_get_metadata_first_match_test() {
       level: Info,
       logger_name: "test",
       message: "test",
-      metadata: [#(key, value1), #(key, value2)],
+      metadata: [#(key, StringVal(value1)), #(key, StringVal(value2))],
     )
 
   // Should return the first occurrence
   record.get_metadata(r, key)
-  |> should.equal(Ok(value1))
+  |> should.equal(Ok(StringVal(value1)))
 }
 
 /// Property: get_metadata returns Error for non-existent keys
@@ -224,10 +225,10 @@ pub fn record_with_metadata_prepends_test() {
       message: "test",
       metadata: [],
     )
-    |> record.with_metadata([#(key, value)])
+    |> record.with_metadata([#(key, StringVal(value))])
 
   record.get_metadata(r, key)
-  |> should.equal(Ok(value))
+  |> should.equal(Ok(StringVal(value)))
 }
 
 /// Property: new_simple creates record with empty metadata

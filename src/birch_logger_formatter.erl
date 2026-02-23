@@ -107,7 +107,8 @@ format_logger_name(Meta) ->
     end.
 
 %% Format metadata to Gleam format.
-%% Returns a list of {Key, Value} tuples where both are binaries.
+%% Returns a list of {Key, MetadataValue} tuples.
+%% MetadataValue is a Gleam sum type: StringVal | IntVal | FloatVal | BoolVal.
 %% Filters out internal :logger metadata and birch-specific keys.
 format_metadata(Meta) ->
     InternalKeys = [time, mfa, file, line, gl, pid, domain, report_cb,
@@ -121,17 +122,19 @@ format_metadata(Meta) ->
                     K when is_binary(K) -> K;
                     K -> list_to_binary(io_lib:format("~p", [K]))
                 end,
-                ValueBin = case Value of
-                    V when is_binary(V) -> V;
+                MetadataValue = case Value of
+                    V when is_boolean(V) -> {bool_val, V};
+                    V when is_integer(V) -> {int_val, V};
+                    V when is_float(V) -> {float_val, V};
+                    V when is_binary(V) -> {string_val, V};
                     V when is_list(V) ->
-                        try unicode:characters_to_binary(V)
-                        catch _:_ -> list_to_binary(io_lib:format("~p", [V]))
-                        end;
-                    V when is_atom(V) -> atom_to_binary(V, utf8);
-                    V when is_integer(V) -> integer_to_binary(V);
-                    V when is_float(V) -> float_to_binary(V);
-                    V -> list_to_binary(io_lib:format("~p", [V]))
+                        Bin = try unicode:characters_to_binary(V)
+                              catch _:_ -> list_to_binary(io_lib:format("~p", [V]))
+                              end,
+                        {string_val, Bin};
+                    V when is_atom(V) -> {string_val, atom_to_binary(V, utf8)};
+                    V -> {string_val, list_to_binary(io_lib:format("~p", [V]))}
                 end,
-                {true, {KeyBin, ValueBin}}
+                {true, {KeyBin, MetadataValue}}
         end
     end, maps:to_list(Meta)).

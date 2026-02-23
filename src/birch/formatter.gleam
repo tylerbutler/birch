@@ -73,7 +73,8 @@ pub fn format_metadata_colored(
   metadata
   |> list.map(fn(pair) {
     let #(key, value) = pair
-    let formatted_kv = key <> "=" <> escape_value(value)
+    let value_str = record.metadata_value_to_string(value)
+    let formatted_kv = key <> "=" <> escape_value(value_str)
     case use_color {
       True -> {
         let color = hash_color(key)

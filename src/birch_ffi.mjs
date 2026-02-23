@@ -6,6 +6,7 @@
 
 // Import Gleam's Result constructors and List helpers from the prelude
 import { Ok, Error, toList } from "./gleam.mjs";
+import { StringVal } from "./birch/record.mjs";
 
 /**
  * Check if stdout is a TTY (for color support detection).
@@ -639,7 +640,7 @@ export function run_with_scope(context, callback) {
 
   // Create _scope_highlight_keys metadata entry
   const highlightKeysValue = newKeys.join(",");
-  const highlightKeysPair = ["_scope_highlight_keys", highlightKeysValue];
+  const highlightKeysPair = ["_scope_highlight_keys", new StringVal(highlightKeysValue)];
 
   // Add _scope_highlight_keys to the context
   const contextWithHighlight = toList([...gleamListToArray(context), highlightKeysPair]);
