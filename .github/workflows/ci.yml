@@ -139,22 +139,20 @@ jobs:
 
   demo:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        target: [erlang, javascript]
-
-    name: Demo (${{ matrix.target }})
-
+    name: Demo
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ratchet:actions/checkout@v6
 
       - name: Setup environment
         uses: tylerbutler/actions/setup-gleam@c697a813534c6364a835de8e2ed2c4e0c3638bbe # ratchet:tylerbutler/actions/setup-gleam@main
         with:
-          node: ${{ matrix.target == 'javascript' }}
+          node: true
 
-      - name: Run demo
-        run: just ${{ matrix.target == 'javascript' && 'demo-js' || 'demo' }}
+      - name: Run demo (Erlang)
+        run: just demo
+
+      - name: Run demo (JavaScript)
+        run: just demo-js
 
   docs:
     runs-on: ubuntu-latest
