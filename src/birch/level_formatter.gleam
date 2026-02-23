@@ -222,7 +222,8 @@ pub fn level_icon(lvl: level.Level) -> String {
   }
 }
 
-/// Get the color code for a log level (fancy style).
+/// Get the color code for a log level (label/badge/fancy style).
+/// Debug uses gray to keep it visually subdued alongside Trace.
 pub fn level_color(lvl: level.Level) -> String {
   case lvl {
     level.Trace -> ansi.gray
@@ -234,7 +235,9 @@ pub fn level_color(lvl: level.Level) -> String {
   }
 }
 
-/// Get the color code for a log level (simple style).
+/// Get the color code for a log level (simple/uppercase style).
+/// Debug uses blue to distinguish it from Trace since both share
+/// the same uppercase "DEBUG"/"TRACE" text without icons.
 fn simple_level_color(lvl: level.Level) -> String {
   case lvl {
     level.Trace -> ansi.gray
@@ -276,13 +279,11 @@ pub fn pad_to_width(formatted: String, target_width: Int) -> String {
 }
 
 /// Calculate the visual length of a string, excluding ANSI escape codes.
-/// This is a simplified calculation that counts visible characters.
+/// Uses a state machine to skip all escape sequences (ESC[...m).
 fn calculate_visual_length(s: String) -> Int {
-  let without_reset = string.replace(s, ansi.reset, "")
-  let without_bold = string.replace(without_reset, ansi.bold, "")
-
-  let chars = string.to_graphemes(without_bold)
-  count_visible_chars(chars, False, 0)
+  s
+  |> string.to_graphemes
+  |> count_visible_chars(False, 0)
 }
 
 fn count_visible_chars(chars: List(String), in_escape: Bool, count: Int) -> Int {
