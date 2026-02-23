@@ -1722,92 +1722,6 @@ pub fn handler_get_error_callback_test() {
 }
 
 // ============================================================================
-// Scoped Logger Override Tests
-// ============================================================================
-
-pub fn with_logger_returns_work_result_test() {
-  let lgr = log.new("test.scoped")
-  let result = log.with_logger(lgr, fn() { 42 })
-  result |> should.equal(42)
-}
-
-pub fn with_logger_overrides_default_logger_test() {
-  // Configure a custom handler that captures output
-  let captured =
-    handler.new(name: "capture", write: fn(_msg) { Nil }, format: fn(rec) {
-      rec.logger_name
-    })
-  let lgr =
-    log.new("overridden")
-    |> logger.with_handlers([captured])
-
-  // Inside with_logger, the default logger should be the overridden one
-  log.with_logger(lgr, fn() {
-    // We can't easily capture the output, but we can verify
-    // the function doesn't crash and returns correctly
-    log.info("this uses the overridden logger")
-    Nil
-  })
-}
-
-pub fn with_logger_restores_after_scope_test() {
-  log.reset_config()
-  let silent =
-    log.new("silent")
-    |> logger.with_handlers([handler.null()])
-
-  // Before scope: default logger
-  log.info("before scope - should use default")
-
-  log.with_logger(silent, fn() {
-    // Inside scope: silent logger
-    log.info("inside scope - silenced")
-  })
-
-  // After scope: default logger restored
-  log.info("after scope - should use default again")
-  log.reset_config()
-}
-
-pub fn with_logger_nests_correctly_test() {
-  let outer_logger =
-    log.new("outer")
-    |> logger.with_handlers([handler.null()])
-  let inner_logger =
-    log.new("inner")
-    |> logger.with_handlers([handler.null()])
-
-  log.with_logger(outer_logger, fn() {
-    // Outer scope uses outer_logger
-    log.info("outer")
-
-    log.with_logger(inner_logger, fn() {
-      // Inner scope uses inner_logger
-      log.info("inner")
-    })
-
-    // Back to outer_logger
-    log.info("outer again")
-  })
-}
-
-pub fn with_logger_composes_with_scope_context_test() {
-  log.reset_config()
-  let lgr =
-    log.new("scoped")
-    |> logger.with_handlers([handler.null()])
-
-  // with_logger + with_scope should compose
-  log.with_scope([#("request_id", "123")], fn() {
-    log.with_logger(lgr, fn() {
-      // The overridden logger should still pick up scope context
-      log.info("logged with scoped logger + scope context")
-    })
-  })
-  log.reset_config()
-}
-
-// ============================================================================
 // Scoped Context Tests
 // ============================================================================
 
@@ -1982,6 +1896,87 @@ pub fn scope_empty_context_test() {
 
   result
   |> should.equal("success")
+}
+
+// ============================================================================
+// Scoped Logger Override Tests (with_logger)
+// ============================================================================
+
+pub fn with_logger_returns_work_result_test() {
+  // with_logger should return the result of the work function
+  let lgr = log.new("test") |> log.with_handlers([handler.null()])
+  let result = log.with_logger(lgr, fn() { 42 })
+
+  result
+  |> should.equal(42)
+}
+
+pub fn with_logger_returns_string_result_test() {
+  // with_logger should work with any return type
+  let lgr = log.new("test") |> log.with_handlers([handler.null()])
+  let result = log.with_logger(lgr, fn() { "hello" })
+
+  result
+  |> should.equal("hello")
+}
+
+pub fn with_logger_overrides_default_logger_test() {
+  // Inside with_logger, get_scoped_logger should return the scoped logger
+  let lgr = log.new("scoped-test") |> log.with_handlers([handler.null()])
+  log.with_logger(lgr, fn() {
+    let result = log.get_scoped_logger()
+    result
+    |> should.be_ok()
+    let assert Ok(scoped) = result
+    logger.name(scoped)
+    |> should.equal("scoped-test")
+  })
+}
+
+pub fn with_logger_cleared_after_scope_test() {
+  // Outside with_logger, no scoped logger should be set
+  let lgr = log.new("temp") |> log.with_handlers([handler.null()])
+  log.with_logger(lgr, fn() { Nil })
+
+  log.get_scoped_logger()
+  |> should.be_error()
+}
+
+pub fn with_logger_nested_scopes_test() {
+  // Nested with_logger should work correctly
+  let outer = log.new("outer") |> log.with_handlers([handler.null()])
+  let inner = log.new("inner") |> log.with_handlers([handler.null()])
+
+  log.with_logger(outer, fn() {
+    // Should see outer logger
+    let assert Ok(lgr) = log.get_scoped_logger()
+    logger.name(lgr) |> should.equal("outer")
+
+    log.with_logger(inner, fn() {
+      // Should see inner logger
+      let assert Ok(lgr2) = log.get_scoped_logger()
+      logger.name(lgr2) |> should.equal("inner")
+    })
+
+    // Should be back to outer logger
+    let assert Ok(lgr3) = log.get_scoped_logger()
+    logger.name(lgr3) |> should.equal("outer")
+  })
+
+  // Should be cleared
+  log.get_scoped_logger() |> should.be_error()
+}
+
+pub fn with_logger_silent_logger_test() {
+  // A silent logger (no handlers) should work as a scoped override
+  let silent = log.silent("silent-test")
+  log.with_logger(silent, fn() {
+    // Module-level logging should use the silent logger (no output)
+    log.info("this should be silent")
+    let assert Ok(lgr) = log.get_scoped_logger()
+    logger.name(lgr) |> should.equal("silent-test")
+    logger.get_handlers(lgr) |> should.equal([])
+  })
 }
 
 // ============================================================================
