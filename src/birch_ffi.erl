@@ -1,6 +1,7 @@
 -module(birch_ffi).
 -export([is_stdout_tty/0, get_color_depth/0,
          get_global_config/0, set_global_config/1, clear_global_config/0,
+         get_cached_default_logger/0, set_cached_default_logger/1, clear_cached_default_logger/0,
          get_scoped_logger/0, set_scoped_logger/1, clear_scoped_logger/0,
          start_async_writer/5, async_send/2, flush_async_writers/0, flush_async_writer/1,
          compress_file_gzip/2, safe_call/1,
@@ -84,6 +85,33 @@ set_global_config(Config) ->
 %% Clear the global configuration (reset to unset state).
 clear_global_config() ->
     try persistent_term:erase(?GLOBAL_CONFIG_KEY) of
+        _ -> nil
+    catch
+        error:badarg -> nil
+    end.
+
+%% ============================================================================
+%% Cached Default Logger
+%% ============================================================================
+
+-define(CACHED_LOGGER_KEY, birch_cached_default_logger).
+
+%% Get the cached default logger. Returns {ok, Logger} or {error, nil}.
+get_cached_default_logger() ->
+    try persistent_term:get(?CACHED_LOGGER_KEY) of
+        Logger -> {ok, Logger}
+    catch
+        error:badarg -> {error, nil}
+    end.
+
+%% Set the cached default logger.
+set_cached_default_logger(Logger) ->
+    persistent_term:put(?CACHED_LOGGER_KEY, Logger),
+    nil.
+
+%% Clear the cached default logger (invalidate on config change).
+clear_cached_default_logger() ->
+    try persistent_term:erase(?CACHED_LOGGER_KEY) of
         _ -> nil
     catch
         error:badarg -> nil

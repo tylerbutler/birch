@@ -99,6 +99,7 @@ pub fn configure(options: List(ConfigOption)) -> Nil {
   let current = get_config()
   let new_config = config.apply_options(current, options)
   config.set_global_config(new_config)
+  clear_cached_default_logger()
 }
 
 /// Get the current global configuration.
@@ -113,6 +114,7 @@ pub fn get_config() -> GlobalConfig {
 /// Reset the global configuration to defaults.
 pub fn reset_config() -> Nil {
   config.clear_global_config()
+  clear_cached_default_logger()
 }
 
 // ============================================================================
@@ -139,6 +141,7 @@ pub fn set_level(lvl: Level) -> Nil {
   let current = get_config()
   let new_config = config.with_level(current, lvl)
   config.set_global_config(new_config)
+  clear_cached_default_logger()
 }
 
 /// Get the current global log level.
@@ -230,19 +233,43 @@ fn default_handlers() -> List(Handler) {
 // Default Logger Operations
 // ============================================================================
 
+/// Cached default logger storage (FFI).
+/// The default logger is built once and cached until config changes.
+@external(erlang, "birch_ffi", "get_cached_default_logger")
+@external(javascript, "./birch_ffi.mjs", "get_cached_default_logger")
+fn get_cached_default_logger() -> Result(Logger, Nil)
+
+@external(erlang, "birch_ffi", "set_cached_default_logger")
+@external(javascript, "./birch_ffi.mjs", "set_cached_default_logger")
+fn set_cached_default_logger(lgr: Logger) -> Nil
+
+@external(erlang, "birch_ffi", "clear_cached_default_logger")
+@external(javascript, "./birch_ffi.mjs", "clear_cached_default_logger")
+fn clear_cached_default_logger() -> Nil
+
+/// Build a Logger from a GlobalConfig.
+fn build_default_logger(cfg: GlobalConfig) -> Logger {
+  logger.new("app")
+  |> logger.with_level(cfg.level)
+  |> logger.with_handlers(cfg.handlers)
+  |> logger.with_context(cfg.context)
+}
+
 /// The default logger used by module-level logging functions.
-/// If a scoped logger override is active (via `with_logger`), returns that.
-/// Otherwise, reads configuration from the global config.
+/// Returns a scoped logger override if one is active (via `with_logger`),
+/// otherwise returns a cached default logger, rebuilding only when config has changed.
 fn default_logger() -> Logger {
   case scoped_logger.get_scoped_logger() {
     Ok(lgr) -> lgr
-    Error(Nil) -> {
-      let cfg = get_config()
-      logger.new("app")
-      |> logger.with_level(cfg.level)
-      |> logger.with_handlers(cfg.handlers)
-      |> logger.with_context(cfg.context)
-    }
+    Error(Nil) ->
+      case get_cached_default_logger() {
+        Ok(lgr) -> lgr
+        Error(Nil) -> {
+          let lgr = build_default_logger(get_config())
+          set_cached_default_logger(lgr)
+          lgr
+        }
+      }
   }
 }
 

@@ -110,6 +110,40 @@ export function clear_global_config() {
 }
 
 // ============================================================================
+// Cached Default Logger
+// ============================================================================
+
+let cachedDefaultLogger = undefined;
+
+/**
+ * Get the cached default logger.
+ * @returns {Ok | Error} Gleam Result type
+ */
+export function get_cached_default_logger() {
+  if (cachedDefaultLogger !== undefined) {
+    return new Ok(cachedDefaultLogger);
+  }
+  return new Error(undefined);
+}
+
+/**
+ * Set the cached default logger.
+ * @param {any} logger - The Logger object to cache
+ */
+export function set_cached_default_logger(logger) {
+  cachedDefaultLogger = logger;
+  return undefined;
+}
+
+/**
+ * Clear the cached default logger (invalidate on config change).
+ */
+export function clear_cached_default_logger() {
+  cachedDefaultLogger = undefined;
+  return undefined;
+}
+
+// ============================================================================
 // Async Writer Implementation
 // ============================================================================
 

@@ -1,0 +1,5 @@
+kind: Performance
+body: |-
+    Cache default logger (#60)
+    The default logger is now cached and only rebuilt when configuration changes via \`configure()\`, \`set_level()\`, or \`reset_config()\`. Previously it was reconstructed on every log call.
+time: 2026-02-22T12:52:21.104525204-08:00
