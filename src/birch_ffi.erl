@@ -1,11 +1,11 @@
 -module(birch_ffi).
 -export([is_stdout_tty/0, get_color_depth/0,
          get_global_config/0, set_global_config/1, clear_global_config/0,
+         get_scoped_logger/0, set_scoped_logger/1, clear_scoped_logger/0,
          start_async_writer/5, async_send/2, flush_async_writers/0, flush_async_writer/1,
          compress_file_gzip/2, safe_call/1,
          get_scope_context/0, set_scope_context/1, is_scope_context_available/0,
          get_scope_depth/0, set_scope_depth/1,
-         get_scoped_logger/0, set_scoped_logger/1, clear_scoped_logger/0,
          get_actor_registry/0, set_actor_registry/1,
          get_caller_id/0]).
 
@@ -318,32 +318,29 @@ set_scope_depth(Depth) ->
 is_scope_context_available() ->
     true.
 
-
 %% ============================================================================
 %% Scoped Logger Override
 %% ============================================================================
 
-%% Key for scoped logger in process dictionary
 -define(SCOPED_LOGGER_KEY, birch_scoped_logger).
 
-%% Get the current scoped logger override.
-%% Returns {ok, Logger} if a scoped logger is set, {error, nil} otherwise.
+%% Get the scoped logger override from the process dictionary.
+%% Returns {ok, Logger} or {error, nil}.
 get_scoped_logger() ->
     case erlang:get(?SCOPED_LOGGER_KEY) of
         undefined -> {error, nil};
         Logger -> {ok, Logger}
     end.
 
-%% Set the scoped logger override.
+%% Set the scoped logger override in the process dictionary.
 set_scoped_logger(Logger) ->
     erlang:put(?SCOPED_LOGGER_KEY, Logger),
     nil.
 
-%% Clear the scoped logger override.
+%% Clear the scoped logger override from the process dictionary.
 clear_scoped_logger() ->
     erlang:erase(?SCOPED_LOGGER_KEY),
     nil.
-
 
 %% ============================================================================
 %% OTP Actor Registry

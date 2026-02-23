@@ -660,7 +660,6 @@ export function is_scope_context_available() {
   return scopeContextState.asyncLocalStorageAvailable;
 }
 
-
 // ============================================================================
 // Scoped Logger Override
 // ============================================================================

@@ -1,8 +1,0 @@
-kind: Changed
-body: |-
-    The `:logger` integration now uses BEAM's formatter callback instead of a handler callback.
-
-    birch plugs into `:logger` as a **formatter** rather than a **handler**. This means your existing BEAM handler configuration (console, file, etc.) stays in control of output, and birch just handles how messages look. This is a simpler, more compatible approach that works better alongside other OTP logging tools.
-
-    See the new `install_formatter()` / `remove_formatter()` functions in `birch/erlang_logger`.
-time: 2026-02-20T23:56:19.000000000Z
