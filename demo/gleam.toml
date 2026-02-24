@@ -4,3 +4,4 @@ target = "erlang"
 
 [dependencies]
 birch = { path = ".." }
+gleam_stdlib = ">= 0.44.0"

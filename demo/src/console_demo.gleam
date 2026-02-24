@@ -7,6 +7,7 @@ import birch/handler/console
 import birch/level
 import birch/level_formatter
 import birch/logger
+import birch/record.{BoolVal, FloatVal, IntVal, StringVal}
 import gleam/io
 
 pub fn main() {
@@ -138,14 +139,14 @@ pub fn main() {
     log.config_level(level.Info),
   ])
 
-  log.info_m("Request received", [#("method", "GET"), #("path", "/api/users")])
+  log.info_m("Request received", [#("method", StringVal("GET")), #("path", StringVal("/api/users"))])
   log.warn_m("Slow query detected", [
-    #("duration_ms", "1523"),
-    #("table", "users"),
+    #("duration_ms", IntVal(1523)),
+    #("table", StringVal("users")),
   ])
   log.error_m("Connection failed", [
-    #("host", "db.example.com"),
-    #("port", "5432"),
+    #("host", StringVal("db.example.com")),
+    #("port", IntVal(5432)),
   ])
 
   // =========================================================================
@@ -163,20 +164,20 @@ pub fn main() {
     |> logger.with_handlers([console.fancy_handler()])
     |> logger.with_level(level.Info)
 
-  logger.info(db_logger, "Connected to database", [])
-  logger.debug(db_logger, "Executing query", [#("sql", "SELECT * FROM users")])
-  logger.info(http_logger, "Server started", [#("port", "8080")])
-  logger.warn(http_logger, "Rate limit exceeded", [#("client", "192.168.1.100")])
+  logger.info(db_logger, "Connected to database", [#("tls", BoolVal(True))])
+  logger.debug(db_logger, "Executing query", [#("sql", StringVal("SELECT * FROM users"))])
+  logger.info(http_logger, "Server started", [#("port", IntVal(8080))])
+  logger.warn(http_logger, "Rate limit exceeded", [#("client", StringVal("192.168.1.100"))])
 
   // =========================================================================
   // Semantic Log Types
   // =========================================================================
   print_header("SEMANTIC LOG TYPES")
 
-  console.start("Building project...", [#("target", "release")])
-  console.success("Build completed!", [#("duration", "2.5s")])
-  console.ready("Server listening", [#("port", "3000")])
-  console.fail("Could not connect to cache", [#("host", "redis.local")])
+  console.start("Building project...", [#("target", StringVal("release"))])
+  console.success("Build completed!", [#("duration_s", FloatVal(2.5))])
+  console.ready("Server listening", [#("port", IntVal(3000))])
+  console.fail("Could not connect to cache", [#("host", StringVal("redis.local"))])
 
   // =========================================================================
   // Box Output
@@ -320,14 +321,14 @@ pub fn main() {
 
   log.info("Outside any scope - no indentation")
 
-  log.with_scope([#("request_id", "req-123")], fn() {
+  log.with_scope([#("request_id", StringVal("req-123"))], fn() {
     log.info("Level 1 scope - indented once")
 
-    log.with_scope([#("step", "validation")], fn() {
+    log.with_scope([#("step", StringVal("validation"))], fn() {
       log.info("Level 2 scope - indented twice")
       log.warn("Warnings are also indented at level 2")
 
-      log.with_scope([#("substep", "schema_check")], fn() {
+      log.with_scope([#("substep", StringVal("schema_check"))], fn() {
         log.info("Level 3 scope - indented three times")
         Nil
       })
