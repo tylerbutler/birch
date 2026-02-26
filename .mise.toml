@@ -7,6 +7,7 @@
 [tools]
 act = "latest"
 bun = "latest"
+changie = "latest"
 deno = "latest"
 node = "22"  # For JavaScript target testing
 changie = "latest"
