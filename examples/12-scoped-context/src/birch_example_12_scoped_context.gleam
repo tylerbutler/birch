@@ -3,6 +3,8 @@
 //// Demonstrates request-scoped metadata propagation.
 
 import birch as log
+import birch/meta
+import birch/record.{type MetadataValue, StringVal}
 import gleam/int
 
 pub fn main() {
@@ -43,7 +45,7 @@ fn demo_basic_scope() {
 
   log.info("Before scope - no context")
 
-  log.with_scope([#("request_id", "req-123")], fn() {
+  log.with_scope([meta.string("request_id", "req-123")], fn() {
     log.info("Inside scope - request_id is attached")
     log.info("All logs in this block have request_id")
   })
@@ -55,13 +57,13 @@ fn demo_basic_scope() {
 fn demo_nested_scopes() {
   log.info("--- Nested Scopes ---")
 
-  log.with_scope([#("request_id", "req-456")], fn() {
+  log.with_scope([meta.string("request_id", "req-456")], fn() {
     log.info("Outer scope: request_id only")
 
-    log.with_scope([#("step", "validation")], fn() {
+    log.with_scope([meta.string("step", "validation")], fn() {
       log.info("Inner scope: request_id AND step")
 
-      log.with_scope([#("field", "email")], fn() {
+      log.with_scope([meta.string("field", "email")], fn() {
         log.info("Deepest scope: all three keys")
       })
 
@@ -84,7 +86,7 @@ fn demo_request_handling() {
 /// Simulate handling a web request with scoped context.
 fn handle_request(request_id: String, path: String, method: String) {
   log.with_scope(
-    [#("request_id", request_id), #("path", path), #("method", method)],
+    [meta.string("request_id", request_id), meta.string("path", path), meta.string("method", method)],
     fn() {
       log.info("Request received")
 
@@ -113,7 +115,7 @@ pub fn with_request_context(
   user_id: String,
   work: fn() -> a,
 ) -> a {
-  log.with_scope([#("request_id", request_id), #("user_id", user_id)], work)
+  log.with_scope([meta.string("request_id", request_id), meta.string("user_id", user_id)], work)
 }
 
 /// Example: Get current request ID from scope context.
@@ -123,16 +125,17 @@ pub fn get_current_request_id() -> Result(String, Nil) {
 }
 
 fn find_key(
-  context: List(#(String, String)),
+  context: List(#(String, MetadataValue)),
   key: String,
 ) -> Result(String, Nil) {
   case context {
     [] -> Error(Nil)
-    [#(k, v), ..rest] ->
+    [#(k, StringVal(v)), ..rest] ->
       case k == key {
         True -> Ok(v)
         False -> find_key(rest, key)
       }
+    [#(_k, _), ..rest] -> find_key(rest, key)
   }
 }
 

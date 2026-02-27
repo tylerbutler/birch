@@ -166,14 +166,16 @@ format_logger_name(Meta) ->
     end.
 
 %% Format metadata to Gleam format.
-%% Returns a list of {Key, Value} tuples where both are binaries.
+%% Returns a list of {Key, MetadataValue} tuples where Key is a binary and
+%% MetadataValue is a Gleam MetadataValue tagged union ({string_val, Binary},
+%% {int_val, Integer}, {float_val, Float}, {bool_val, Boolean}).
 format_metadata(Meta) ->
     InternalKeys = [time, mfa, file, line, gl, pid, domain, report_cb],
     lists:filtermap(fun({Key, Value}) ->
         case lists:member(Key, InternalKeys) of
             true -> false;
             false ->
-                {true, {to_binary_key(Key), to_binary_value(Value)}}
+                {true, {to_binary_key(Key), to_metadata_value(Value)}}
         end
     end, maps:to_list(Meta)).
 
@@ -181,15 +183,20 @@ to_binary_key(K) when is_atom(K) -> atom_to_binary(K, utf8);
 to_binary_key(K) when is_binary(K) -> K;
 to_binary_key(K) -> iolist_to_binary(io_lib:format("~p", [K])).
 
-to_binary_value(V) when is_binary(V) -> V;
-to_binary_value(V) when is_list(V) ->
-    try unicode:characters_to_binary(V)
-    catch _:_ -> iolist_to_binary(io_lib:format("~p", [V]))
-    end;
-to_binary_value(V) when is_atom(V) -> atom_to_binary(V, utf8);
-to_binary_value(V) when is_integer(V) -> integer_to_binary(V);
-to_binary_value(V) when is_float(V) -> float_to_binary(V);
-to_binary_value(V) -> iolist_to_binary(io_lib:format("~p", [V])).
+%% Convert an Erlang value to a Gleam MetadataValue tagged union.
+%% Gleam compiles StringVal(v) to {string_val, v}, IntVal(v) to {int_val, v}, etc.
+%% Note: is_boolean/1 guard must come before is_atom/1 since booleans are atoms in Erlang.
+to_metadata_value(V) when is_binary(V) -> {string_val, V};
+to_metadata_value(V) when is_boolean(V) -> {bool_val, V};
+to_metadata_value(V) when is_integer(V) -> {int_val, V};
+to_metadata_value(V) when is_float(V) -> {float_val, V};
+to_metadata_value(V) when is_list(V) ->
+    BinVal = try unicode:characters_to_binary(V)
+             catch _:_ -> iolist_to_binary(io_lib:format("~p", [V]))
+             end,
+    {string_val, BinVal};
+to_metadata_value(V) when is_atom(V) -> {string_val, atom_to_binary(V, utf8)};
+to_metadata_value(V) -> {string_val, iolist_to_binary(io_lib:format("~p", [V]))}.
 
 %% Convert Erlang level atom to display string (fallback formatter only)
 level_to_string(emergency) -> <<"FATAL">>;

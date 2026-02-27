@@ -4,8 +4,7 @@
 
 import birch as log
 import birch/logger
-import gleam/float
-import gleam/int
+import birch/meta
 
 pub fn main() {
   log.info("=== Structured Logging with Metadata ===")
@@ -33,19 +32,19 @@ fn demo_basic_metadata() {
   log.info("Application started")
 
   // Message with metadata
-  logger.info(lgr, "User logged in", [#("user_id", "user_123"), #("ip", "192.168.1.1")])
+  logger.info(lgr, "User logged in", [meta.string("user_id", "user_123"), meta.string("ip", "192.168.1.1")])
 
   // Debug with metadata (won't show at default level)
   logger.debug(lgr, "Session created", [
-    #("session_id", "sess_abc"),
-    #("expires_in", "3600"),
+    meta.string("session_id", "sess_abc"),
+    meta.int("expires_in", 3600),
   ])
 
   // Warning with metadata
   logger.warn(lgr, "Rate limit approaching", [
-    #("current", "95"),
-    #("limit", "100"),
-    #("window", "60s"),
+    meta.int("current", 95),
+    meta.int("limit", 100),
+    meta.string("window", "60s"),
   ])
 }
 
@@ -54,18 +53,18 @@ fn demo_request_tracking() {
   log.info("--- Request Tracking ---")
 
   let lgr = log.new("app")
-  let request_id = "req_" <> int.to_string(12_345)
+  let request_id = "req_12345"
 
   logger.info(lgr, "Request received", [
-    #("request_id", request_id),
-    #("method", "POST"),
-    #("path", "/api/users"),
+    meta.string("request_id", request_id),
+    meta.string("method", "POST"),
+    meta.string("path", "/api/users"),
   ])
 
   logger.info(lgr, "Request processed", [
-    #("request_id", request_id),
-    #("status", "200"),
-    #("duration_ms", "42"),
+    meta.string("request_id", request_id),
+    meta.int("status", 200),
+    meta.int("duration_ms", 42),
   ])
 }
 
@@ -76,16 +75,16 @@ fn demo_performance_metrics() {
   let lgr = log.new("app")
 
   logger.info(lgr, "Database query completed", [
-    #("query_type", "SELECT"),
-    #("table", "users"),
-    #("duration_ms", "15"),
-    #("rows_returned", "42"),
+    meta.string("query_type", "SELECT"),
+    meta.string("table", "users"),
+    meta.int("duration_ms", 15),
+    meta.int("rows_returned", 42),
   ])
 
   logger.info(lgr, "Cache operation", [
-    #("operation", "GET"),
-    #("key", "user:123:profile"),
-    #("hit", "true"),
+    meta.string("operation", "GET"),
+    meta.string("key", "user:123:profile"),
+    meta.bool("hit", True),
   ])
 }
 
@@ -96,16 +95,16 @@ fn demo_error_context() {
   let lgr = log.new("app")
 
   logger.error(lgr, "Failed to process payment", [
-    #("order_id", "order_789"),
-    #("amount", "99.99"),
-    #("currency", "USD"),
-    #("error_code", "CARD_DECLINED"),
+    meta.string("order_id", "order_789"),
+    meta.float("amount", 99.99),
+    meta.string("currency", "USD"),
+    meta.string("error_code", "CARD_DECLINED"),
   ])
 
   logger.error(lgr, "Connection failed", [
-    #("host", "db.example.com"),
-    #("port", "5432"),
-    #("retry_count", "3"),
+    meta.string("host", "db.example.com"),
+    meta.int("port", 5432),
+    meta.int("retry_count", 3),
   ])
 }
 
@@ -114,8 +113,8 @@ fn demo_error_context() {
 pub fn process_order(order_id: String, items: Int, total: Float) -> Nil {
   let lgr = log.new("app")
   logger.info(lgr, "Processing order", [
-    #("order_id", order_id),
-    #("item_count", int.to_string(items)),
-    #("total", float.to_string(total)),
+    meta.string("order_id", order_id),
+    meta.int("item_count", items),
+    meta.float("total", total),
   ])
 }

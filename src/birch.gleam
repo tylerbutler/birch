@@ -9,7 +9,7 @@
 ////
 //// pub fn main() {
 ////   log.info("Application starting")
-////   log.debug("Debug info", [#("key", "value")])
+////   log.debug("Debug info")
 //// }
 //// ```
 ////
@@ -17,9 +17,11 @@
 ////
 //// ```gleam
 //// import birch as log
+//// import birch/logger
+//// import birch/meta
 ////
-//// let logger = log.new("myapp.database")
-//// logger |> log.logger_info("Connected", [])
+//// let lgr = log.new("myapp.database")
+//// lgr |> logger.info("Connected", [meta.string("host", "localhost")])
 //// ```
 ////
 //// ## Configuration
@@ -38,6 +40,7 @@
 import birch/config.{type ConfigOption, type GlobalConfig, type SampleConfig}
 import birch/handler.{type ErrorCallback, type Handler}
 import birch/internal/platform
+import birch/internal/scoped_logger
 
 @target(erlang)
 import birch/erlang_logger
@@ -98,6 +101,7 @@ pub fn configure(options: List(ConfigOption)) -> Nil {
   let current = get_config()
   let new_config = config.apply_options(current, options)
   config.set_global_config(new_config)
+  clear_cached_default_logger()
 }
 
 /// Get the current global configuration.
@@ -112,6 +116,7 @@ pub fn get_config() -> GlobalConfig {
 /// Reset the global configuration to defaults.
 pub fn reset_config() -> Nil {
   config.clear_global_config()
+  clear_cached_default_logger()
 }
 
 // ============================================================================
@@ -138,6 +143,7 @@ pub fn set_level(lvl: Level) -> Nil {
   let current = get_config()
   let new_config = config.with_level(current, lvl)
   config.set_global_config(new_config)
+  clear_cached_default_logger()
 }
 
 /// Get the current global log level.
@@ -210,7 +216,7 @@ pub fn default_config() -> GlobalConfig {
     handlers: default_handlers(),
     context: [],
     on_error: None,
-    sampling: Error(Nil),
+    sampling: None,
   )
 }
 
@@ -229,14 +235,44 @@ fn default_handlers() -> List(Handler) {
 // Default Logger Operations
 // ============================================================================
 
-/// The default logger used by module-level logging functions.
-/// This logger reads its configuration from the global config.
-fn default_logger() -> Logger {
-  let cfg = get_config()
+/// Cached default logger storage (FFI).
+/// The default logger is built once and cached until config changes.
+@external(erlang, "birch_ffi", "get_cached_default_logger")
+@external(javascript, "./birch_ffi.mjs", "get_cached_default_logger")
+fn get_cached_default_logger() -> Result(Logger, Nil)
+
+@external(erlang, "birch_ffi", "set_cached_default_logger")
+@external(javascript, "./birch_ffi.mjs", "set_cached_default_logger")
+fn set_cached_default_logger(lgr: Logger) -> Nil
+
+@external(erlang, "birch_ffi", "clear_cached_default_logger")
+@external(javascript, "./birch_ffi.mjs", "clear_cached_default_logger")
+fn clear_cached_default_logger() -> Nil
+
+/// Build a Logger from a GlobalConfig.
+fn build_default_logger(cfg: GlobalConfig) -> Logger {
   logger.new("app")
   |> logger.with_level(cfg.level)
   |> logger.with_handlers(cfg.handlers)
   |> logger.with_context(cfg.context)
+}
+
+/// The default logger used by module-level logging functions.
+/// Returns a scoped logger override if one is active (via `with_logger`),
+/// otherwise returns a cached default logger, rebuilding only when config has changed.
+fn default_logger() -> Logger {
+  case scoped_logger.get_scoped_logger() {
+    Ok(lgr) -> lgr
+    Error(Nil) ->
+      case get_cached_default_logger() {
+        Ok(lgr) -> lgr
+        Error(Nil) -> {
+          let lgr = build_default_logger(get_config())
+          set_cached_default_logger(lgr)
+          lgr
+        }
+      }
+  }
 }
 
 /// Create a new named logger.
@@ -275,6 +311,11 @@ pub fn with_level(logger: Logger, min_level: Level) -> Logger {
 /// Add a handler to a logger.
 pub fn with_handler(lgr: Logger, handler: Handler) -> Logger {
   logger.with_handler(lgr, handler)
+}
+
+/// Replace all handlers on a logger.
+pub fn with_handlers(lgr: Logger, handlers: List(Handler)) -> Logger {
+  logger.with_handlers(lgr, handlers)
 }
 
 /// Set a custom time provider for a logger.
@@ -397,7 +438,7 @@ pub fn trace(message: String) -> Nil {
 }
 
 /// Log a trace message with metadata using the default logger.
-@deprecated("Use trace(message, metadata) instead - the _m suffix variants are being removed")
+@deprecated("Use birch/logger.trace(logger, message, metadata) instead")
 pub fn trace_m(message: String, metadata: Metadata) -> Nil {
   case should_sample(level.Trace) {
     False -> Nil
@@ -414,7 +455,7 @@ pub fn debug(message: String) -> Nil {
 }
 
 /// Log a debug message with metadata using the default logger.
-@deprecated("Use debug(message, metadata) instead - the _m suffix variants are being removed")
+@deprecated("Use birch/logger.debug(logger, message, metadata) instead")
 pub fn debug_m(message: String, metadata: Metadata) -> Nil {
   case should_sample(level.Debug) {
     False -> Nil
@@ -431,7 +472,7 @@ pub fn info(message: String) -> Nil {
 }
 
 /// Log an info message with metadata using the default logger.
-@deprecated("Use info(message, metadata) instead - the _m suffix variants are being removed")
+@deprecated("Use birch/logger.info(logger, message, metadata) instead")
 pub fn info_m(message: String, metadata: Metadata) -> Nil {
   case should_sample(level.Info) {
     False -> Nil
@@ -448,7 +489,7 @@ pub fn warn(message: String) -> Nil {
 }
 
 /// Log a warning message with metadata using the default logger.
-@deprecated("Use warn(message, metadata) instead - the _m suffix variants are being removed")
+@deprecated("Use birch/logger.warn(logger, message, metadata) instead")
 pub fn warn_m(message: String, metadata: Metadata) -> Nil {
   case should_sample(level.Warn) {
     False -> Nil
@@ -465,7 +506,7 @@ pub fn error(message: String) -> Nil {
 }
 
 /// Log an error message with metadata using the default logger.
-@deprecated("Use error(message, metadata) instead - the _m suffix variants are being removed")
+@deprecated("Use birch/logger.error(logger, message, metadata) instead")
 pub fn error_m(message: String, metadata: Metadata) -> Nil {
   case should_sample(level.Err) {
     False -> Nil
@@ -482,7 +523,7 @@ pub fn fatal(message: String) -> Nil {
 }
 
 /// Log a fatal message with metadata using the default logger.
-@deprecated("Use fatal(message, metadata) instead - the _m suffix variants are being removed")
+@deprecated("Use birch/logger.fatal(logger, message, metadata) instead")
 pub fn fatal_m(message: String, metadata: Metadata) -> Nil {
   case should_sample(level.Fatal) {
     False -> Nil
@@ -541,7 +582,7 @@ pub fn error_result(message: String, result: Result(a, e)) -> Nil {
 }
 
 /// Log an error message with an associated Result and metadata.
-@deprecated("Use error_result(message, result, metadata) instead - the _m suffix variants are being removed")
+@deprecated("Use birch/logger.error_result(logger, message, result, metadata) instead")
 pub fn error_result_m(
   message: String,
   result: Result(a, e),
@@ -565,7 +606,7 @@ pub fn fatal_result(message: String, result: Result(a, e)) -> Nil {
 }
 
 /// Log a fatal message with an associated Result and metadata.
-@deprecated("Use fatal_result(message, result, metadata) instead - the _m suffix variants are being removed")
+@deprecated("Use birch/logger.fatal_result(logger, message, result, metadata) instead")
 pub fn fatal_result_m(
   message: String,
   result: Result(a, e),
@@ -597,6 +638,57 @@ pub fn logger_fatal_result(
   metadata: Metadata,
 ) -> Nil {
   logger.fatal_result(lgr, message, result, metadata)
+}
+
+// ============================================================================
+// Scoped Logger Override
+// ============================================================================
+
+/// Execute a function with the given logger as the default.
+///
+/// All module-level logging functions (`birch.info`, `birch.error`, etc.)
+/// called within the scope will use the provided logger instead of the
+/// global default. After the function returns, the previous default
+/// logger is restored.
+///
+/// This is useful when a subsystem needs different logging behavior
+/// (e.g., silencing logs during TUI rendering) without mutating the
+/// global configuration.
+///
+/// Scopes can be nested — inner `with_logger` calls override outer ones.
+///
+/// ## Example
+///
+/// ```gleam
+/// import birch as log
+/// import birch/handler
+///
+/// // Create a silent logger for the TUI
+/// let silent = log.new("tui") |> log.with_handler(handler.null())
+///   |> log.with_handlers([])
+///
+/// log.with_logger(silent, fn() {
+///   // birch.info("...") uses the silent logger here
+///   start_tui()
+/// })
+/// // Outside the block, the original default logger is used
+/// ```
+///
+/// ## Platform Support
+///
+/// - **Erlang:** Uses the process dictionary. Each process has its own scope.
+/// - **JavaScript (Node.js):** Uses AsyncLocalStorage for async context propagation.
+/// - **JavaScript (Other):** Falls back to stack-based storage.
+pub fn with_logger(lgr: Logger, work: fn() -> a) -> a {
+  scoped_logger.with_scoped_logger(lgr, work)
+}
+
+/// Get the current scoped logger override, if any.
+///
+/// Returns `Ok(logger)` if a scoped logger is active (via `with_logger`),
+/// or `Error(Nil)` if using the global default.
+pub fn get_scoped_logger() -> Result(Logger, Nil) {
+  scoped_logger.get_scoped_logger()
 }
 
 // ============================================================================

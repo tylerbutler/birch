@@ -1,4 +1,5 @@
 import birch as log
+import birch/meta
 import gleeunit
 import gleeunit/should
 import birch_example_12_scoped_context as scoped_context
@@ -21,7 +22,7 @@ pub fn with_request_context_test() {
 pub fn get_current_request_id_inside_scope_test() {
   // On JavaScript without AsyncLocalStorage, with_scope runs the function but
   // scoped context isn't persisted, so we just verify it runs
-  log.with_scope([#("request_id", "test-req-789")], fn() {
+  log.with_scope([meta.string("request_id", "test-req-789")], fn() {
     case log.is_scoped_context_available() {
       True -> {
         scoped_context.get_current_request_id()

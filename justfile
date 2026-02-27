@@ -75,10 +75,10 @@ check-quick: format-check check-configs-sync test-erlang
 
 # Full local validation (no act/Docker required)
 # Covers: format, config sync, strict build, tests, examples (Erlang), integration (Node.js)
-check-full: format-check check-configs-sync build-strict-all test test-examples test-integration-node
+check-full: format-check check-configs-sync build-strict-all test test-examples test-integration-node demo
 
 # CI parity recipes
-pr: format-check check-configs-sync build-strict test docs
+pr: format-check check-configs-sync build-strict test docs demo
 main: pr test-examples
 
 # Watch and rebuild on changes (requires watchexec)

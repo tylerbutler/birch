@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ratchet:actions/checkout@v6
 
       - name: Setup environment
-        uses: ./.github/actions/setup
+        uses: tylerbutler/actions/setup-gleam@c697a813534c6364a835de8e2ed2c4e0c3638bbe # ratchet:tylerbutler/actions/setup-gleam@main
         with:
           node: ${{ matrix.target == 'javascript' }}
 
@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ratchet:actions/checkout@v6
 
       - name: Setup environment
-        uses: ./.github/actions/setup
+        uses: tylerbutler/actions/setup-gleam@c697a813534c6364a835de8e2ed2c4e0c3638bbe # ratchet:tylerbutler/actions/setup-gleam@main
         with:
           node: true
 
@@ -105,7 +105,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ratchet:actions/checkout@v6
 
       - name: Setup environment
-        uses: ./.github/actions/setup
+        uses: tylerbutler/actions/setup-gleam@c697a813534c6364a835de8e2ed2c4e0c3638bbe # ratchet:tylerbutler/actions/setup-gleam@main
         with:
           node: ${{ matrix.target != 'erlang' }}
 
@@ -137,13 +137,30 @@ jobs:
         if: matrix.target == 'bun'
         run: just test-example-bun ${{ matrix.example }}
 
+  demo:
+    runs-on: ubuntu-latest
+    name: Demo
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ratchet:actions/checkout@v6
+
+      - name: Setup environment
+        uses: tylerbutler/actions/setup-gleam@c697a813534c6364a835de8e2ed2c4e0c3638bbe # ratchet:tylerbutler/actions/setup-gleam@main
+        with:
+          node: true
+
+      - name: Run demo (Erlang)
+        run: just demo
+
+      - name: Run demo (JavaScript)
+        run: just demo-js
+
   docs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ratchet:actions/checkout@v6
 
       - name: Setup environment
-        uses: ./.github/actions/setup
+        uses: tylerbutler/actions/setup-gleam@c697a813534c6364a835de8e2ed2c4e0c3638bbe # ratchet:tylerbutler/actions/setup-gleam@main
 
       - name: Build docs
         run: just docs

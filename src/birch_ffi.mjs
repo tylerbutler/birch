@@ -17,8 +17,15 @@ export function is_stdout_tty() {
     return process.stdout.isTTY === true;
   }
   // Deno
-  if (typeof Deno !== "undefined" && Deno.isatty) {
-    return Deno.isatty(Deno.stdout.rid);
+  if (typeof Deno !== "undefined") {
+    // Deno 2.0+: stdout.isTerminal()
+    if (typeof Deno.stdout?.isTerminal === "function") {
+      return Deno.stdout.isTerminal();
+    }
+    // Deno 1.x fallback: isatty(rid)
+    if (Deno.isatty && Deno.stdout?.rid !== undefined) {
+      return Deno.isatty(Deno.stdout.rid);
+    }
   }
   // Browser - assume no TTY
   return false;
@@ -105,6 +112,40 @@ export function set_global_config(config) {
  */
 export function clear_global_config() {
   globalConfig = undefined;
+  return undefined;
+}
+
+// ============================================================================
+// Cached Default Logger
+// ============================================================================
+
+let cachedDefaultLogger = undefined;
+
+/**
+ * Get the cached default logger.
+ * @returns {Ok | Error} Gleam Result type
+ */
+export function get_cached_default_logger() {
+  if (cachedDefaultLogger !== undefined) {
+    return new Ok(cachedDefaultLogger);
+  }
+  return new Error(undefined);
+}
+
+/**
+ * Set the cached default logger.
+ * @param {any} logger - The Logger object to cache
+ */
+export function set_cached_default_logger(logger) {
+  cachedDefaultLogger = logger;
+  return undefined;
+}
+
+/**
+ * Clear the cached default logger (invalidate on config change).
+ */
+export function clear_cached_default_logger() {
+  cachedDefaultLogger = undefined;
   return undefined;
 }
 
@@ -370,7 +411,7 @@ export function compress_file_gzip(sourcePath, destPath) {
     if (typeof Deno !== "undefined") {
       // Use gzip command for synchronous compression in Deno
       const command = new Deno.Command("gzip", {
-        args: ["-c", sourcePath],
+        args: ["-c", "--", sourcePath],
         stdout: "piped",
         stderr: "piped",
       });
@@ -597,19 +638,6 @@ function mergeGleamLists(newContext, currentContext) {
 export function run_with_scope(context, callback) {
   initScopeContext();
 
-  // Extract keys from the new context being added
-  const newKeys = gleamListToArray(context).map(pair => {
-    // Each pair is a tuple with [0] = key, [1] = value
-    return pair[0];
-  });
-
-  // Create _scope_highlight_keys metadata entry
-  const highlightKeysValue = newKeys.join(",");
-  const highlightKeysPair = ["_scope_highlight_keys", highlightKeysValue];
-
-  // Add _scope_highlight_keys to the context
-  const contextWithHighlight = toList([...gleamListToArray(context), highlightKeysPair]);
-
   if (
     scopeContextState.asyncLocalStorageAvailable &&
     scopeContextState.asyncLocalStorage
@@ -619,7 +647,7 @@ export function run_with_scope(context, callback) {
       context: toList([]),
       depth: 0
     };
-    const mergedContext = mergeGleamLists(contextWithHighlight, currentStore.context);
+    const mergedContext = mergeGleamLists(context, currentStore.context);
     const newStore = {
       context: mergedContext,
       depth: currentStore.depth + 1
@@ -635,7 +663,7 @@ export function run_with_scope(context, callback) {
     context: toList([]),
     depth: 0
   };
-  const mergedContext = mergeGleamLists(contextWithHighlight, currentStore.context);
+  const mergedContext = mergeGleamLists(context, currentStore.context);
   const newStore = {
     context: mergedContext,
     depth: currentStore.depth + 1
@@ -658,6 +686,144 @@ export function run_with_scope(context, callback) {
 export function is_scope_context_available() {
   initScopeContext();
   return scopeContextState.asyncLocalStorageAvailable;
+}
+
+// ============================================================================
+// Scoped Logger Override
+// ============================================================================
+
+// Scoped logger state (separate from scope context)
+let scopedLoggerState = {
+  initialized: false,
+  asyncLocalStorage: null,
+  asyncLocalStorageAvailable: false,
+  // Stack-based fallback for non-Node.js environments
+  fallbackStack: [],
+};
+
+/**
+ * Initialize the scoped logger system (lazy initialization).
+ */
+function initScopedLogger() {
+  if (scopedLoggerState.initialized) {
+    return;
+  }
+  scopedLoggerState.initialized = true;
+
+  // Try to use AsyncLocalStorage in Node.js
+  if (typeof process !== "undefined" && process.versions?.node) {
+    try {
+      const async_hooks = await_import_or_require("node:async_hooks");
+      if (async_hooks?.AsyncLocalStorage) {
+        scopedLoggerState.asyncLocalStorage = new async_hooks.AsyncLocalStorage();
+        scopedLoggerState.asyncLocalStorageAvailable = true;
+      }
+    } catch (e) {
+      scopedLoggerState.asyncLocalStorageAvailable = false;
+    }
+  }
+}
+
+/**
+ * Try to synchronously import or require a module.
+ */
+function await_import_or_require(mod) {
+  try {
+    return require(mod);
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Get the current scoped logger override.
+ * @returns {Result} Ok(Logger) if set, Error(nil) otherwise
+ */
+export function get_scoped_logger() {
+  initScopedLogger();
+
+  if (
+    scopedLoggerState.asyncLocalStorageAvailable &&
+    scopedLoggerState.asyncLocalStorage
+  ) {
+    const store = scopedLoggerState.asyncLocalStorage.getStore();
+    if (store && store.logger !== undefined) {
+      return new Ok(store.logger);
+    }
+    return new Error(undefined);
+  }
+
+  // Fallback
+  const stack = scopedLoggerState.fallbackStack;
+  if (stack.length > 0) {
+    return new Ok(stack[stack.length - 1]);
+  }
+  return new Error(undefined);
+}
+
+/**
+ * Set the scoped logger override (fallback only).
+ */
+export function set_scoped_logger(logger) {
+  initScopedLogger();
+
+  if (
+    scopedLoggerState.asyncLocalStorageAvailable &&
+    scopedLoggerState.asyncLocalStorage
+  ) {
+    // For AsyncLocalStorage, this is handled by run_with_scoped_logger
+    return undefined;
+  }
+
+  // Fallback
+  scopedLoggerState.fallbackStack.push(logger);
+  return undefined;
+}
+
+/**
+ * Clear the scoped logger override (fallback only).
+ */
+export function clear_scoped_logger() {
+  initScopedLogger();
+
+  if (
+    scopedLoggerState.asyncLocalStorageAvailable &&
+    scopedLoggerState.asyncLocalStorage
+  ) {
+    // For AsyncLocalStorage, this is handled by run_with_scoped_logger
+    return undefined;
+  }
+
+  // Fallback
+  scopedLoggerState.fallbackStack.pop();
+  return undefined;
+}
+
+/**
+ * Run a function with a scoped logger override.
+ * This properly handles AsyncLocalStorage.run() for Node.js.
+ * @param {*} logger - The Logger to use as override
+ * @param {function} callback - Function to run with the scoped logger
+ * @returns {*} The result of the callback
+ */
+export function run_with_scoped_logger(logger, callback) {
+  initScopedLogger();
+
+  if (
+    scopedLoggerState.asyncLocalStorageAvailable &&
+    scopedLoggerState.asyncLocalStorage
+  ) {
+    const newStore = { logger: logger };
+    return scopedLoggerState.asyncLocalStorage.run(newStore, callback);
+  }
+
+  // Fallback for non-Node.js environments: use stack-based approach
+  scopedLoggerState.fallbackStack.push(logger);
+  try {
+    return callback();
+  } finally {
+    scopedLoggerState.fallbackStack.pop();
+  }
 }
 
 

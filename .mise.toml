@@ -7,11 +7,11 @@
 [tools]
 act = "latest"
 bun = "latest"
-deno = "latest"
-node = "22"  # For JavaScript target testing
 changie = "latest"
+deno = "latest"
 go = "1.23"  # Required for commit-config-gen
 "go:github.com/tylerbutler/commit-config-gen" = "latest"
+node = "22"  # For JavaScript target testing
 
 [env]
 # Ensure consistent locale for tests

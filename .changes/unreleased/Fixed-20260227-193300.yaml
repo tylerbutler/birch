@@ -1,0 +1,5 @@
+kind: Fixed
+body: |-
+    Fix Block overflow strategy silently discarding records (#83)
+    The `Block` overflow strategy in the Erlang async writer called `flush_queue` with a dummy callback, discarding all pending records instead of writing them. The real callback is now passed through correctly.
+time: 2026-02-27T19:33:00.000000000-08:00

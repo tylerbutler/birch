@@ -1,0 +1,5 @@
+kind: Fixed
+body: |-
+    Add exception safety to Erlang scoped context (#83)
+    If `work()` panicked inside `with_scope` or `with_scoped_logger` on the Erlang target, the process dictionary was never restored — permanently corrupting scope context for OTP processes. Added `try/after` FFI helpers to guarantee cleanup. The JavaScript target already handled this correctly.
+time: 2026-02-27T19:32:00.000000000-08:00

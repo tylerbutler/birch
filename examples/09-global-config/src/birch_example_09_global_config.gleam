@@ -7,6 +7,7 @@ import birch/handler/console
 import birch/handler/json
 import birch/level
 import birch/logger
+import birch/meta
 
 pub fn main() {
   log.info("=== Global Config Demo ===")
@@ -55,7 +56,7 @@ fn demo_multiple_handlers() {
 
   let lgr = log.new("app")
   log.info("This goes to both console and JSON handlers")
-  logger.info(lgr, "With metadata", [#("key", "value")])
+  logger.info(lgr, "With metadata", [meta.string("key", "value")])
 }
 
 /// Demonstrate global context.
@@ -65,12 +66,12 @@ fn demo_global_context() {
   // Set global context that appears in all logs
   log.configure([
     log.config_handlers([console.handler()]),
-    log.config_context([#("app", "myapp"), #("version", "1.0.0")]),
+    log.config_context([meta.string("app", "myapp"), meta.string("version", "1.0.0")]),
   ])
 
   let lgr = log.new("app")
   log.info("This includes global context")
-  logger.info(lgr, "Plus additional metadata", [#("request_id", "123")])
+  logger.info(lgr, "Plus additional metadata", [meta.string("request_id", "123")])
 }
 
 /// Demonstrate runtime level changes.
@@ -105,7 +106,7 @@ pub fn configure_production() -> Nil {
   log.configure([
     log.config_level(level.Info),
     log.config_handlers([json.handler()]),
-    log.config_context([#("env", "production")]),
+    log.config_context([meta.string("env", "production")]),
   ])
 }
 
@@ -114,6 +115,6 @@ pub fn configure_development() -> Nil {
   log.configure([
     log.config_level(level.Debug),
     log.config_handlers([console.handler()]),
-    log.config_context([#("env", "development")]),
+    log.config_context([meta.string("env", "development")]),
   ])
 }

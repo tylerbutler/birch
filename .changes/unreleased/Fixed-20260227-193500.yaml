@@ -1,0 +1,5 @@
+kind: Fixed
+body: |-
+    Wrap OTP logger metadata in proper `MetadataValue` tags (#83)
+    The Erlang `:logger` formatter FFI returned raw binaries for metadata values, but Gleam's `Metadata` type expects tagged `MetadataValue` unions. Values are now correctly wrapped as `StringVal`, `IntVal`, `FloatVal`, or `BoolVal` with proper type detection (including boolean-before-atom guard ordering).
+time: 2026-02-27T19:35:00.000000000-08:00
