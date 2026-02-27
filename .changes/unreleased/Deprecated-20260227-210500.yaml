@@ -1,0 +1,5 @@
+kind: Deprecated
+body: |-
+    Deprecate `forward_to_logger()` and related functions
+    `forward_to_logger()`, `forward_to_logger_with_formatter()`, and `forward_to_logger_raw()` are deprecated in favor of `forward_to_beam()`. The old functions either discarded log levels or had a confusing name. The legacy handler-based API (`install_logger_handler()`, `uninstall_logger_handler()`) is also deprecated in favor of `install_formatter()` and `remove_formatter()`.
+time: 2026-02-27T21:05:00.000000000-08:00

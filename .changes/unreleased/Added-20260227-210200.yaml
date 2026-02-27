@@ -1,0 +1,5 @@
+kind: Added
+body: |-
+    `forward_to_beam()` handler for Erlang :logger integration
+    New `erlang_logger.forward_to_beam()` handler that preserves birch log levels when forwarding to Erlang's `:logger` system. Unlike the old `forward_to_logger()`, this handler maps each birch level to the correct RFC 5424 `:logger` level (e.g., `Warn` → `warning`, `Critical` → `critical`).
+time: 2026-02-27T21:02:00.000000000-08:00

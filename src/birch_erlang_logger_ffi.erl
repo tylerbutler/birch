@@ -33,12 +33,13 @@ gleam_level_to_atom(erlang_debug) -> debug.
 
 %% Convert Erlang log level atom to Gleam Level type.
 %% Gleam Level variants are also just atoms.
+%% This is a 1:1 mapping matching RFC 5424 severity levels.
 erlang_level_to_gleam(emergency) -> fatal;
-erlang_level_to_gleam(alert) -> fatal;
-erlang_level_to_gleam(critical) -> fatal;
+erlang_level_to_gleam(alert) -> alert;
+erlang_level_to_gleam(critical) -> critical;
 erlang_level_to_gleam(error) -> err;
 erlang_level_to_gleam(warning) -> warn;
-erlang_level_to_gleam(notice) -> info;
+erlang_level_to_gleam(notice) -> notice;
 erlang_level_to_gleam(info) -> info;
 erlang_level_to_gleam(debug) -> debug;
 erlang_level_to_gleam(_) -> info.
@@ -199,12 +200,12 @@ to_metadata_value(V) when is_atom(V) -> {string_val, atom_to_binary(V, utf8)};
 to_metadata_value(V) -> {string_val, iolist_to_binary(io_lib:format("~p", [V]))}.
 
 %% Convert Erlang level atom to display string (fallback formatter only)
-level_to_string(emergency) -> <<"FATAL">>;
-level_to_string(alert) -> <<"FATAL">>;
-level_to_string(critical) -> <<"FATAL">>;
-level_to_string(error) -> <<"ERROR">>;
-level_to_string(warning) -> <<"WARN ">>;
-level_to_string(notice) -> <<"INFO ">>;
-level_to_string(info) -> <<"INFO ">>;
-level_to_string(debug) -> <<"DEBUG">>;
-level_to_string(_) -> <<"INFO ">>.
+level_to_string(emergency) -> <<"FATAL   ">>;
+level_to_string(alert) -> <<"ALERT   ">>;
+level_to_string(critical) -> <<"CRITICAL">>;
+level_to_string(error) -> <<"ERROR   ">>;
+level_to_string(warning) -> <<"WARN    ">>;
+level_to_string(notice) -> <<"NOTICE  ">>;
+level_to_string(info) -> <<"INFO    ">>;
+level_to_string(debug) -> <<"DEBUG   ">>;
+level_to_string(_) -> <<"INFO    ">>.

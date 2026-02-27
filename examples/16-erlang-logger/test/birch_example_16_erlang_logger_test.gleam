@@ -8,8 +8,8 @@ pub fn main() {
   gleeunit.main()
 }
 
-pub fn forward_to_logger_creates_handler_test() {
-  let handler = erlang_logger.forward_to_logger()
+pub fn forward_to_beam_creates_handler_test() {
+  let handler = erlang_logger.forward_to_beam()
 
   // Should be able to use it without error
   log.configure([log.config_handlers([handler])])

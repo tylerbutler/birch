@@ -1,6 +1,9 @@
 //// Log levels for controlling which messages are emitted.
 ////
-//// Levels are ordered by severity: TRACE < DEBUG < INFO < WARN < ERROR < FATAL
+//// Levels are ordered by severity, following RFC 5424 (syslog) semantics
+//// with an additional Trace level below Debug:
+////
+//// TRACE < DEBUG < INFO < NOTICE < WARN < ERR < CRITICAL < ALERT < FATAL
 ////
 //// Messages at or above the configured threshold are logged; those below are filtered.
 
@@ -10,13 +13,17 @@ import gleam/string
 
 /// Log level representing the severity of a log message.
 ///
-/// Levels are ordered from least to most severe:
-/// - `Trace`: Very detailed diagnostic information
+/// Levels are ordered from least to most severe, following RFC 5424
+/// (syslog) severity levels with an additional Trace level:
+/// - `Trace`: Very detailed diagnostic information (no RFC 5424 equivalent)
 /// - `Debug`: Debugging information useful during development
 /// - `Info`: Normal operational messages (default threshold)
+/// - `Notice`: Normal but significant conditions
 /// - `Warn`: Warning conditions that might need attention
 /// - `Err`: Error conditions that should be addressed
-/// - `Fatal`: Critical errors that prevent the system from continuing
+/// - `Critical`: Critical conditions — a subsystem has failed
+/// - `Alert`: Action must be taken immediately
+/// - `Fatal`: System is unusable (maps to RFC 5424 emergency)
 ///
 /// Note: `Err` is used instead of `Error` to avoid conflict with the
 /// `Result` type's `Error` constructor.
@@ -24,8 +31,11 @@ pub type Level {
   Trace
   Debug
   Info
+  Notice
   Warn
   Err
+  Critical
+  Alert
   Fatal
 }
 
@@ -36,9 +46,12 @@ pub fn to_int(level: Level) -> Int {
     Trace -> 0
     Debug -> 1
     Info -> 2
-    Warn -> 3
-    Err -> 4
-    Fatal -> 5
+    Notice -> 3
+    Warn -> 4
+    Err -> 5
+    Critical -> 6
+    Alert -> 7
+    Fatal -> 8
   }
 }
 
@@ -49,9 +62,12 @@ pub fn from_string(s: String) -> Result(Level, Nil) {
     "trace" -> Ok(Trace)
     "debug" -> Ok(Debug)
     "info" -> Ok(Info)
+    "notice" -> Ok(Notice)
     "warn" | "warning" -> Ok(Warn)
     "error" | "err" -> Ok(Err)
-    "fatal" | "critical" -> Ok(Fatal)
+    "critical" -> Ok(Critical)
+    "alert" -> Ok(Alert)
+    "fatal" | "emergency" -> Ok(Fatal)
     _ -> Error(Nil)
   }
 }
@@ -62,8 +78,11 @@ pub fn to_string(level: Level) -> String {
     Trace -> "TRACE"
     Debug -> "DEBUG"
     Info -> "INFO"
+    Notice -> "NOTICE"
     Warn -> "WARN"
     Err -> "ERROR"
+    Critical -> "CRITICAL"
+    Alert -> "ALERT"
     Fatal -> "FATAL"
   }
 }
@@ -74,8 +93,11 @@ pub fn to_string_lowercase(level: Level) -> String {
     Trace -> "trace"
     Debug -> "debug"
     Info -> "info"
+    Notice -> "notice"
     Warn -> "warn"
     Err -> "error"
+    Critical -> "critical"
+    Alert -> "alert"
     Fatal -> "fatal"
   }
 }

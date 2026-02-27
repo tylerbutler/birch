@@ -139,7 +139,10 @@ pub fn main() {
     log.config_level(level.Info),
   ])
 
-  log.info_m("Request received", [#("method", StringVal("GET")), #("path", StringVal("/api/users"))])
+  log.info_m("Request received", [
+    #("method", StringVal("GET")),
+    #("path", StringVal("/api/users")),
+  ])
   log.warn_m("Slow query detected", [
     #("duration_ms", IntVal(1523)),
     #("table", StringVal("users")),
@@ -165,9 +168,13 @@ pub fn main() {
     |> logger.with_level(level.Info)
 
   logger.info(db_logger, "Connected to database", [#("tls", BoolVal(True))])
-  logger.debug(db_logger, "Executing query", [#("sql", StringVal("SELECT * FROM users"))])
+  logger.debug(db_logger, "Executing query", [
+    #("sql", StringVal("SELECT * FROM users")),
+  ])
   logger.info(http_logger, "Server started", [#("port", IntVal(8080))])
-  logger.warn(http_logger, "Rate limit exceeded", [#("client", StringVal("192.168.1.100"))])
+  logger.warn(http_logger, "Rate limit exceeded", [
+    #("client", StringVal("192.168.1.100")),
+  ])
 
   // =========================================================================
   // Semantic Log Types
@@ -177,7 +184,9 @@ pub fn main() {
   console.start("Building project...", [#("target", StringVal("release"))])
   console.success("Build completed!", [#("duration_s", FloatVal(2.5))])
   console.ready("Server listening", [#("port", IntVal(3000))])
-  console.fail("Could not connect to cache", [#("host", StringVal("redis.local"))])
+  console.fail("Could not connect to cache", [
+    #("host", StringVal("redis.local")),
+  ])
 
   // =========================================================================
   // Box Output
@@ -256,8 +265,11 @@ pub fn main() {
           level.Trace -> "🔍"
           level.Debug -> "🐛"
           level.Info -> "💡"
+          level.Notice -> "📋"
           level.Warn -> "⚠️ "
           level.Err -> "🔥"
+          level.Critical -> "🔥"
+          level.Alert -> "🚨"
           level.Fatal -> "💀"
         }
       },

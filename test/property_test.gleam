@@ -3,7 +3,9 @@
 //// These tests verify invariants that should hold for all inputs.
 
 import birch/formatter
-import birch/level.{Debug, Err, Fatal, Info, Trace, Warn}
+import birch/level.{
+  Alert, Critical, Debug, Err, Fatal, Info, Notice, Trace, Warn,
+}
 import birch/record.{StringVal}
 import gleam/list
 import gleam/order
@@ -21,8 +23,11 @@ fn level_generator() -> qcheck.Generator(level.Level) {
   qcheck.from_generators(qcheck.return(Trace), [
     qcheck.return(Debug),
     qcheck.return(Info),
+    qcheck.return(Notice),
     qcheck.return(Warn),
     qcheck.return(Err),
+    qcheck.return(Critical),
+    qcheck.return(Alert),
     qcheck.return(Fatal),
   ])
 }
@@ -33,7 +38,17 @@ fn level_generator() -> qcheck.Generator(level.Level) {
 
 /// Property: to_int produces unique values for each level
 pub fn level_to_int_unique_test() {
-  let all_levels = [Trace, Debug, Info, Warn, Err, Fatal]
+  let all_levels = [
+    Trace,
+    Debug,
+    Info,
+    Notice,
+    Warn,
+    Err,
+    Critical,
+    Alert,
+    Fatal,
+  ]
   let ints = list.map(all_levels, level.to_int)
   let unique_ints = list.unique(ints)
 
@@ -43,7 +58,17 @@ pub fn level_to_int_unique_test() {
 
 /// Property: to_int values are strictly increasing with severity
 pub fn level_to_int_ordering_test() {
-  let all_levels = [Trace, Debug, Info, Warn, Err, Fatal]
+  let all_levels = [
+    Trace,
+    Debug,
+    Info,
+    Notice,
+    Warn,
+    Err,
+    Critical,
+    Alert,
+    Fatal,
+  ]
   let ints = list.map(all_levels, level.to_int)
 
   // Check that each successive int is greater than the previous

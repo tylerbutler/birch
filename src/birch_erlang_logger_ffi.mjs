@@ -47,6 +47,15 @@ export function logger_log(level, message) {
 }
 
 const LEVEL_NAMES = {
+  erlang_emergency: "emergency",
+  erlang_alert: "alert",
+  erlang_critical: "critical",
+  erlang_error: "error",
+  erlang_warning: "warning",
+  erlang_notice: "notice",
+  erlang_info: "info",
+  erlang_debug: "debug",
+  // Also support PascalCase variant names (legacy codegen)
   ErlangEmergency: "emergency",
   ErlangAlert: "alert",
   ErlangCritical: "critical",
