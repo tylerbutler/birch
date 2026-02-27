@@ -26,7 +26,7 @@ fn demo_forward_to_logger() {
   log.info("--- Forward to Erlang Logger ---")
 
   // Create handler that forwards to Erlang's logger
-  let handler = erlang_logger.forward_to_logger()
+  let handler = erlang_logger.forward_to_beam()
 
   // Configure birch to use this handler
   log.configure([log.config_handlers([handler])])
@@ -75,7 +75,7 @@ fn demo_install_formatter() {
 /// Create a handler that forwards to Erlang logger.
 /// Useful for OTP application integration.
 pub fn create_erlang_handler() -> Handler {
-  erlang_logger.forward_to_logger()
+  erlang_logger.forward_to_beam()
 }
 
 /// Install birch as a formatter for Erlang's :logger system.

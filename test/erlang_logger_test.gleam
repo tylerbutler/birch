@@ -24,18 +24,18 @@ import gleeunit/should
 // (These work on both Erlang and JavaScript targets)
 // ============================================================================
 
-pub fn forward_to_logger_creates_handler_test() {
+pub fn forward_to_beam_creates_handler_test() {
   // Creating a handler that forwards to :logger should work
-  let h = erlang_logger.forward_to_logger()
+  let h = erlang_logger.forward_to_beam()
 
   // The handler should have a descriptive name
   handler.name(h)
   |> should.equal("erlang:logger")
 }
 
-pub fn forward_to_logger_handler_can_handle_records_test() {
+pub fn forward_to_beam_handler_can_handle_records_test() {
   // The forward handler should not crash when handling records
-  let h = erlang_logger.forward_to_logger()
+  let h = erlang_logger.forward_to_beam()
 
   let r =
     record.new(
@@ -50,16 +50,19 @@ pub fn forward_to_logger_handler_can_handle_records_test() {
   handler.handle(h, r)
 }
 
-pub fn forward_to_logger_with_all_levels_test() {
+pub fn forward_to_beam_with_all_levels_test() {
   // Test that all log levels can be forwarded without error
-  let h = erlang_logger.forward_to_logger()
+  let h = erlang_logger.forward_to_beam()
 
   let levels = [
     level.Trace,
     level.Debug,
     level.Info,
+    level.Notice,
     level.Warn,
     level.Err,
+    level.Critical,
+    level.Alert,
     level.Fatal,
   ]
 
@@ -202,18 +205,27 @@ pub fn gleam_level_to_erlang_level_test() {
   erlang_logger.gleam_level_to_erlang(level.Info)
   |> should.equal(erlang_logger.ErlangInfo)
 
+  erlang_logger.gleam_level_to_erlang(level.Notice)
+  |> should.equal(erlang_logger.ErlangNotice)
+
   erlang_logger.gleam_level_to_erlang(level.Warn)
   |> should.equal(erlang_logger.ErlangWarning)
 
   erlang_logger.gleam_level_to_erlang(level.Err)
   |> should.equal(erlang_logger.ErlangError)
 
+  erlang_logger.gleam_level_to_erlang(level.Critical)
+  |> should.equal(erlang_logger.ErlangCritical)
+
+  erlang_logger.gleam_level_to_erlang(level.Alert)
+  |> should.equal(erlang_logger.ErlangAlert)
+
   erlang_logger.gleam_level_to_erlang(level.Fatal)
   |> should.equal(erlang_logger.ErlangEmergency)
 }
 
 pub fn erlang_level_to_gleam_level_test() {
-  // Test that Erlang :logger levels convert correctly to Gleam levels
+  // Test that Erlang :logger levels convert correctly to Gleam levels (1:1 mapping)
   erlang_logger.erlang_level_to_gleam(erlang_logger.ErlangDebug)
   |> should.equal(level.Debug)
 
@@ -221,7 +233,7 @@ pub fn erlang_level_to_gleam_level_test() {
   |> should.equal(level.Info)
 
   erlang_logger.erlang_level_to_gleam(erlang_logger.ErlangNotice)
-  |> should.equal(level.Info)
+  |> should.equal(level.Notice)
 
   erlang_logger.erlang_level_to_gleam(erlang_logger.ErlangWarning)
   |> should.equal(level.Warn)
@@ -230,10 +242,10 @@ pub fn erlang_level_to_gleam_level_test() {
   |> should.equal(level.Err)
 
   erlang_logger.erlang_level_to_gleam(erlang_logger.ErlangCritical)
-  |> should.equal(level.Fatal)
+  |> should.equal(level.Critical)
 
   erlang_logger.erlang_level_to_gleam(erlang_logger.ErlangAlert)
-  |> should.equal(level.Fatal)
+  |> should.equal(level.Alert)
 
   erlang_logger.erlang_level_to_gleam(erlang_logger.ErlangEmergency)
   |> should.equal(level.Fatal)
@@ -248,7 +260,7 @@ pub fn logger_with_forward_handler_test() {
   // Create a logger that forwards to Erlang :logger
   let lgr =
     logger.new("test.erlang")
-    |> logger.with_handler(erlang_logger.forward_to_logger())
+    |> logger.with_handler(erlang_logger.forward_to_beam())
 
   // Should be able to log without crashing
   logger.info(lgr, "Message forwarded to Erlang :logger", [
@@ -262,7 +274,7 @@ pub fn configure_with_forward_handler_test() {
 
   // Configure birch to forward to Erlang :logger
   log.configure([
-    log.config_handlers([erlang_logger.forward_to_logger()]),
+    log.config_handlers([erlang_logger.forward_to_beam()]),
   ])
 
   // Verify the handler was added
@@ -339,9 +351,9 @@ pub fn ensure_formatter_configured_does_not_crash_test() {
   erlang_logger.ensure_formatter_configured()
 }
 
-pub fn forward_raw_sends_structured_data_test() {
-  // The raw forward handler should not crash when sending structured data
-  let h = erlang_logger.forward_to_logger_raw()
+pub fn forward_to_beam_sends_structured_data_test() {
+  // The forward_to_beam handler should not crash when sending structured data
+  let h = erlang_logger.forward_to_beam()
 
   let r =
     record.new(
@@ -356,9 +368,9 @@ pub fn forward_raw_sends_structured_data_test() {
   handler.handle(h, r)
 }
 
-pub fn forward_raw_with_caller_id_test() {
+pub fn forward_to_beam_with_caller_id_test() {
   // Test that caller_id is passed through without crashing
-  let h = erlang_logger.forward_to_logger_raw()
+  let h = erlang_logger.forward_to_beam()
 
   let r =
     record.new(
@@ -372,4 +384,30 @@ pub fn forward_raw_with_caller_id_test() {
 
   // Should not crash
   handler.handle(h, r)
+}
+
+pub fn forward_to_beam_level_roundtrip_test() {
+  // Verify that birch levels survive the round-trip through Erlang level mapping
+  // birch level → Erlang level → birch level should preserve the level
+  // (except Trace → Debug, since both map to ErlangDebug)
+  let levels_with_expected = [
+    // Trace maps to ErlangDebug which maps back to Debug (lossy)
+    #(level.Trace, level.Debug),
+    #(level.Debug, level.Debug),
+    #(level.Info, level.Info),
+    #(level.Notice, level.Notice),
+    #(level.Warn, level.Warn),
+    #(level.Err, level.Err),
+    #(level.Critical, level.Critical),
+    #(level.Alert, level.Alert),
+    #(level.Fatal, level.Fatal),
+  ]
+
+  list.each(levels_with_expected, fn(pair) {
+    let #(input_level, expected_level) = pair
+    input_level
+    |> erlang_logger.gleam_level_to_erlang
+    |> erlang_logger.erlang_level_to_gleam
+    |> should.equal(expected_level)
+  })
 }

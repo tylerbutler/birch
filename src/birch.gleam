@@ -223,7 +223,7 @@ pub fn default_config() -> GlobalConfig {
 @target(erlang)
 fn default_handlers() -> List(Handler) {
   erlang_logger.ensure_formatter_configured()
-  [erlang_logger.forward_to_logger_raw()]
+  [erlang_logger.forward_to_beam()]
 }
 
 @target(javascript)
@@ -480,6 +480,14 @@ pub fn info_m(message: String, metadata: Metadata) -> Nil {
   }
 }
 
+/// Log a notice message using the default logger.
+pub fn notice(message: String) -> Nil {
+  case should_sample(level.Notice) {
+    False -> Nil
+    True -> logger.notice(default_logger(), message, [])
+  }
+}
+
 /// Log a warning message using the default logger.
 pub fn warn(message: String) -> Nil {
   case should_sample(level.Warn) {
@@ -511,6 +519,22 @@ pub fn error_m(message: String, metadata: Metadata) -> Nil {
   case should_sample(level.Err) {
     False -> Nil
     True -> logger.error(default_logger(), message, metadata)
+  }
+}
+
+/// Log a critical message using the default logger.
+pub fn critical(message: String) -> Nil {
+  case should_sample(level.Critical) {
+    False -> Nil
+    True -> logger.critical(default_logger(), message, [])
+  }
+}
+
+/// Log an alert message using the default logger.
+pub fn alert(message: String) -> Nil {
+  case should_sample(level.Alert) {
+    False -> Nil
+    True -> logger.alert(default_logger(), message, [])
   }
 }
 

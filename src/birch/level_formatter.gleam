@@ -58,10 +58,10 @@ pub fn label_formatter() -> LevelFormatter {
 pub fn label_formatter_with_config(config: LabelConfig) -> LevelFormatter {
   LevelFormatter(
     format: fn(lvl, use_color) { format_label(lvl, config, use_color) },
-    // Label width: "trace" = 5, "error" = 5 (but icons add 2 chars: "ℹ info" = 6)
+    // Label width: "critical" = 8 (longest), icons add 2 chars: "✖ critical" = 10
     target_width: case config.icons {
-      True -> 6
-      False -> 5
+      True -> 10
+      False -> 8
     },
   )
 }
@@ -103,8 +103,8 @@ fn format_label(
 pub fn badge_formatter() -> LevelFormatter {
   LevelFormatter(
     format: fn(lvl, use_color) { format_badge(lvl, use_color) },
-    // Badge width: "[TRACE]" = 7, "[ERROR]" = 7
-    target_width: 7,
+    // Badge width: "[CRITICAL]" = 10 (longest)
+    target_width: 10,
   )
 }
 
@@ -132,8 +132,8 @@ fn format_badge(lvl: level.Level, use_color: Bool) -> String {
 pub fn simple_formatter() -> LevelFormatter {
   LevelFormatter(
     format: fn(lvl, use_color) { format_simple(lvl, use_color) },
-    // Simple width: "TRACE" = 5, "ERROR" = 5
-    target_width: 5,
+    // Simple width: "CRITICAL" = 8 (longest)
+    target_width: 8,
   )
 }
 
@@ -216,8 +216,11 @@ pub fn level_icon(lvl: level.Level) -> String {
     level.Trace -> "→"
     level.Debug -> "⚙"
     level.Info -> "ℹ"
+    level.Notice -> "◉"
     level.Warn -> "⚠"
     level.Err -> "✖"
+    level.Critical -> "✖"
+    level.Alert -> "‼"
     level.Fatal -> "✖"
   }
 }
@@ -228,8 +231,11 @@ pub fn level_color(lvl: level.Level) -> String {
     level.Trace -> ansi.gray
     level.Debug -> ansi.gray
     level.Info -> ansi.cyan
+    level.Notice -> ansi.cyan
     level.Warn -> ansi.yellow
     level.Err -> ansi.red
+    level.Critical -> ansi.bright_red
+    level.Alert -> ansi.bright_red
     level.Fatal -> ansi.bright_red
   }
 }
@@ -240,8 +246,11 @@ fn simple_level_color(lvl: level.Level) -> String {
     level.Trace -> ansi.gray
     level.Debug -> ansi.blue
     level.Info -> ansi.cyan
+    level.Notice -> ansi.cyan
     level.Warn -> ansi.yellow
     level.Err -> ansi.red
+    level.Critical -> ansi.bright_red
+    level.Alert -> ansi.bright_red
     level.Fatal -> ansi.bright_red
   }
 }
@@ -255,9 +264,9 @@ fn simple_level_color(lvl: level.Level) -> String {
 ///
 /// The width should be chosen based on the longest possible level output
 /// for the given formatter style:
-/// - Simple style (uppercase): 5 characters ("TRACE", "DEBUG", "ERROR", "FATAL")
-/// - Badge style: 7 characters ("[TRACE]", "[DEBUG]", "[ERROR]", "[FATAL]")
-/// - Label style (lowercase): 5 characters ("trace", "debug", "error", "fatal")
+/// - Simple style (uppercase): 8 characters ("CRITICAL" is the longest)
+/// - Badge style: 10 characters ("[CRITICAL]" is the longest)
+/// - Label style (lowercase): 8 characters ("critical" is the longest)
 ///
 /// This function intelligently handles both plain text and ANSI-formatted strings
 /// by padding AFTER any ANSI reset codes to keep coloring clean.

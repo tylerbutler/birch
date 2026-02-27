@@ -23,7 +23,7 @@
 //// pub fn main() {
 ////   // Configure birch to forward to Erlang's :logger
 ////   log.configure([
-////     log.config_handlers([erlang_logger.forward_to_logger()]),
+////     log.config_handlers([erlang_logger.forward_to_beam()]),
 ////   ])
 ////
 ////   // Logs will now go to Erlang's :logger system
@@ -60,19 +60,19 @@ import birch/record
 // Erlang Log Level Type
 // ============================================================================
 
-/// Erlang :logger log levels.
+/// Erlang :logger log levels (RFC 5424 syslog severity levels).
 ///
-/// Erlang uses syslog-style levels which are more granular than birch levels.
-/// These are mapped to/from birch levels as follows:
+/// Birch levels map 1:1 to Erlang levels (except Trace, which shares
+/// debug with Debug):
 ///
 /// | Erlang Level | Gleam Level |
 /// |--------------|-------------|
 /// | emergency    | Fatal       |
-/// | alert        | Fatal       |
-/// | critical     | Fatal       |
+/// | alert        | Alert       |
+/// | critical     | Critical    |
 /// | error        | Err         |
 /// | warning      | Warn        |
-/// | notice       | Info        |
+/// | notice       | Notice      |
 /// | info         | Info        |
 /// | debug        | Debug/Trace |
 pub type ErlangLevel {
@@ -91,27 +91,50 @@ pub type ErlangLevel {
 // ============================================================================
 
 /// Convert a Gleam log level to an Erlang :logger level.
+///
+/// The mapping follows RFC 5424 semantics with a 1:1 correspondence
+/// for all levels except Trace (which has no RFC 5424 equivalent and
+/// maps to debug):
+///
+/// | Gleam Level | Erlang Level |
+/// |-------------|--------------|
+/// | Trace       | debug        |
+/// | Debug       | debug        |
+/// | Info        | info         |
+/// | Notice      | notice       |
+/// | Warn        | warning      |
+/// | Err         | error        |
+/// | Critical    | critical     |
+/// | Alert       | alert        |
+/// | Fatal       | emergency    |
 pub fn gleam_level_to_erlang(gleam_level: Level) -> ErlangLevel {
   case gleam_level {
     level.Trace -> ErlangDebug
     level.Debug -> ErlangDebug
     level.Info -> ErlangInfo
+    level.Notice -> ErlangNotice
     level.Warn -> ErlangWarning
     level.Err -> ErlangError
+    level.Critical -> ErlangCritical
+    level.Alert -> ErlangAlert
     level.Fatal -> ErlangEmergency
   }
 }
 
 /// Convert an Erlang :logger level to a Gleam log level.
+///
+/// This is a clean 1:1 reverse mapping. The only lossy direction is
+/// Erlang debug → Gleam Debug (Trace is not distinguishable from Debug
+/// on the Erlang side).
 pub fn erlang_level_to_gleam(erlang_level: ErlangLevel) -> Level {
   case erlang_level {
     ErlangDebug -> level.Debug
     ErlangInfo -> level.Info
-    ErlangNotice -> level.Info
+    ErlangNotice -> level.Notice
     ErlangWarning -> level.Warn
     ErlangError -> level.Err
-    ErlangCritical -> level.Fatal
-    ErlangAlert -> level.Fatal
+    ErlangCritical -> level.Critical
+    ErlangAlert -> level.Alert
     ErlangEmergency -> level.Fatal
   }
 }
@@ -120,31 +143,54 @@ pub fn erlang_level_to_gleam(erlang_level: ErlangLevel) -> Level {
 // Forward to :logger Handler
 // ============================================================================
 
-/// Create a handler that forwards birch records to Erlang's :logger system.
+// ============================================================================
+// Forward to BEAM :logger Handler
+// ============================================================================
+
+/// Create a handler that forwards birch records to the BEAM's :logger
+/// with proper level mapping.
 ///
-/// This allows birch to integrate with existing OTP logging infrastructure,
-/// including any :logger handlers already configured (default handler, file handlers, etc.).
+/// This is the recommended handler for Erlang/BEAM deployments. It
+/// preserves birch log levels through to :logger so that downstream
+/// :logger handlers, log aggregation systems, and monitoring tools
+/// see the correct RFC 5424 severity levels.
 ///
-/// On JavaScript, this creates a handler that writes to console instead,
-/// since :logger is not available.
+/// On JavaScript, this falls back to console output (since :logger is
+/// not available), using the appropriate console method for the level.
 ///
 /// ## Example
 ///
 /// ```gleam
 /// import birch as log
 /// import birch/erlang_logger
-/// import birch/handler/console
 ///
 /// pub fn main() {
-///   // Use both console and :logger output
 ///   log.configure([
-///     log.config_handlers([
-///       console.handler(),
-///       erlang_logger.forward_to_logger(),
-///     ]),
+///     log.config_handlers([erlang_logger.forward_to_beam()]),
 ///   ])
+///
+///   // Logs are forwarded to :logger with correct level mapping
+///   log.info("Hello from Gleam!")
 /// }
 /// ```
+pub fn forward_to_beam() -> Handler {
+  handler.new_with_record_write(name: "erlang:logger", write: fn(r) {
+    let erlang_level = gleam_level_to_erlang(r.level)
+    let message = formatter.human_readable(r)
+    do_logger_log(erlang_level, message)
+  })
+}
+
+// ============================================================================
+// Deprecated: forward_to_logger / forward_to_logger_raw
+// ============================================================================
+
+/// Create a handler that forwards birch records to Erlang's :logger system.
+///
+/// **Deprecated**: This handler always logs at the `info` level regardless of
+/// the actual log record's level, silently discarding level information.
+/// Use `forward_to_beam()` instead, which preserves log levels.
+@deprecated("Use forward_to_beam() instead — this handler discards log levels")
 pub fn forward_to_logger() -> Handler {
   handler.new(
     name: "erlang:logger",
@@ -154,6 +200,10 @@ pub fn forward_to_logger() -> Handler {
 }
 
 /// Create a handler that forwards to :logger with a custom formatter.
+///
+/// **Deprecated**: This handler always logs at the `info` level regardless of
+/// the actual log record's level. Use `forward_to_beam()` instead.
+@deprecated("Use forward_to_beam() instead — this handler discards log levels")
 pub fn forward_to_logger_with_formatter(format: formatter.Formatter) -> Handler {
   handler.new(name: "erlang:logger", write: forward_write, format: format)
 }
@@ -162,22 +212,13 @@ fn forward_write(message: String) -> Nil {
   do_logger_log(ErlangInfo, message)
 }
 
-// ============================================================================
-// Forward to :logger with Level (raw handler)
-// ============================================================================
-
 /// Create a handler that forwards birch records to :logger with proper
 /// level mapping and structured metadata.
 ///
-/// This handler passes structured data to :logger, preserving the log level,
-/// logger name, metadata, and caller ID. The birch_logger_formatter installed
-/// on the default handler will then apply birch's formatting.
+/// **Deprecated**: Use `forward_to_beam()` instead (same behavior, better name).
+@deprecated("Use forward_to_beam() instead")
 pub fn forward_to_logger_raw() -> Handler {
-  handler.new_with_record_write(name: "erlang:logger:raw", write: fn(r) {
-    let erlang_level = gleam_level_to_erlang(r.level)
-    let message = formatter.human_readable(r)
-    do_logger_log(erlang_level, message)
-  })
+  forward_to_beam()
 }
 
 // ============================================================================

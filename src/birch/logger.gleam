@@ -70,7 +70,7 @@ pub fn new(name: String) -> Logger {
 
 @target(erlang)
 fn default_handlers() -> List(Handler) {
-  [erlang_logger.forward_to_logger_raw()]
+  [erlang_logger.forward_to_beam()]
 }
 
 @target(javascript)
@@ -380,6 +380,20 @@ pub fn info_lazy(
   log_lazy(logger, level.Info, message_fn, metadata)
 }
 
+/// Log a notice message.
+pub fn notice(logger: Logger, message: String, metadata: Metadata) -> Nil {
+  log(logger, level.Notice, message, metadata)
+}
+
+/// Log a notice message with lazy evaluation.
+pub fn notice_lazy(
+  logger: Logger,
+  message_fn: fn() -> String,
+  metadata: Metadata,
+) -> Nil {
+  log_lazy(logger, level.Notice, message_fn, metadata)
+}
+
 /// Log a warning message.
 pub fn warn(logger: Logger, message: String, metadata: Metadata) -> Nil {
   log(logger, level.Warn, message, metadata)
@@ -406,6 +420,34 @@ pub fn error_lazy(
   metadata: Metadata,
 ) -> Nil {
   log_lazy(logger, level.Err, message_fn, metadata)
+}
+
+/// Log a critical message.
+pub fn critical(logger: Logger, message: String, metadata: Metadata) -> Nil {
+  log(logger, level.Critical, message, metadata)
+}
+
+/// Log a critical message with lazy evaluation.
+pub fn critical_lazy(
+  logger: Logger,
+  message_fn: fn() -> String,
+  metadata: Metadata,
+) -> Nil {
+  log_lazy(logger, level.Critical, message_fn, metadata)
+}
+
+/// Log an alert message.
+pub fn alert(logger: Logger, message: String, metadata: Metadata) -> Nil {
+  log(logger, level.Alert, message, metadata)
+}
+
+/// Log an alert message with lazy evaluation.
+pub fn alert_lazy(
+  logger: Logger,
+  message_fn: fn() -> String,
+  metadata: Metadata,
+) -> Nil {
+  log_lazy(logger, level.Alert, message_fn, metadata)
 }
 
 /// Log a fatal message.
