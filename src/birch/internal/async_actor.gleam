@@ -10,12 +10,6 @@
 ////
 //// On JavaScript, this module is not used - the platform FFI handles async there.
 
-@target(javascript)
-/// This module is only used on the Erlang target.
-/// The JavaScript target does not support OTP actors.
-@deprecated("This constant will be removed - it serves no functional purpose")
-pub const erlang_only = True
-
 @target(erlang)
 import birch/handler.{type Handler}
 

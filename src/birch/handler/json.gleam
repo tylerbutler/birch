@@ -193,12 +193,12 @@ pub fn handler_stderr_with_formatter(format: formatter.Formatter) -> Handler {
 ///
 /// Default JSON format includes: timestamp, level, logger, message, and metadata.
 pub fn handler() -> Handler {
-  handler.new(name: "json", write: io.println, format: format_json)
+  handler_with_formatter(format_json)
 }
 
 /// Create a JSON handler that writes to stderr with the default format.
 pub fn handler_stderr() -> Handler {
-  handler.new(name: "json_stderr", write: io.println_error, format: format_json)
+  handler_stderr_with_formatter(format_json)
 }
 
 // ============================================================================
@@ -206,6 +206,8 @@ pub fn handler_stderr() -> Handler {
 // ============================================================================
 
 /// Format a log record as a JSON string using the default format.
+///
+/// Includes timestamp, level, logger, message, and all metadata fields.
 /// This is equivalent to using `standard_builder() |> build()`.
 pub fn format_json(record: LogRecord) -> String {
   standard_builder()

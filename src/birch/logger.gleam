@@ -70,6 +70,7 @@ pub fn new(name: String) -> Logger {
 
 @target(erlang)
 fn default_handlers() -> List(Handler) {
+  erlang_logger.ensure_formatter_configured()
   [erlang_logger.forward_to_logger_raw()]
 }
 
