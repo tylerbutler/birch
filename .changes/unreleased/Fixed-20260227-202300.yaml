@@ -1,0 +1,5 @@
+kind: Fixed
+body: |-
+    Fix misleading deprecation messages for `_m` suffix functions
+    Deprecation messages previously pointed to non-existent overloads like `info(message, metadata)`. They now correctly direct users to `birch/logger` (e.g., `birch/logger.info(logger, message, metadata)`).
+time: 2026-02-27T20:23:00.000000000-08:00
