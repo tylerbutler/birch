@@ -54,7 +54,7 @@ import gleam/list
 /// ```
 @external(javascript, "../birch_ffi.mjs", "run_with_scope")
 pub fn with_scope(context: Metadata, work: fn() -> a) -> a {
-  // Erlang implementation: use process dictionary
+  // Erlang implementation: use process dictionary with try/after cleanup
   // Get current scope context and depth (may be empty or from outer scope)
   let current_context = platform.get_scope_context()
   let current_depth = platform.get_scope_depth()
@@ -63,19 +63,26 @@ pub fn with_scope(context: Metadata, work: fn() -> a) -> a {
   let merged_context = list.append(context, current_context)
   let new_depth = current_depth + 1
 
-  // Set the new scope context and depth
-  platform.set_scope_context(merged_context)
-  platform.set_scope_depth(new_depth)
-
-  // Execute the work function
-  let result = work()
-
-  // Restore the previous context and depth
-  platform.set_scope_context(current_context)
-  platform.set_scope_depth(current_depth)
-
-  result
+  // Use FFI helper that wraps work() in try/after for exception safety
+  run_with_scope_cleanup(
+    merged_context,
+    new_depth,
+    current_context,
+    current_depth,
+    work,
+  )
 }
+
+/// Erlang FFI: run work function with scope context, restoring previous
+/// context/depth in an `after` block even if work() raises an exception.
+@external(erlang, "birch_ffi", "run_with_scope_cleanup")
+fn run_with_scope_cleanup(
+  merged_context: Metadata,
+  new_depth: Int,
+  old_context: Metadata,
+  old_depth: Int,
+  work: fn() -> a,
+) -> a
 
 /// Get the current scope context.
 ///
