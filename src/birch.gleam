@@ -436,7 +436,7 @@ pub fn trace(message: String) -> Nil {
 }
 
 /// Log a trace message with metadata using the default logger.
-@deprecated("Use trace(message, metadata) instead - the _m suffix variants are being removed")
+@deprecated("Use birch/logger.trace(logger, message, metadata) instead")
 pub fn trace_m(message: String, metadata: Metadata) -> Nil {
   case should_sample(level.Trace) {
     False -> Nil
@@ -453,7 +453,7 @@ pub fn debug(message: String) -> Nil {
 }
 
 /// Log a debug message with metadata using the default logger.
-@deprecated("Use debug(message, metadata) instead - the _m suffix variants are being removed")
+@deprecated("Use birch/logger.debug(logger, message, metadata) instead")
 pub fn debug_m(message: String, metadata: Metadata) -> Nil {
   case should_sample(level.Debug) {
     False -> Nil
@@ -470,7 +470,7 @@ pub fn info(message: String) -> Nil {
 }
 
 /// Log an info message with metadata using the default logger.
-@deprecated("Use info(message, metadata) instead - the _m suffix variants are being removed")
+@deprecated("Use birch/logger.info(logger, message, metadata) instead")
 pub fn info_m(message: String, metadata: Metadata) -> Nil {
   case should_sample(level.Info) {
     False -> Nil
@@ -487,7 +487,7 @@ pub fn warn(message: String) -> Nil {
 }
 
 /// Log a warning message with metadata using the default logger.
-@deprecated("Use warn(message, metadata) instead - the _m suffix variants are being removed")
+@deprecated("Use birch/logger.warn(logger, message, metadata) instead")
 pub fn warn_m(message: String, metadata: Metadata) -> Nil {
   case should_sample(level.Warn) {
     False -> Nil
@@ -504,7 +504,7 @@ pub fn error(message: String) -> Nil {
 }
 
 /// Log an error message with metadata using the default logger.
-@deprecated("Use error(message, metadata) instead - the _m suffix variants are being removed")
+@deprecated("Use birch/logger.error(logger, message, metadata) instead")
 pub fn error_m(message: String, metadata: Metadata) -> Nil {
   case should_sample(level.Err) {
     False -> Nil
@@ -521,7 +521,7 @@ pub fn fatal(message: String) -> Nil {
 }
 
 /// Log a fatal message with metadata using the default logger.
-@deprecated("Use fatal(message, metadata) instead - the _m suffix variants are being removed")
+@deprecated("Use birch/logger.fatal(logger, message, metadata) instead")
 pub fn fatal_m(message: String, metadata: Metadata) -> Nil {
   case should_sample(level.Fatal) {
     False -> Nil
@@ -580,7 +580,7 @@ pub fn error_result(message: String, result: Result(a, e)) -> Nil {
 }
 
 /// Log an error message with an associated Result and metadata.
-@deprecated("Use error_result(message, result, metadata) instead - the _m suffix variants are being removed")
+@deprecated("Use birch/logger.error_result(logger, message, result, metadata) instead")
 pub fn error_result_m(
   message: String,
   result: Result(a, e),
@@ -604,7 +604,7 @@ pub fn fatal_result(message: String, result: Result(a, e)) -> Nil {
 }
 
 /// Log a fatal message with an associated Result and metadata.
-@deprecated("Use fatal_result(message, result, metadata) instead - the _m suffix variants are being removed")
+@deprecated("Use birch/logger.fatal_result(logger, message, result, metadata) instead")
 pub fn fatal_result_m(
   message: String,
   result: Result(a, e),
