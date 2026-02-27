@@ -214,7 +214,7 @@ pub fn default_config() -> GlobalConfig {
     handlers: default_handlers(),
     context: [],
     on_error: None,
-    sampling: Error(Nil),
+    sampling: None,
   )
 }
 
