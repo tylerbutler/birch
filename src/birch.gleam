@@ -9,7 +9,7 @@
 ////
 //// pub fn main() {
 ////   log.info("Application starting")
-////   log.debug("Debug info", [#("key", "value")])
+////   log.debug("Debug info")
 //// }
 //// ```
 ////
@@ -17,9 +17,11 @@
 ////
 //// ```gleam
 //// import birch as log
+//// import birch/logger
+//// import birch/meta
 ////
-//// let logger = log.new("myapp.database")
-//// logger |> log.logger_info("Connected", [])
+//// let lgr = log.new("myapp.database")
+//// lgr |> logger.info("Connected", [meta.string("host", "localhost")])
 //// ```
 ////
 //// ## Configuration

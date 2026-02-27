@@ -6,10 +6,12 @@
 //// ## Example
 ////
 //// ```gleam
+//// import birch as log
+//// import birch/meta
 //// import birch/scope
 ////
 //// pub fn handle_request(request_id: String) {
-////   scope.with_scope([#("request_id", request_id)], fn() {
+////   scope.with_scope([meta.string("request_id", request_id)], fn() {
 ////     // All logs in this block include request_id
 ////     log.info("processing request")
 ////     do_work()
@@ -44,9 +46,11 @@ import gleam/list
 /// ## Example
 ///
 /// ```gleam
-/// with_scope([#("request_id", "123")], fn() {
+/// import birch/meta
+///
+/// with_scope([meta.string("request_id", "123")], fn() {
 ///   log.info("processing")  // Includes request_id=123
-///   with_scope([#("step", "validation")], fn() {
+///   with_scope([meta.string("step", "validation")], fn() {
 ///     log.info("validating")  // Includes request_id=123 AND step=validation
 ///   })
 ///   log.info("done")  // Only request_id=123
