@@ -3037,6 +3037,17 @@ pub fn level_formatter_simple_test() {
   |> should.equal("ERROR")
 }
 
+pub fn level_formatter_padded_handles_ansi_without_reset_test() {
+  let custom_formatter =
+    level_formatter.custom_level_formatter(
+      fn(_lvl, _use_color) { "\u{001b}[31mINFO" },
+      5,
+    )
+
+  level_formatter.format_level_padded(custom_formatter, level.Info, True)
+  |> should.equal("\u{001b}[31mINFO ")
+}
+
 pub fn console_with_badge_style_test() {
   let config =
     console.ConsoleConfig(
