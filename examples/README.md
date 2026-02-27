@@ -28,8 +28,8 @@ gleam test --target javascript    # Test on JavaScript
 |---|---------|-------------|
 | 01 | [quick-start](./01-quick-start/) | Zero-config logging with `log.info()`, `log.debug()`, etc. |
 | 02 | [log-levels](./02-log-levels/) | All six log levels, level filtering, `level.from_string()` |
-| 03 | [metadata](./03-metadata/) | Structured logging with `_m` variants and key-value pairs |
-| 04 | [named-loggers](./04-named-loggers/) | Component loggers with `log.new()` and `logger_` functions |
+| 03 | [metadata](./03-metadata/) | Structured logging with `birch/meta` typed metadata |
+| 04 | [named-loggers](./04-named-loggers/) | Component loggers with `log.new()` and `birch/logger` functions |
 
 ### Group 2: Handlers
 

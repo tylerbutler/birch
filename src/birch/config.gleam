@@ -32,10 +32,6 @@ pub type SampleConfig {
 
 /// Global configuration that affects the default logger and
 /// application-wide settings.
-///
-/// **Planned breaking change:** The `sampling` field will change from
-/// `Result(SampleConfig, Nil)` to `Option(SampleConfig)` in a future release.
-/// Migrate from `Ok(config)` / `Error(Nil)` to `Some(config)` / `None`.
 pub type GlobalConfig {
   GlobalConfig(
     /// Minimum log level for the default logger
@@ -47,12 +43,7 @@ pub type GlobalConfig {
     /// Optional global error callback for handler failures
     on_error: Option(ErrorCallback),
     /// Optional sampling configuration.
-    ///
-    /// **Planned breaking change:** This field will change from
-    /// `Result(SampleConfig, Nil)` to `Option(SampleConfig)` in a future
-    /// release. Use `Ok(config)` / `Error(Nil)` for now, but plan to
-    /// migrate to `Some(config)` / `None`.
-    sampling: Result(SampleConfig, Nil),
+    sampling: Option(SampleConfig),
   )
 }
 
@@ -102,7 +93,7 @@ pub fn empty() -> GlobalConfig {
     handlers: [],
     context: [],
     on_error: None,
-    sampling: Error(Nil),
+    sampling: None,
   )
 }
 
@@ -121,7 +112,7 @@ fn apply_option(config: GlobalConfig, option: ConfigOption) -> GlobalConfig {
     HandlersOption(h) -> GlobalConfig(..config, handlers: h)
     ContextOption(ctx) -> GlobalConfig(..config, context: ctx)
     OnErrorOption(callback) -> GlobalConfig(..config, on_error: Some(callback))
-    SamplingOption(s) -> GlobalConfig(..config, sampling: Ok(s))
+    SamplingOption(s) -> GlobalConfig(..config, sampling: Some(s))
   }
 }
 

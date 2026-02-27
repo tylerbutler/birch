@@ -7,6 +7,7 @@
          compress_file_gzip/2, safe_call/1,
          get_scope_context/0, set_scope_context/1, is_scope_context_available/0,
          get_scope_depth/0, set_scope_depth/1,
+         run_with_scope_cleanup/5, run_with_scoped_logger_cleanup/2,
          get_actor_registry/0, set_actor_registry/1,
          get_caller_id/0]).
 
@@ -148,7 +149,7 @@ async_writer_loop(Callback, MaxQueueSize, Overflow, Queue, QueueLen) ->
     receive
         {log, Record} ->
             %% Handle incoming log record
-            {NewQueue, NewLen} = enqueue_record(Record, Queue, QueueLen, MaxQueueSize, Overflow),
+            {NewQueue, NewLen} = enqueue_record(Callback, Record, Queue, QueueLen, MaxQueueSize, Overflow),
             %% Process queue if we have records
             {ProcessedQueue, ProcessedLen} = process_queue(Callback, NewQueue, NewLen),
             async_writer_loop(Callback, MaxQueueSize, Overflow, ProcessedQueue, ProcessedLen);
@@ -167,7 +168,7 @@ async_writer_loop(Callback, MaxQueueSize, Overflow, Queue, QueueLen) ->
     end.
 
 %% Enqueue a record with overflow handling
-enqueue_record(Record, Queue, QueueLen, MaxQueueSize, Overflow) when QueueLen >= MaxQueueSize ->
+enqueue_record(Callback, Record, Queue, QueueLen, MaxQueueSize, Overflow) when QueueLen >= MaxQueueSize ->
     case Overflow of
         0 -> %% DropOldest
             {{value, _}, Q2} = queue:out(Queue),
@@ -175,10 +176,10 @@ enqueue_record(Record, Queue, QueueLen, MaxQueueSize, Overflow) when QueueLen >=
         1 -> %% DropNewest
             {Queue, QueueLen};
         2 -> %% Block - process queue first, then add
-            {Q2, Len2} = flush_queue(fun(_R) -> ok end, Queue, QueueLen),
+            {Q2, Len2} = flush_queue(Callback, Queue, QueueLen),
             {queue:in(Record, Q2), Len2 + 1}
     end;
-enqueue_record(Record, Queue, QueueLen, _MaxQueueSize, _Overflow) ->
+enqueue_record(_Callback, Record, Queue, QueueLen, _MaxQueueSize, _Overflow) ->
     {queue:in(Record, Queue), QueueLen + 1}.
 
 %% Process the queue (write records)
@@ -233,14 +234,10 @@ register_writer(Name, Pid) ->
     persistent_term:put(?ASYNC_REGISTRY_KEY, NewWriters).
 
 unregister_writer() ->
-    case whereis(?MODULE) of
-        undefined -> ok;
-        _ ->
-            Writers = get_all_writers(),
-            Self = self(),
-            NewWriters = lists:filter(fun({_, Pid}) -> Pid =/= Self end, Writers),
-            persistent_term:put(?ASYNC_REGISTRY_KEY, NewWriters)
-    end.
+    Writers = get_all_writers(),
+    Self = self(),
+    NewWriters = lists:filter(fun({_, Pid}) -> Pid =/= Self end, Writers),
+    persistent_term:put(?ASYNC_REGISTRY_KEY, NewWriters).
 
 get_all_writers() ->
     try
@@ -346,6 +343,19 @@ set_scope_depth(Depth) ->
 is_scope_context_available() ->
     true.
 
+%% Run a function with scope context, guaranteeing cleanup via try/after.
+%% This ensures that if Work() raises an exception, the previous scope context
+%% and depth are always restored in the process dictionary.
+run_with_scope_cleanup(MergedContext, NewDepth, OldContext, OldDepth, Work) ->
+    set_scope_context(MergedContext),
+    set_scope_depth(NewDepth),
+    try Work() of
+        Result -> Result
+    after
+        set_scope_context(OldContext),
+        set_scope_depth(OldDepth)
+    end.
+
 %% ============================================================================
 %% Scoped Logger Override
 %% ============================================================================
@@ -369,6 +379,21 @@ set_scoped_logger(Logger) ->
 clear_scoped_logger() ->
     erlang:erase(?SCOPED_LOGGER_KEY),
     nil.
+
+%% Run a function with a scoped logger override, guaranteeing cleanup via try/after.
+%% This ensures that if Work() raises an exception, the previous scoped logger
+%% state is always restored in the process dictionary.
+run_with_scoped_logger_cleanup(Logger, Work) ->
+    Previous = get_scoped_logger(),
+    set_scoped_logger(Logger),
+    try Work() of
+        Result -> Result
+    after
+        case Previous of
+            {ok, Prev} -> set_scoped_logger(Prev);
+            {error, _} -> clear_scoped_logger()
+        end
+    end.
 
 %% ============================================================================
 %% OTP Actor Registry

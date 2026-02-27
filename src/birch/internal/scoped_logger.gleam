@@ -25,23 +25,14 @@ pub fn clear_scoped_logger() -> Nil
 
 /// Run a function with a scoped logger override.
 /// On JavaScript, uses AsyncLocalStorage.run() for proper async propagation.
-/// On Erlang, uses process dictionary (set/clear pattern).
+/// On Erlang, uses FFI helper with try/after for exception safety.
 @external(javascript, "../../birch_ffi.mjs", "run_with_scoped_logger")
 pub fn with_scoped_logger(lgr: Logger, work: fn() -> a) -> a {
-  // Erlang implementation: use process dictionary
-  let previous = get_scoped_logger()
-
-  // Set the new scoped logger
-  set_scoped_logger(lgr)
-
-  // Execute the work function
-  let result = work()
-
-  // Restore the previous scoped logger (or clear it)
-  case previous {
-    Ok(prev) -> set_scoped_logger(prev)
-    Error(Nil) -> clear_scoped_logger()
-  }
-
-  result
+  // Erlang implementation: use FFI helper with try/after for exception safety
+  run_with_scoped_logger_cleanup(lgr, work)
 }
+
+/// Erlang FFI: run work function with scoped logger, restoring previous
+/// logger state in an `after` block even if work() raises an exception.
+@external(erlang, "birch_ffi", "run_with_scoped_logger_cleanup")
+fn run_with_scoped_logger_cleanup(lgr: Logger, work: fn() -> a) -> a

@@ -266,7 +266,7 @@ fn simple_level_color(lvl: level.Level) -> String {
 /// by padding AFTER any ANSI reset codes to keep coloring clean.
 pub fn pad_to_width(formatted: String, target_width: Int) -> String {
   // Calculate visual length - either by removing ANSI codes or using string length
-  let visual_length = case string.contains(formatted, ansi.reset) {
+  let visual_length = case string.contains(formatted, "\u{001b}") {
     True -> calculate_visual_length(formatted)
     False -> string.length(formatted)
   }

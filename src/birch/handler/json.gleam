@@ -210,19 +210,7 @@ pub fn handler_stderr() -> Handler {
 /// Includes timestamp, level, logger, message, and all metadata fields.
 /// This is equivalent to using `standard_builder() |> build()`.
 pub fn format_json(record: LogRecord) -> String {
-  let base_fields = [
-    #("timestamp", json.string(record.timestamp)),
-    #("level", json.string(level.to_string_lowercase(record.level))),
-    #("logger", json.string(record.logger_name)),
-    #("message", json.string(record.message)),
-  ]
-
-  let metadata_fields =
-    list.map(record.metadata, fn(pair) {
-      #(pair.0, metadata_value_to_json(pair.1))
-    })
-
-  list.append(base_fields, metadata_fields)
-  |> json.object
-  |> json.to_string
+  standard_builder()
+  |> build()
+  |> fn(format) { format(record) }
 }

@@ -56,6 +56,9 @@ import gleam/dict.{type Dict}
 @target(erlang)
 import gleam/erlang/process.{type Subject}
 
+@target(erlang)
+import gleam/io
+
 // JavaScript-only imports
 @target(javascript)
 import birch/internal/platform
@@ -147,27 +150,42 @@ fn set_actor_registry_ffi(registry: ActorRegistry) -> Nil
 /// Wrap a handler to make it asynchronous (Erlang implementation).
 ///
 /// Uses an OTP actor with gleam_otp Subject for message passing.
+/// If the actor fails to start, falls back to synchronous logging
+/// rather than crashing the application.
 pub fn make_async(base_handler: Handler, async_config: AsyncConfig) -> Handler {
   let base_name = handler.name(base_handler)
   let async_name = "async:" <> base_name
 
-  // Start the OTP actor
-  let assert Ok(actor) =
+  // Start the OTP actor, falling back to synchronous handler on failure
+  case
     async_actor.start(
       base_handler,
       async_config.queue_size,
       overflow_to_int(async_config.overflow),
     )
+  {
+    Ok(actor) -> {
+      // Register the actor for later flush/shutdown
+      let registry = get_actor_registry()
+      let new_registry = dict.insert(registry, async_name, actor)
+      set_actor_registry(new_registry)
 
-  // Register the actor for later flush/shutdown
-  let registry = get_actor_registry()
-  let new_registry = dict.insert(registry, async_name, actor)
-  set_actor_registry(new_registry)
-
-  // Create a handler that sends records to the actor
-  handler.new_with_record_write(name: async_name, write: fn(record: LogRecord) {
-    async_actor.send(actor, record)
-  })
+      // Create a handler that sends records to the actor
+      handler.new_with_record_write(
+        name: async_name,
+        write: fn(record: LogRecord) { async_actor.send(actor, record) },
+      )
+    }
+    Error(_) -> {
+      // Actor failed to start; fall back to synchronous handler
+      io.println_error(
+        "[birch] WARNING: async actor failed to start for handler \""
+        <> base_name
+        <> "\", falling back to synchronous logging",
+      )
+      base_handler
+    }
+  }
 }
 
 @target(erlang)

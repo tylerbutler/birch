@@ -2133,12 +2133,12 @@ pub fn sampling_bypasses_for_higher_levels_test() {
 
 pub fn sampling_no_config_always_logs_test() {
   // When no sampling config, should_sample_with_config should return True
-  let sample_config = Ok(sampling.config(level.Debug, 1.0))
+  let sample_config = Some(sampling.config(level.Debug, 1.0))
   sampling.should_sample_with_config(sample_config, level.Debug)
   |> should.be_true
 
-  // With Error (no config), should always sample
-  sampling.should_sample_with_config(Error(Nil), level.Debug)
+  // With None (no config), should always sample
+  sampling.should_sample_with_config(None, level.Debug)
   |> should.be_true
 }
 
@@ -2209,7 +2209,8 @@ pub fn config_with_sampling_test() {
 
   // Verify sampling config is set
   config.sampling
-  |> should.be_ok
+  |> option.is_some
+  |> should.be_true
 
   // Reset for other tests
   log.reset_config()
@@ -2223,7 +2224,8 @@ pub fn config_without_sampling_test() {
 
   // Default should have no sampling
   config.sampling
-  |> should.be_error
+  |> option.is_none
+  |> should.be_true
 
   // Reset for other tests
   log.reset_config()
@@ -3037,6 +3039,17 @@ pub fn level_formatter_simple_test() {
   |> should.equal("ERROR")
 }
 
+pub fn level_formatter_padded_handles_ansi_without_reset_test() {
+  let custom_formatter =
+    level_formatter.custom_level_formatter(
+      fn(_lvl, _use_color) { "\u{001b}[31mINFO" },
+      5,
+    )
+
+  level_formatter.format_level_padded(custom_formatter, level.Info, True)
+  |> should.equal("\u{001b}[31mINFO ")
+}
+
 pub fn console_with_badge_style_test() {
   let config =
     console.ConsoleConfig(
@@ -3561,10 +3574,8 @@ pub fn main_api_config_sampling_test() {
 
   let cfg = log.get_config()
   // Verify sampling is configured
-  case cfg.sampling {
-    Ok(_) -> True
-    Error(_) -> False
-  }
+  cfg.sampling
+  |> option.is_some
   |> should.be_true
 
   log.reset_config()

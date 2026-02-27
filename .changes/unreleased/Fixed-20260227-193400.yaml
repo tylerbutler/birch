@@ -1,0 +1,5 @@
+kind: Fixed
+body: |-
+    Handle async actor start failure gracefully (#83)
+    `make_async` previously used `let assert` which would crash the application if the OTP actor failed to start. It now falls back to synchronous logging with a warning to stderr, consistent with birch's philosophy that handler failures never crash the application.
+time: 2026-02-27T19:34:00.000000000-08:00
