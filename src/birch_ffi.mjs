@@ -6,7 +6,6 @@
 
 // Import Gleam's Result constructors and List helpers from the prelude
 import { Ok, Error, toList } from "./gleam.mjs";
-import { StringVal } from "./birch/record.mjs";
 
 /**
  * Check if stdout is a TTY (for color support detection).
@@ -18,8 +17,15 @@ export function is_stdout_tty() {
     return process.stdout.isTTY === true;
   }
   // Deno
-  if (typeof Deno !== "undefined" && Deno.isatty) {
-    return Deno.isatty(Deno.stdout.rid);
+  if (typeof Deno !== "undefined") {
+    // Deno 2.0+: stdout.isTerminal()
+    if (typeof Deno.stdout?.isTerminal === "function") {
+      return Deno.stdout.isTerminal();
+    }
+    // Deno 1.x fallback: isatty(rid)
+    if (Deno.isatty && Deno.stdout?.rid !== undefined) {
+      return Deno.isatty(Deno.stdout.rid);
+    }
   }
   // Browser - assume no TTY
   return false;
@@ -405,7 +411,7 @@ export function compress_file_gzip(sourcePath, destPath) {
     if (typeof Deno !== "undefined") {
       // Use gzip command for synchronous compression in Deno
       const command = new Deno.Command("gzip", {
-        args: ["-c", sourcePath],
+        args: ["-c", "--", sourcePath],
         stdout: "piped",
         stderr: "piped",
       });
@@ -632,19 +638,6 @@ function mergeGleamLists(newContext, currentContext) {
 export function run_with_scope(context, callback) {
   initScopeContext();
 
-  // Extract keys from the new context being added
-  const newKeys = gleamListToArray(context).map(pair => {
-    // Each pair is a tuple with [0] = key, [1] = value
-    return pair[0];
-  });
-
-  // Create _scope_highlight_keys metadata entry
-  const highlightKeysValue = newKeys.join(",");
-  const highlightKeysPair = ["_scope_highlight_keys", new StringVal(highlightKeysValue)];
-
-  // Add _scope_highlight_keys to the context
-  const contextWithHighlight = toList([...gleamListToArray(context), highlightKeysPair]);
-
   if (
     scopeContextState.asyncLocalStorageAvailable &&
     scopeContextState.asyncLocalStorage
@@ -654,7 +647,7 @@ export function run_with_scope(context, callback) {
       context: toList([]),
       depth: 0
     };
-    const mergedContext = mergeGleamLists(contextWithHighlight, currentStore.context);
+    const mergedContext = mergeGleamLists(context, currentStore.context);
     const newStore = {
       context: mergedContext,
       depth: currentStore.depth + 1
@@ -670,7 +663,7 @@ export function run_with_scope(context, callback) {
     context: toList([]),
     depth: 0
   };
-  const mergedContext = mergeGleamLists(contextWithHighlight, currentStore.context);
+  const mergedContext = mergeGleamLists(context, currentStore.context);
   const newStore = {
     context: mergedContext,
     depth: currentStore.depth + 1

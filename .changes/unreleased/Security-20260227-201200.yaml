@@ -1,0 +1,5 @@
+kind: Security
+body: |-
+    Prevent log injection via metadata values
+    Metadata values containing quotes, newlines, or carriage returns are now properly escaped in human-readable formatter output. Previously, an attacker who controlled metadata values could forge log lines via newline injection.
+time: 2026-02-27T20:12:00.000000000-08:00

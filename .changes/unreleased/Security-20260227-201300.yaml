@@ -1,0 +1,5 @@
+kind: Security
+body: |-
+    Fix gzip argument injection on Deno
+    Added `--` end-of-options marker before file path in Deno gzip command to prevent paths starting with `-` from being interpreted as flags.
+time: 2026-02-27T20:13:00.000000000-08:00
