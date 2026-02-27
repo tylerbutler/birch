@@ -265,8 +265,11 @@ pub fn main() {
           level.Trace -> "🔍"
           level.Debug -> "🐛"
           level.Info -> "💡"
+          level.Notice -> "📋"
           level.Warn -> "⚠️ "
           level.Err -> "🔥"
+          level.Critical -> "🔥"
+          level.Alert -> "🚨"
           level.Fatal -> "💀"
         }
       },
