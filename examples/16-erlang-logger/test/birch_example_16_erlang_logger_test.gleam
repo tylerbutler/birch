@@ -28,10 +28,10 @@ pub fn create_erlang_handler_test() {
   log.reset_config()
 }
 
-pub fn install_uninstall_handler_test() {
+pub fn install_remove_formatter_test() {
   // Should not crash
-  let _ = erlang_logger.install_logger_handler()
-  let _ = erlang_logger.uninstall_logger_handler()
+  let _ = erlang_logger.install_formatter()
+  let _ = erlang_logger.remove_formatter()
 
   should.be_true(True)
 }

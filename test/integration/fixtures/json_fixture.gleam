@@ -11,6 +11,7 @@ import birch as log
 import birch/handler/json
 import birch/level
 import birch/logger
+import birch/meta
 
 pub fn main() {
   // Configure with JSON handler
@@ -30,8 +31,8 @@ pub fn main() {
   |> log.with_handler(json.handler())
   |> log.with_level(level.Debug)
   |> logger.info("JSON with metadata", [
-    #("transaction_id", "txn-456"),
-    #("amount", "100.50"),
+    meta.string("transaction_id", "txn-456"),
+    meta.string("amount", "100.50"),
   ])
 
   // Reset config for clean state

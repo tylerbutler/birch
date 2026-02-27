@@ -5,13 +5,16 @@
 ////
 //// - **Level conversion tests**: Pure Gleam, work on both platforms
 //// - **Forward handler tests**: Work on both (uses console.log on JS)
-//// - **Install/uninstall tests**: Only succeed on Erlang, expect errors on JS
+//// - **Formatter install/remove tests**: Only succeed on Erlang, expect errors on JS
 
 import birch as log
 import birch/erlang_logger
+import birch/formatter
 import birch/handler
+import birch/handler/console
 import birch/level
 import birch/logger
+import birch/meta
 import birch/record
 import gleam/list
 import gleeunit/should
@@ -40,7 +43,7 @@ pub fn forward_to_logger_handler_can_handle_records_test() {
       level: level.Info,
       logger_name: "test.erlang_logger",
       message: "Test message for :logger",
-      metadata: [#("key", "value")],
+      metadata: [meta.string("key", "value")],
     )
 
   // Should not crash
@@ -74,37 +77,35 @@ pub fn forward_to_logger_with_all_levels_test() {
 }
 
 // ============================================================================
-// Install :logger Handler Tests
+// Install Formatter Tests
 // (These tests are platform-specific - succeed on Erlang, error on JavaScript)
 // ============================================================================
 
 /// Helper to check if we're running on Erlang.
 /// Uses the install result as a platform indicator.
 fn is_erlang_target() -> Bool {
-  // Try to install a test handler - if it succeeds, we're on Erlang
-  let result =
-    erlang_logger.install_logger_handler_with_id("birch_platform_check")
+  // Try to install formatter - if it succeeds, we're on Erlang
+  let result = erlang_logger.install_formatter()
   case result {
     Ok(_) -> {
       // Clean up and return true
-      let _ =
-        erlang_logger.uninstall_logger_handler_with_id("birch_platform_check")
+      let _ = erlang_logger.remove_formatter()
       True
     }
     Error(_) -> False
   }
 }
 
-pub fn install_logger_handler_test() {
+pub fn install_formatter_test() {
   // The install function should return Ok on Erlang, Error on JS
-  let result = erlang_logger.install_logger_handler()
+  let result = erlang_logger.install_formatter()
 
   case is_erlang_target() {
     True -> {
       // On Erlang, should succeed
       should.be_ok(result)
       // Clean up
-      let _ = erlang_logger.uninstall_logger_handler()
+      let _ = erlang_logger.remove_formatter()
       Nil
     }
     False -> {
@@ -115,75 +116,70 @@ pub fn install_logger_handler_test() {
   }
 }
 
-pub fn install_and_uninstall_logger_handler_test() {
-  // Test install/uninstall cycle
+pub fn install_and_remove_formatter_test() {
+  // Test install/remove cycle
   case is_erlang_target() {
     True -> {
-      let install_result = erlang_logger.install_logger_handler()
+      let install_result = erlang_logger.install_formatter()
       should.be_ok(install_result)
 
-      let uninstall_result = erlang_logger.uninstall_logger_handler()
-      should.be_ok(uninstall_result)
+      let remove_result = erlang_logger.remove_formatter()
+      should.be_ok(remove_result)
     }
     False -> {
       // On JavaScript, both should return errors
       let _ =
-        erlang_logger.install_logger_handler()
+        erlang_logger.install_formatter()
         |> should.be_error
 
       let _ =
-        erlang_logger.uninstall_logger_handler()
+        erlang_logger.remove_formatter()
         |> should.be_error
       Nil
     }
   }
 }
 
-pub fn install_logger_handler_with_custom_id_test() {
+pub fn install_formatter_with_custom_format_test() {
   case is_erlang_target() {
     True -> {
-      // On Erlang, should be able to install with custom ID
-      let result =
-        erlang_logger.install_logger_handler_with_id("birch_custom_test")
+      // On Erlang, should be able to install with a custom formatter
+      let result = erlang_logger.install_formatter_with(formatter.simple)
       should.be_ok(result)
 
       // Clean up
-      let _ =
-        erlang_logger.uninstall_logger_handler_with_id("birch_custom_test")
+      let _ = erlang_logger.remove_formatter()
       Nil
     }
     False -> {
       // On JavaScript, should return error
       let _ =
-        erlang_logger.install_logger_handler_with_id("birch_custom_test")
+        erlang_logger.install_formatter_with(formatter.simple)
         |> should.be_error
       Nil
     }
   }
 }
 
-pub fn install_logger_handler_twice_fails_test() {
+pub fn install_formatter_on_nonexistent_handler_test() {
   case is_erlang_target() {
     True -> {
-      // On Erlang, installing twice should fail the second time
-      let result1 = erlang_logger.install_logger_handler()
-      should.be_ok(result1)
-
-      let result2 = erlang_logger.install_logger_handler()
-      let _ = should.be_error(result2)
-
-      // Clean up
-      let _ = erlang_logger.uninstall_logger_handler()
+      // Installing on a non-existent handler should fail
+      let result =
+        erlang_logger.install_formatter_on(
+          "nonexistent_handler",
+          formatter.human_readable,
+        )
+      let _ = should.be_error(result)
       Nil
     }
     False -> {
-      // On JavaScript, both installs fail with the same error
+      // On JavaScript, always errors
       let _ =
-        erlang_logger.install_logger_handler()
-        |> should.be_error
-
-      let _ =
-        erlang_logger.install_logger_handler()
+        erlang_logger.install_formatter_on(
+          "nonexistent_handler",
+          formatter.human_readable,
+        )
         |> should.be_error
       Nil
     }
@@ -256,7 +252,7 @@ pub fn logger_with_forward_handler_test() {
 
   // Should be able to log without crashing
   logger.info(lgr, "Message forwarded to Erlang :logger", [
-    #("source", "birch"),
+    meta.string("source", "birch"),
   ])
 }
 
@@ -283,4 +279,97 @@ pub fn configure_with_forward_handler_test() {
 
   // Reset for other tests
   log.reset_config()
+}
+
+// ============================================================================
+// Formatter Setup Tests
+// (Platform-specific - succeed on Erlang, error/no-op on JavaScript)
+// ============================================================================
+
+pub fn setup_configures_default_handler_test() {
+  // setup() should succeed on Erlang, error on JS
+  let result = erlang_logger.setup()
+
+  case is_erlang_target() {
+    True -> {
+      should.be_ok(result)
+    }
+    False -> {
+      let _ = should.be_error(result)
+      Nil
+    }
+  }
+}
+
+pub fn setup_with_fancy_config_test() {
+  // setup_with_config with fancy style should succeed on Erlang
+  let result = erlang_logger.setup_with_config(console.default_fancy_config())
+
+  case is_erlang_target() {
+    True -> {
+      should.be_ok(result)
+      // Restore simple style for subsequent tests
+      let _ = erlang_logger.setup()
+      Nil
+    }
+    False -> {
+      let _ = should.be_error(result)
+      Nil
+    }
+  }
+}
+
+pub fn setup_idempotent_test() {
+  // Calling setup twice should not error
+  case is_erlang_target() {
+    True -> {
+      let result1 = erlang_logger.setup()
+      should.be_ok(result1)
+
+      let result2 = erlang_logger.setup()
+      should.be_ok(result2)
+    }
+    False -> Nil
+  }
+}
+
+pub fn ensure_formatter_configured_does_not_crash_test() {
+  // ensure_formatter_configured should be safe to call multiple times
+  erlang_logger.ensure_formatter_configured()
+  erlang_logger.ensure_formatter_configured()
+}
+
+pub fn forward_raw_sends_structured_data_test() {
+  // The raw forward handler should not crash when sending structured data
+  let h = erlang_logger.forward_to_logger_raw()
+
+  let r =
+    record.new(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Info,
+      logger_name: "test.structured",
+      message: "Structured forward test",
+      metadata: [meta.string("status", "200"), meta.string("method", "GET")],
+    )
+
+  // Should not crash
+  handler.handle(h, r)
+}
+
+pub fn forward_raw_with_caller_id_test() {
+  // Test that caller_id is passed through without crashing
+  let h = erlang_logger.forward_to_logger_raw()
+
+  let r =
+    record.new(
+      timestamp: "2024-12-26T10:30:45.123Z",
+      level: level.Debug,
+      logger_name: "test.caller_id",
+      message: "With caller ID",
+      metadata: [],
+    )
+    |> record.with_caller_id("<0.123.0>")
+
+  // Should not crash
+  handler.handle(h, r)
 }

@@ -73,7 +73,8 @@ pub fn format_metadata_colored(
   metadata
   |> list.map(fn(pair) {
     let #(key, value) = pair
-    let formatted_kv = key <> "=" <> escape_value(value)
+    let value_str = record.metadata_value_to_string(value)
+    let formatted_kv = key <> "=" <> escape_value(value_str)
     case use_color {
       True -> {
         let color = hash_color(key)
@@ -85,10 +86,24 @@ pub fn format_metadata_colored(
   |> string.join(" ")
 }
 
-/// Escape a value if it contains spaces or special characters.
+/// Escape a value if it contains spaces, special characters, or control characters.
+/// Prevents log injection via metadata values containing newlines or quotes.
 fn escape_value(value: String) -> String {
-  case string.contains(value, " ") || string.contains(value, "=") {
-    True -> "\"" <> value <> "\""
+  let needs_quoting =
+    string.contains(value, " ")
+    || string.contains(value, "=")
+    || string.contains(value, "\"")
+    || string.contains(value, "\n")
+    || string.contains(value, "\r")
+  case needs_quoting {
+    True -> {
+      value
+      |> string.replace("\\", "\\\\")
+      |> string.replace("\"", "\\\"")
+      |> string.replace("\n", "\\n")
+      |> string.replace("\r", "\\r")
+      |> fn(escaped) { "\"" <> escaped <> "\"" }
+    }
     False -> value
   }
 }

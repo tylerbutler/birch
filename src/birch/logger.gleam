@@ -4,10 +4,15 @@
 //// and persistent metadata.
 
 import birch/handler.{type Handler}
-import birch/handler/console
 import birch/internal/time
+
+@target(erlang)
+import birch/erlang_logger
+
+@target(javascript)
+import birch/handler/console
 import birch/level.{type Level}
-import birch/record.{type Metadata}
+import birch/record.{type Metadata, StringVal}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
@@ -47,17 +52,30 @@ pub opaque type Logger {
 }
 
 /// Create a new logger with the given name.
-/// Uses default level (Info) and console handler.
+/// Uses default level (Info) and a platform-appropriate handler.
+///
+/// On Erlang, defaults to forwarding logs through the BEAM logger (`:logger`).
+/// On JavaScript, defaults to the console handler with colors.
 pub fn new(name: String) -> Logger {
   Logger(
     name: name,
     min_level: level.Info,
-    handlers: [console.handler()],
+    handlers: default_handlers(),
     context: [],
     time_provider: None,
     timestamp_formatter: None,
     capture_caller_id: False,
   )
+}
+
+@target(erlang)
+fn default_handlers() -> List(Handler) {
+  [erlang_logger.forward_to_logger_raw()]
+}
+
+@target(javascript)
+fn default_handlers() -> List(Handler) {
+  [console.handler()]
 }
 
 /// Create a logger with no handlers (silent by default).
@@ -460,10 +478,10 @@ pub fn fatal_result(
 }
 
 /// Extract error metadata from a Result.
-/// Returns empty list for Ok, or [#("error", inspected_value)] for Error.
+/// Returns empty list for Ok, or [#("error", StringVal(inspected_value))] for Error.
 fn extract_error_metadata(result: Result(a, e)) -> Metadata {
   case result {
     Ok(_) -> []
-    Error(e) -> [#("error", string.inspect(e))]
+    Error(e) -> [#("error", StringVal(string.inspect(e)))]
   }
 }

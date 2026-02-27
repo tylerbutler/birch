@@ -6,6 +6,7 @@ import birch as log
 import birch/handler.{type Handler}
 import birch/handler/json
 import birch/logger
+import birch/meta
 import gleam/json as gjson
 
 pub fn main() {
@@ -31,7 +32,7 @@ fn demo_default_json() {
 
   let lgr = log.new("app")
   log.info("Default JSON format")
-  logger.info(lgr, "With metadata", [#("user_id", "12345"), #("action", "login")])
+  logger.info(lgr, "With metadata", [meta.string("user_id", "12345"), meta.string("action", "login")])
   log.error("Error message")
 }
 
@@ -54,7 +55,7 @@ fn demo_custom_json() {
 
   let lgr = log.new("app")
   log.info("Custom JSON with service info")
-  logger.info(lgr, "Request processed", [#("status", "200"), #("duration_ms", "42")])
+  logger.info(lgr, "Request processed", [meta.string("status", "200"), meta.string("duration_ms", "42")])
 }
 
 /// Demonstrate minimal JSON format.
@@ -72,7 +73,7 @@ fn demo_minimal_json() {
 
   let lgr = log.new("app")
   log.info("Minimal JSON (no logger name or metadata)")
-  logger.info(lgr, "Metadata is ignored", [#("key", "value")])
+  logger.info(lgr, "Metadata is ignored", [meta.string("key", "value")])
 }
 
 /// Create a JSON handler for a microservice.

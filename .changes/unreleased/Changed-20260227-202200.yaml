@@ -1,0 +1,5 @@
+kind: Changed
+body: |-
+    Migrate `sampling` config from `Result` to `Option` (BREAKING)
+    `GlobalConfig.sampling` changed from `Result(SampleConfig, Nil)` to `Option(SampleConfig)`. Migrate from `Ok(config)` / `Error(Nil)` to `Some(config)` / `None`.
+time: 2026-02-27T20:22:00.000000000-08:00

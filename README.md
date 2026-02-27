@@ -25,7 +25,7 @@ The name "birch" comes from birch trees, whose white bark gleams in the light.
 
 - **Cross-platform**: Works on both Erlang and JavaScript targets
 - **Zero-configuration startup**: Just import and start logging
-- **Structured logging**: Key-value metadata on every log message
+- **Structured logging**: Typed key-value metadata on every log message
 - **Multiple handlers**: Console, file, JSON, or custom handlers
 - **Color support**: Colored output for TTY terminals
 - **Lazy evaluation**: Avoid expensive string formatting when logs are filtered
@@ -38,6 +38,7 @@ The name "birch" comes from birch trees, whose white bark gleams in the light.
 
 ```gleam
 import birch as log
+import birch/meta as m
 
 pub fn main() {
   // Simple logging
@@ -45,10 +46,16 @@ pub fn main() {
   log.debug("Debug message")
   log.error("Something went wrong")
 
-  // With metadata
-  log.info_m("User logged in", [#("user_id", "123"), #("ip", "192.168.1.1")])
+  // With typed metadata
+  let lgr = log.new("myapp")
+  lgr |> log.logger_info("User logged in", [
+    m.string("user_id", "123"),
+    m.string("ip", "192.168.1.1"),
+  ])
 }
 ```
+
+> **Tip:** `import birch/meta as m` keeps metadata concise. All examples in this README use `m.` for brevity, but `meta.` works identically.
 
 ## Installation
 
@@ -66,6 +73,7 @@ Configure the default logger with custom settings:
 ```gleam
 import birch as log
 import birch/level
+import birch/meta as m
 import birch/handler/console
 import birch/handler/json
 
@@ -74,7 +82,7 @@ pub fn main() {
   log.configure([
     log.config_level(level.Debug),
     log.config_handlers([console.handler(), json.handler()]),
-    log.config_context([#("app", "myapp"), #("env", "production")]),
+    log.config_context([m.string("app", "myapp"), m.string("env", "production")]),
   ])
 
   // All logs now include the context and go to both handlers
@@ -122,17 +130,18 @@ Add persistent context to a logger:
 
 ```gleam
 import birch as log
+import birch/meta as m
 
 pub fn handle_request(request_id: String) {
   let logger = log.new("myapp.http")
     |> log.with_context([
-      #("request_id", request_id),
-      #("service", "api"),
+      m.string("request_id", request_id),
+      m.string("service", "api"),
     ])
 
   // All logs from this logger include the context
   logger |> log.logger_info("Processing request", [])
-  logger |> log.logger_info("Request complete", [#("status", "200")])
+  logger |> log.logger_info("Request complete", [m.int("status", 200)])
 }
 ```
 
@@ -142,9 +151,10 @@ Automatically attach metadata to all logs within a scope:
 
 ```gleam
 import birch as log
+import birch/meta as m
 
 pub fn handle_request(request_id: String) {
-  log.with_scope([#("request_id", request_id)], fn() {
+  log.with_scope([m.string("request_id", request_id)], fn() {
     // All logs in this block include request_id automatically
     log.info("Processing request")
     do_work()  // Logs in nested functions also include request_id
@@ -156,10 +166,10 @@ pub fn handle_request(request_id: String) {
 Scopes can be nested, with inner scopes adding to outer scope context:
 
 ```gleam
-log.with_scope([#("request_id", "123")], fn() {
+log.with_scope([m.string("request_id", "123")], fn() {
   log.info("Start")  // request_id=123
 
-  log.with_scope([#("step", "validation")], fn() {
+  log.with_scope([m.string("step", "validation")], fn() {
     log.info("Validating")  // request_id=123 step=validation
   })
 
@@ -373,6 +383,7 @@ Log errors with automatic metadata extraction:
 
 ```gleam
 import birch as log
+import birch/meta as m
 
 case file.read("config.json") {
   Ok(content) -> parse_config(content)
@@ -383,10 +394,11 @@ case file.read("config.json") {
   }
 }
 
-// With additional metadata
-log.error_result_m("Database query failed", result, [
-  #("query", "SELECT * FROM users"),
-  #("table", "users"),
+// With additional metadata (using a named logger)
+let lgr = log.new("myapp.db")
+lgr |> log.logger_error_result("Database query failed", result, [
+  m.string("query", "SELECT * FROM users"),
+  m.string("table", "users"),
 ])
 ```
 
@@ -487,7 +499,7 @@ Several logging libraries exist in the Gleam ecosystem. Here's how they compare:
 | File rotation | 🧪 | ❌ | ❌ | ❌ |
 | Colored output | ✅ | ✅ | ❌ | ✅ |
 | Structured metadata | ✅ | ✅ | ✅ | ✅ |
-| Typed metadata values | ❌ | ❌ | ✅ | ✅ |
+| Typed metadata values | ✅ | ❌ | ✅ | ✅ |
 | Named loggers | ✅ | ❌ | ❌ | ❌ |
 | Logger context | ✅ | ✅ | ✅ | ❌ |
 | Scoped context | ✅ | ❌ | ❌ | ❌ |

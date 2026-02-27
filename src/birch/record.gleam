@@ -4,13 +4,38 @@
 //// timestamp, level, logger name, message, and metadata.
 
 import birch/level.{type Level}
+import gleam/float
+import gleam/int
 import gleam/list
 import gleam/option.{type Option, None}
 
+/// A typed value in a metadata entry.
+/// Supports the four common structured logging value types.
+pub type MetadataValue {
+  StringVal(String)
+  IntVal(Int)
+  FloatVal(Float)
+  BoolVal(Bool)
+}
+
+/// Convert a MetadataValue to its string representation.
+pub fn metadata_value_to_string(value: MetadataValue) -> String {
+  case value {
+    StringVal(s) -> s
+    IntVal(i) -> int.to_string(i)
+    FloatVal(f) -> float.to_string(f)
+    BoolVal(b) ->
+      case b {
+        True -> "true"
+        False -> "false"
+      }
+  }
+}
+
 /// Metadata is a list of key-value pairs attached to a log record.
-/// Keys and values are both strings for simplicity and cross-target compatibility.
+/// Keys are strings; values are typed via MetadataValue.
 pub type Metadata =
-  List(#(String, String))
+  List(#(String, MetadataValue))
 
 /// A log record representing a single log event.
 pub type LogRecord {
@@ -58,7 +83,10 @@ pub fn with_metadata(record: LogRecord, metadata: Metadata) -> LogRecord {
 }
 
 /// Get a metadata value by key.
-pub fn get_metadata(record: LogRecord, key: String) -> Result(String, Nil) {
+pub fn get_metadata(
+  record: LogRecord,
+  key: String,
+) -> Result(MetadataValue, Nil) {
   list.find_map(record.metadata, fn(pair) {
     case pair {
       #(k, v) if k == key -> Ok(v)
