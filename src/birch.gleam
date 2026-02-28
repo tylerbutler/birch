@@ -85,6 +85,10 @@ pub type Config =
 
 /// Configure the global logging settings.
 ///
+/// On the Erlang target, this uses `persistent_term` which triggers a global
+/// garbage collection. Best suited for infrequent changes like application
+/// startup, not per-request use.
+///
 /// Example:
 /// ```gleam
 /// import birch as log
@@ -114,6 +118,9 @@ pub fn get_config() -> GlobalConfig {
 }
 
 /// Reset the global configuration to defaults.
+///
+/// On the Erlang target, this erases a `persistent_term` key which triggers
+/// a global garbage collection. Best suited for infrequent use.
 pub fn reset_config() -> Nil {
   config.clear_global_config()
   clear_cached_default_logger()
@@ -127,6 +134,10 @@ pub fn reset_config() -> Nil {
 ///
 /// This changes the log level for all new log operations immediately.
 /// Other configuration (handlers, context) is preserved.
+///
+/// On the Erlang target, this uses `persistent_term` which triggers a global
+/// garbage collection. Best suited for infrequent changes like startup or
+/// debug toggling, not per-request use.
 ///
 /// Example:
 /// ```gleam
