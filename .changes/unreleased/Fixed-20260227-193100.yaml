@@ -1,5 +1,0 @@
-kind: Fixed
-body: |-
-    Fix `unregister_writer` no-op causing memory leak (#83)
-    The `unregister_writer` function in the Erlang FFI always returned early because `whereis(?MODULE)` is never a registered process. Async writers were never removed from `persistent_term`, causing a slow memory leak in long-running systems.
-time: 2026-02-27T19:31:00.000000000-08:00

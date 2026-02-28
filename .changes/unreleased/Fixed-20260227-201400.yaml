@@ -1,5 +1,0 @@
-kind: Fixed
-body: |-
-    Fix cross-platform scope context parity
-    Removed unused `_scope_highlight_keys` internal metadata that was only injected on the JavaScript target, causing behavioral divergence from the Erlang target. Also removes the `StringVal` import coupling to Gleam codegen internals in `birch_ffi.mjs`.
-time: 2026-02-27T20:14:00.000000000-08:00

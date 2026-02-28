@@ -1,5 +1,0 @@
-kind: Fixed
-body: |-
-    Fix Deno 2.0 TTY detection
-    Use `Deno.stdout.isTerminal()` for Deno 2.0+ with fallback to legacy `isatty(rid)` API. The `rid` property was removed in Deno 2.0, silently disabling color output.
-time: 2026-02-27T20:11:00.000000000-08:00

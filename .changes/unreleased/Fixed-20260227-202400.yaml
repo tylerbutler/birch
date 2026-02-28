@@ -1,5 +1,0 @@
-kind: Fixed
-body: |-
-    Update doc comments and examples to use current API
-    Fixed module doc comments in `birch.gleam` and `scope.gleam` that showed deprecated or non-compiling code. Updated examples README to reference `birch/meta` and `birch/logger` instead of deprecated `_m` variants and `logger_` functions.
-time: 2026-02-27T20:24:00.000000000-08:00

@@ -1,5 +1,0 @@
-kind: Fixed
-body: |-
-    Fix Erlang level mapping collapsing alert, critical, and notice
-    The Erlang-to-Gleam level conversion incorrectly mapped `alert` and `critical` to `Fatal`, and `notice` to `Info`, losing severity distinctions. These now map 1:1 to their corresponding Gleam levels (`Alert`, `Critical`, `Notice`).
-time: 2026-02-27T21:04:00.000000000-08:00
