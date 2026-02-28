@@ -29,7 +29,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. The Erlang FFI accesses Gleam record fields via accessor functions, not fragile tuple position indexing
   4. All 9 birch levels round-trip through OTP's 8 levels with documented and tested mapping behavior
   5. The :logger primary level interaction is documented: birch does not silently drop debug/info messages due to primary level filtering
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Safe FFI record access + is_healthy health check (OTP-03, OTP-02)
+- [ ] 01-02-PLAN.md — Formatter crash recovery + report_cb fix (OTP-01)
+- [ ] 01-03-PLAN.md — Level round-trip property tests + primary level config (OTP-04, OTP-05)
 
 ### Phase 2: Resource and Safety Hardening
 **Goal**: The runtime resource usage is correct and the async handler is safe under load
@@ -74,7 +79,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. OTP Integration Hardening | 0/? | Not started | - |
+| 1. OTP Integration Hardening | 0/3 | Planned | - |
 | 2. Resource and Safety Hardening | 0/? | Not started | - |
 | 3. API Surface and Idiomatic Gleam Audit | 0/? | Not started | - |
 | 4. Benchmarking Suite | 0/? | Not started | - |
