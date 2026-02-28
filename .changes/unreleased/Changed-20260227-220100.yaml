@@ -1,0 +1,5 @@
+kind: Changed
+body: |-
+    Default BEAM config sends logs directly to `:logger` — no birch handler needed (BREAKING)
+    On Erlang, `emit_record()` now sends each LogRecord directly to `:logger` with the full record in metadata. The default handler list is empty (was `[forward_to_beam()]`). The birch formatter installed on `:logger`'s default handler receives the intact LogRecord and formats it — no decompose/recompose step. Users who explicitly passed `forward_to_beam()` in `config_handlers()` should remove it. The JavaScript target is unchanged.
+time: 2026-02-27T22:01:00.000000000-08:00

@@ -2,17 +2,20 @@
 ////
 //// Demonstrates integrating birch with Erlang's built-in :logger system.
 //// This example is BEAM only - it uses Erlang-specific features.
+////
+//// On BEAM, birch sends LogRecords directly to :logger — no handler wrapper
+//// is needed. The birch formatter installed on :logger's default handler
+//// formats both birch logs and OTP logs consistently.
 
 import birch as log
 import birch/erlang_logger
 import birch/formatter
-import birch/handler.{type Handler}
 
 pub fn main() {
   log.info("=== Erlang Logger Integration Demo ===")
 
-  // Demo 1: Forward to Erlang logger
-  demo_forward_to_logger()
+  // Demo 1: Direct logging (birch → :logger automatically on BEAM)
+  demo_direct_logging()
 
   // Demo 2: Install birch as :logger formatter
   demo_install_formatter()
@@ -21,24 +24,20 @@ pub fn main() {
   log.info("Demo complete")
 }
 
-/// Demonstrate forwarding birch logs to Erlang :logger.
-fn demo_forward_to_logger() {
-  log.info("--- Forward to Erlang Logger ---")
+/// Demonstrate direct birch logging on BEAM.
+///
+/// On BEAM, birch sends LogRecords directly to :logger without needing
+/// a handler wrapper. The formatter installed on :logger's default handler
+/// formats the output using birch's formatting pipeline.
+fn demo_direct_logging() {
+  log.info("--- Direct Logging on BEAM ---")
 
-  // Create handler that forwards to Erlang's logger
-  let handler = erlang_logger.forward_to_beam()
-
-  // Configure birch to use this handler
-  log.configure([log.config_handlers([handler])])
-
-  // These logs go through Erlang's logger system
-  log.info("This message goes to Erlang logger")
+  // These logs go through Erlang's :logger system automatically
+  log.info("This message goes to :logger automatically")
   log.warn("Warnings are mapped to Erlang warning level")
   log.error("Errors are mapped to Erlang error level")
 
-  // Reset for next demo
-  log.reset_config()
-  log.info("Forwarding demo complete")
+  log.info("Direct logging demo complete")
 }
 
 /// Demonstrate installing birch as a :logger formatter.
@@ -70,12 +69,6 @@ fn demo_install_formatter() {
   // Remove birch formatter, restoring OTP defaults
   let _ = erlang_logger.remove_formatter()
   log.info("Formatter removed, OTP defaults restored")
-}
-
-/// Create a handler that forwards to Erlang logger.
-/// Useful for OTP application integration.
-pub fn create_erlang_handler() -> Handler {
-  erlang_logger.forward_to_beam()
 }
 
 /// Install birch as a formatter for Erlang's :logger system.
