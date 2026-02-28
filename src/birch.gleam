@@ -222,8 +222,10 @@ pub fn default_config() -> GlobalConfig {
 
 @target(erlang)
 fn default_handlers() -> List(Handler) {
+  // On BEAM, birch sends LogRecords directly to :logger — no birch handler needed.
+  // Ensure the birch formatter is installed on :logger's default handler.
   erlang_logger.ensure_formatter_configured()
-  [erlang_logger.forward_to_beam()]
+  []
 }
 
 @target(javascript)

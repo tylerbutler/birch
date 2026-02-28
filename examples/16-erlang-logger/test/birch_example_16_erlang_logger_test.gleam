@@ -8,24 +8,11 @@ pub fn main() {
   gleeunit.main()
 }
 
-pub fn forward_to_beam_creates_handler_test() {
-  let handler = erlang_logger.forward_to_beam()
-
-  // Should be able to use it without error
-  log.configure([log.config_handlers([handler])])
-
-  log.info("Test message through Erlang logger")
-
-  log.reset_config()
-}
-
-pub fn create_erlang_handler_test() {
-  let handler = example.create_erlang_handler()
-
-  // Should create a valid handler
-  log.configure([log.config_handlers([handler])])
-  log.info("Using example handler")
-  log.reset_config()
+pub fn direct_logging_does_not_crash_test() {
+  // On BEAM, birch sends to :logger directly — just log and verify no crash
+  log.info("Test message through :logger")
+  log.warn("Warning through :logger")
+  log.error("Error through :logger")
 }
 
 pub fn install_remove_formatter_test() {

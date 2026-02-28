@@ -910,10 +910,21 @@ pub fn config_default_test() {
   config.level
   |> should.equal(level.Info)
 
-  // Default should have one handler (BEAM logger on Erlang, console on JS)
+  // On BEAM: default has no birch handlers (birch sends to :logger directly)
+  // On JS: default has one handler (console)
   config.handlers
   |> list.length
-  |> should.equal(1)
+  |> should.equal(platform_default_handler_count())
+}
+
+@target(erlang)
+fn platform_default_handler_count() -> Int {
+  0
+}
+
+@target(javascript)
+fn platform_default_handler_count() -> Int {
+  1
 }
 
 pub fn config_set_level_test() {

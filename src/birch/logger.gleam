@@ -70,7 +70,9 @@ pub fn new(name: String) -> Logger {
 
 @target(erlang)
 fn default_handlers() -> List(Handler) {
-  [erlang_logger.forward_to_beam()]
+  // On BEAM, birch sends LogRecords directly to :logger — no birch handler needed.
+  // Users can still add birch handlers for additional output (e.g., JSON file).
+  []
 }
 
 @target(javascript)
@@ -276,7 +278,13 @@ fn merge_metadata(logger: Logger, call_metadata: Metadata) -> Metadata {
   list.append(call_metadata, list.append(scope_context, logger.context))
 }
 
-/// Create a log record and dispatch it to handlers.
+/// Create a log record and dispatch it.
+///
+/// On BEAM: sends the LogRecord directly to `:logger`, where the birch
+/// formatter handles output. Also dispatches to any birch handlers
+/// (for users who want additional output beyond `:logger`).
+///
+/// On JavaScript: dispatches to birch handlers only.
 fn emit_record(
   logger: Logger,
   log_level: Level,
@@ -296,7 +304,22 @@ fn emit_record(
     Some(caller_id) -> record.with_caller_id(base_record, caller_id)
     None -> base_record
   }
+
+  // On BEAM, send directly to :logger
+  let _ = emit_to_beam(final_record)
+
+  // Dispatch to any birch handlers (additional output beyond :logger)
   handler.handle_all(logger.handlers, final_record)
+}
+
+@target(erlang)
+fn emit_to_beam(record: record.LogRecord) -> Nil {
+  erlang_logger.emit(record)
+}
+
+@target(javascript)
+fn emit_to_beam(_record: record.LogRecord) -> Nil {
+  Nil
 }
 
 /// Log a message at the specified level.
