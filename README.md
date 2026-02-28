@@ -108,6 +108,8 @@ log.set_level(level.Warn)
 let current = log.get_level()
 ```
 
+> **Performance note (Erlang/BEAM):** `set_level()`, `configure()`, and `reset_config()` use `persistent_term` for storage, which triggers a global garbage collection across all BEAM processes on write. These functions are designed for infrequent configuration changes (application startup, debug toggling) rather than per-request use. In systems with many processes, frequent calls may cause latency spikes.
+
 ## Named Loggers
 
 Create named loggers for different components:
@@ -484,6 +486,152 @@ pub fn do_something() {
 ```
 
 Consumers control logging by adding handlers to the logger.
+
+## BEAM Logger Integration
+
+On the Erlang target (BEAM), birch integrates with OTP's built-in `:logger` system. This section explains what happens automatically, how logs flow, and how to control the integration.
+
+> [!NOTE]
+> This section only applies to the Erlang target. On JavaScript, birch uses its own handlers directly and `:logger` is not involved.
+
+### What Birch Does on Startup
+
+When you first log a message using birch's default configuration, birch automatically:
+
+1. **Installs its formatter** on `:logger`'s `default` handler
+2. **Sends all birch LogRecords directly to `:logger`** (no birch handler is needed)
+
+This means birch takes over formatting for the `default` `:logger` handler. All log output routed through that handler -- including OTP supervisor reports, application start/stop messages, and logs from other libraries -- will be formatted using birch's human-readable format.
+
+```
+2024-12-26T10:30:45.123Z | INFO    | myapp    | Application starting
+2024-12-26T10:30:45.124Z | NOTICE  | erlang   | Application controller: app started
+```
+
+This happens lazily on first use via `ensure_formatter_configured()`, which is idempotent -- calling it multiple times is safe.
+
+### How Logs Flow on BEAM
+
+```
+birch log (e.g., log.info("hello"))
+  |
+  v
+logger:log(info, msg, #{birch_log_record => LogRecord})
+  |
+  v
+ALL registered :logger handlers receive the event
+  |
+  +---> default handler --> birch formatter --> console output
+  +---> your_custom_handler --> its own formatter --> file/network/etc.
+```
+
+Key points:
+
+- **Birch logs flow through `:logger`**, not through birch handlers. The default configuration uses an empty handler list (`[]`) on BEAM.
+- **`:logger` controls routing and overload protection.** Birch controls formatting.
+- **OTP log events are also handled.** When the `default` handler receives a non-birch log event (e.g., from a supervisor), the birch formatter builds a LogRecord from `:logger` event fields and formats it consistently. Structured reports use their `report_cb` callbacks for human-readable output.
+- **All `:logger` handlers see birch logs.** If you have added other `:logger` handlers (e.g., for log aggregation), they will receive birch log events too. Those handlers use their own formatters -- birch only modifies the formatter on the `default` handler.
+
+### Controlling the Formatter
+
+#### Explicit Setup
+
+Instead of relying on auto-configuration, you can set up the formatter explicitly:
+
+```gleam
+import birch/erlang_logger
+
+pub fn main() {
+  // Install birch formatter on the default :logger handler
+  let assert Ok(Nil) = erlang_logger.setup()
+  // ...
+}
+```
+
+#### Custom Formatting Style
+
+Use `setup_with_config` to customize the formatter style:
+
+```gleam
+import birch/erlang_logger
+import birch/handler/console
+
+// Use fancy style with icons
+let assert Ok(Nil) =
+  erlang_logger.setup_with_config(console.default_fancy_config())
+```
+
+#### Installing on a Specific Handler
+
+If you have multiple `:logger` handlers, install birch's formatter on a specific one:
+
+```gleam
+import birch/erlang_logger
+import birch/formatter
+
+// Install on a custom handler (e.g., a file handler you configured via :logger)
+let assert Ok(Nil) =
+  erlang_logger.install_formatter_on("my_file_handler", formatter.human_readable)
+```
+
+#### Removing the Formatter
+
+Restore OTP's default formatter:
+
+```gleam
+import birch/erlang_logger
+
+let assert Ok(Nil) = erlang_logger.remove_formatter()
+```
+
+### Opting Out of :logger Integration
+
+If you want birch to use its own console handler instead of going through `:logger`, configure explicit handlers. This bypasses the automatic `:logger` formatter installation:
+
+```gleam
+import birch as log
+import birch/handler/console
+
+// Use birch's own console handler instead of :logger
+log.configure([
+  log.config_handlers([console.handler()]),
+])
+
+// Logs now go through birch's handler, not :logger
+// OTP logs will still use OTP's default formatter
+```
+
+This is useful when:
+- You want birch output separate from OTP log output
+- You want to avoid changing the formatter on the `default` `:logger` handler
+- You are using another library that also configures `:logger` formatting
+
+### Using with Existing :logger Configurations
+
+If your application already has `:logger` handlers configured (e.g., via Erlang's `sys.config` or programmatically):
+
+- **Other handlers keep their own formatters.** Birch only modifies the `default` handler's formatter. Any handlers you've added (file handlers, remote syslog, etc.) are unaffected.
+- **Birch logs appear in all handlers.** Since birch sends logs via `:logger`, all registered handlers receive them. Each handler applies its own formatter.
+- **Level filtering still works.** Both birch's level filter and `:logger`'s own level filters apply. A log must pass both to be output.
+
+### Phoenix / Elixir Considerations
+
+If you are using birch from an Elixir/Phoenix application:
+
+- **Birch's `ensure_formatter_configured()` will override your `:logger` formatter config.** Phoenix configures `:logger` formatting in `config.exs`. When birch's default config is first used, it replaces the formatter on the `default` handler.
+- **To avoid this**, use explicit birch handlers instead of the default config:
+
+```gleam
+import birch as log
+import birch/handler/console
+
+// Skip :logger integration -- use birch's own handler
+log.configure([
+  log.config_handlers([console.handler()]),
+])
+```
+
+- Alternatively, call `erlang_logger.setup()` at application startup to make the override explicit and intentional rather than a side effect of the first log call.
 
 ## Comparison with Other Logging Libraries
 
