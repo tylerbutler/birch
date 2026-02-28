@@ -1,5 +1,0 @@
-kind: Added
-body: |-
-    OTP structured report support via `report_cb` (#90)
-    The birch `:logger` formatter now checks for `report_cb` callbacks in OTP log event metadata. Supports both 1-arg (returns chardata) and 2-arg (returns `{Format, Args}`) callbacks with `try/catch` fallback to `~p` on failure. OTP libraries that emit structured reports (e.g., supervisor, gen_server) now render human-readable messages instead of raw Erlang terms.
-time: 2026-02-27T22:03:00.000000000-08:00

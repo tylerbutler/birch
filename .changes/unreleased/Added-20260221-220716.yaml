@@ -1,5 +1,0 @@
-kind: Added
-body: |-
-    Typed metadata values (#58)
-    Replace stringly-typed `Metadata` with a `MetadataValue` sum type (`StringVal`, `IntVal`, `FloatVal`, `BoolVal`). New `birch/meta` module provides ergonomic constructors (`meta.string`, `meta.int`, `meta.float`, `meta.bool`). JSON handler now outputs typed values instead of strings.
-time: 2026-02-21T22:07:16.915874519-08:00

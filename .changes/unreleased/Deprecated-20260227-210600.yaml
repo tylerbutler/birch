@@ -1,5 +1,0 @@
-kind: Deprecated
-body: |-
-    Deprecate type aliases and `logger_` prefix functions
-    Top-level type aliases (`LogLevel`, `LogHandler`, `LogMetadata`, `Config`, `TimestampFormatter`) are deprecated — use the types from their respective modules directly (e.g., `birch/level.Level`). The `logger_` prefix functions (`logger_info`, `logger_debug`, etc.) are deprecated in favor of calling `birch/logger` functions directly (e.g., `logger.info(lgr, msg, meta)`).
-time: 2026-02-27T21:06:00.000000000-08:00
