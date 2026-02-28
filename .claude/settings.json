@@ -7,7 +7,9 @@
           {
             "type": "command",
             "command": "gleam format $CLAUDE_FILE_PATHS",
-            "filePatterns": ["**/*.gleam"]
+            "filePatterns": [
+              "**/*.gleam"
+            ]
           }
         ]
       },
@@ -19,7 +21,18 @@
             "command": "just check"
           }
         ],
-        "filePatterns": ["**/birch_ffi.erl", "**/birch_ffi.mjs"]
+        "filePatterns": [
+          "**/birch_ffi.erl",
+          "**/birch_ffi.mjs"
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/gsd-context-monitor.js"
+          }
+        ]
       }
     ],
     "PreToolUse": [
@@ -29,10 +42,27 @@
           {
             "type": "command",
             "command": "echo '⚠️  Remember: FFI changes require updating BOTH birch_ffi.erl AND birch_ffi.mjs'",
-            "filePatterns": ["**/birch_ffi.erl", "**/birch_ffi.mjs"]
+            "filePatterns": [
+              "**/birch_ffi.erl",
+              "**/birch_ffi.mjs"
+            ]
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/gsd-check-update.js"
           }
         ]
       }
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "node .claude/hooks/gsd-statusline.js"
   }
 }
