@@ -1,6 +1,7 @@
-//// Erlang :logger integration for birch.
+//// Erlang `:logger` integration for birch.
 ////
-//// This module provides integration with Erlang's built-in :logger system.
+//// This module provides integration with Erlang's built-in `:logger` system,
+//// allowing birch to participate in OTP's standard logging infrastructure.
 ////
 //// ## Architecture
 ////
@@ -23,10 +24,20 @@
 //// formatter builds a LogRecord from `:logger` event fields and formats
 //// structured reports using their `report_cb` callbacks when available.
 ////
-//// ## Setup
+//// ## Automatic Setup
 ////
-//// Birch automatically installs its formatter on the `:logger` default handler
-//// when the default configuration is used. You can also set it up explicitly:
+//// When birch's default configuration is used (i.e., no explicit `config_handlers`
+//// is set), birch automatically installs its formatter on the `:logger` default
+//// handler on first use via `ensure_formatter_configured()`. This is idempotent.
+////
+//// **Important:** This changes how ALL `:logger` output looks on the `default`
+//// handler — including OTP supervisor reports, application lifecycle messages,
+//// and logs from other Erlang/Elixir libraries. Other `:logger` handlers you
+//// have added are not affected; they keep their own formatters.
+////
+//// ## Explicit Setup
+////
+//// You can set up the formatter explicitly for more control:
 ////
 //// ```gleam
 //// import birch/erlang_logger
@@ -37,7 +48,7 @@
 //// }
 //// ```
 ////
-//// ## Customization
+//// ## Custom Formatting
 ////
 //// ```gleam
 //// import birch/erlang_logger
@@ -47,6 +58,31 @@
 //// let assert Ok(Nil) =
 ////   erlang_logger.setup_with_config(console.default_fancy_config())
 //// ```
+////
+//// ## Opting Out
+////
+//// To skip `:logger` integration and use birch's own handlers instead,
+//// configure explicit handlers:
+////
+//// ```gleam
+//// import birch as log
+//// import birch/handler/console
+////
+//// log.configure([
+////   log.config_handlers([console.handler()]),
+//// ])
+//// ```
+////
+//// With explicit handlers, birch still sends LogRecords to `:logger` (so
+//// other `:logger` handlers see them), but it does not install its formatter
+//// on the `default` handler. OTP logs will use OTP's own default formatter.
+////
+//// ## Phoenix / Elixir
+////
+//// If using birch from Phoenix or another Elixir application, be aware that
+//// `ensure_formatter_configured()` will override the `:logger` formatter
+//// config set in `config.exs`. Use explicit handlers (see above) or call
+//// `erlang_logger.setup()` at startup to make the override intentional.
 
 import birch/formatter
 import birch/handler.{type Handler}
