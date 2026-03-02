@@ -27,7 +27,8 @@
          logger_log/2, logger_log_structured/5,
          install_formatter/2, remove_formatter/1,
          is_formatter_configured/0, ensure_initialized/0,
-         is_healthy/0]).
+         is_healthy/0,
+         set_handler_level_all/0]).
 
 %% :logger formatter callback
 -export([format/2]).
@@ -134,7 +135,12 @@ install_formatter(HandlerId, FormatFn) ->
     Result = update_handler_formatter(HandlerId, {?MODULE, #{format_fn => FormatFn}}),
     case Result of
         {ok, nil} ->
-            persistent_term:put(birch_logger_initialized, true);
+            persistent_term:put(birch_logger_initialized, true),
+            %% Set handler-level filter to 'all' so birch controls filtering.
+            %% Without this, OTP's default handler level (notice) silently
+            %% drops debug/info messages before birch's formatter sees them.
+            Id = binary_to_atom(HandlerId, utf8),
+            logger:set_handler_config(Id, level, all);
         _ -> ok
     end,
     Result.
@@ -177,6 +183,14 @@ is_healthy() ->
         _ ->
             false
     end.
+
+%% Set the default handler's level filter to 'all'.
+%% Called automatically by install_formatter/2. Exposed for cases where
+%% the user wants to reset the handler level after external modification.
+-spec set_handler_level_all() -> nil.
+set_handler_level_all() ->
+    logger:set_handler_config(default, level, all),
+    nil.
 
 %% ============================================================================
 %% :logger Formatter Callback

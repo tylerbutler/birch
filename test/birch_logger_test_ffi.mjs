@@ -35,3 +35,7 @@ export function otp_logger_report_with_cb_2arg() {
 export function install_crashing_formatter() {
   return undefined;
 }
+
+export function get_handler_level() {
+  return "unavailable";
+}

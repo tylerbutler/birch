@@ -355,77 +355,14 @@ pub fn is_healthy_detects_stale_persistent_term_cache_test() {
   }
 }
 
-// ============================================================================
-// Formatter Crash Recovery Tests (OTP-01)
-// ============================================================================
-
-pub fn format_crash_handler_survives_test() {
-  case is_erlang_target() {
-    True -> {
-      // Install a deliberately crashing formatter
-      install_crashing_formatter()
-
-      // Send a message -- this triggers the crash, format/2 returns fallback
-      do_otp_logger_warning("trigger crash")
-      sleep(100)
-
-      // Handler should still be installed (birch's try/catch caught the crash)
-      erlang_logger.is_healthy()
-      |> should.be_true
-
-      // Verify handler still works: install capture formatter and send message
-      let captured = new_capture_buffer()
-      let capture_fn = fn(r: record.LogRecord) -> String {
-        let formatted = formatter.human_readable(r)
-        append_to_buffer(captured, formatted)
-        formatted
-      }
-      let assert Ok(Nil) =
-        erlang_logger.install_formatter_on("default", capture_fn)
-
-      do_otp_logger_warning("after crash recovery")
-      sleep(100)
-
-      let output = get_buffer_contents(captured)
-      output |> string.contains("after crash recovery") |> should.be_true
-
-      // Cleanup
-      let assert Ok(Nil) = erlang_logger.setup()
-      Nil
-    }
-    False -> Nil
-  }
+/// allow_all_levels does not crash on either target.
+pub fn allow_all_levels_does_not_crash_test() {
+  erlang_logger.allow_all_levels()
 }
 
-// ============================================================================
-// report_cb Correctness Tests (OTP-01)
-// ============================================================================
-
-pub fn report_cb_2arg_formatting_test() {
-  case is_erlang_target() {
-    True -> {
-      let captured = new_capture_buffer()
-      let capture_fn = fn(r: record.LogRecord) -> String {
-        let formatted = formatter.human_readable(r)
-        append_to_buffer(captured, formatted)
-        formatted
-      }
-
-      let assert Ok(Nil) =
-        erlang_logger.install_formatter_on("default", capture_fn)
-
-      do_otp_logger_report_with_cb_2arg()
-      sleep(100)
-
-      let output = get_buffer_contents(captured)
-      output |> string.contains("Two-arg report: world") |> should.be_true
-
-      let _ = erlang_logger.remove_formatter()
-      Nil
-    }
-    False -> Nil
-  }
-}
+// Note: Formatter crash recovery tests (OTP-01) and report_cb 2-arg tests
+// are integrated into logger_round_trip_formatting_test (Tests 6-8) to avoid
+// race conditions with concurrent tests modifying the same :logger handler.
 
 pub fn emit_does_not_crash_test() {
   // Direct emit should work without crashing
@@ -614,6 +551,62 @@ pub fn logger_round_trip_formatting_test() {
       // The report_cb should format the report as "Test report: hello"
       output5 |> string.contains("Test report: hello") |> should.be_true
 
+      // === Test 6: OTP report_cb 2-arg formatting ===
+      let captured6 = new_capture_buffer()
+      let capture_formatter6 = fn(r: record.LogRecord) -> String {
+        let formatted = formatter.human_readable(r)
+        append_to_buffer(captured6, formatted)
+        formatted
+      }
+
+      let assert Ok(Nil) =
+        erlang_logger.install_formatter_on("default", capture_formatter6)
+
+      do_otp_logger_report_with_cb_2arg()
+      sleep(100)
+
+      let output6 = get_buffer_contents(captured6)
+      output6 |> string.contains("Two-arg report: world") |> should.be_true
+
+      // === Test 7: Formatter crash recovery ===
+      // Install a deliberately crashing formatter
+      install_crashing_formatter()
+
+      // Send a message -- triggers the crash, format/2 returns fallback
+      do_otp_logger_warning("trigger crash")
+      sleep(100)
+
+      // Handler should still be installed (birch's try/catch caught the crash)
+      erlang_logger.is_healthy()
+      |> should.be_true
+
+      // Verify handler still works after crash
+      let captured7 = new_capture_buffer()
+      let capture_formatter7 = fn(r: record.LogRecord) -> String {
+        let formatted = formatter.human_readable(r)
+        append_to_buffer(captured7, formatted)
+        formatted
+      }
+      let assert Ok(Nil) =
+        erlang_logger.install_formatter_on("default", capture_formatter7)
+
+      do_otp_logger_warning("after crash recovery")
+      sleep(100)
+
+      let output7 = get_buffer_contents(captured7)
+      output7 |> string.contains("after crash recovery") |> should.be_true
+
+      // === Test 8: Handler level set to 'all' after install (OTP-05) ===
+      // Verifies that install_formatter sets handler level to 'all',
+      // so debug/info messages are not silently dropped by OTP's default notice filter.
+      // We check the handler config directly instead of round-tripping a debug message,
+      // because concurrent tests modify the handler formatter (causing race conditions).
+      let assert Ok(Nil) =
+        erlang_logger.install_formatter_on("default", formatter.human_readable)
+
+      let handler_level = get_handler_level()
+      handler_level |> should.equal("all")
+
       // === Cleanup ===
       let _ = erlang_logger.remove_formatter()
       Nil
@@ -672,6 +665,12 @@ fn do_otp_logger_report_with_cb_2arg() -> Nil
 @external(erlang, "birch_logger_test_ffi", "install_crashing_formatter")
 @external(javascript, "./birch_logger_test_ffi.mjs", "install_crashing_formatter")
 fn install_crashing_formatter() -> Nil
+
+/// Get the handler level for the default :logger handler.
+/// Returns the level as a string (e.g., "all", "notice").
+@external(erlang, "birch_logger_test_ffi", "get_handler_level")
+@external(javascript, "./birch_logger_test_ffi.mjs", "get_handler_level")
+fn get_handler_level() -> String
 
 /// Opaque type for the capture buffer
 type CaptureBuffer

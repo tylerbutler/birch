@@ -45,6 +45,21 @@
 //// level, both Trace and Debug map to `debug`. On the return trip, `debug`
 //// always maps to Debug. Level ordering is preserved for all other levels.
 ////
+//// ## Level Filtering
+////
+//// OTP's `:logger` has its own level filtering that runs before birch's
+//// formatter sees the message. By default, the handler level is `notice`,
+//// which silently drops `debug` and `info` messages.
+////
+//// When birch installs its formatter (via `setup()`, `install_formatter()`,
+//// or `ensure_formatter_configured()`), it automatically sets the handler
+//// level to `all` so birch controls all level filtering. This only affects
+//// the handler birch is installed on (default by default); other `:logger`
+//// handlers keep their own level settings.
+////
+//// If you need to reset this after external modification, call
+//// `allow_all_levels()`.
+////
 //// ## Automatic Setup
 ////
 //// When birch's default configuration is used (i.e., no explicit `config_handlers`
@@ -294,6 +309,22 @@ pub fn ensure_formatter_configured() -> Nil {
   }
 }
 
+/// Configure the OTP `:logger` default handler to allow all log levels through.
+///
+/// By default, OTP's `:logger` handler-level filter is `notice`, which silently
+/// drops `debug` and `info` messages before they reach the formatter. This
+/// function sets the handler level to `all`, letting birch control all level
+/// filtering.
+///
+/// **Note:** This is called automatically when `setup()` or
+/// `install_formatter()` succeeds. You only need to call this directly if
+/// something has reset the handler level after birch's initial setup.
+///
+/// On JavaScript, this is a no-op since `:logger` is not available.
+pub fn allow_all_levels() -> Nil {
+  do_set_handler_level_all()
+}
+
 // ============================================================================
 // Install birch as :logger Formatter
 // ============================================================================
@@ -526,3 +557,8 @@ fn do_install_formatter(
 @external(erlang, "birch_erlang_logger_ffi", "remove_formatter")
 @external(javascript, "../birch_erlang_logger_ffi.mjs", "remove_formatter")
 fn do_remove_formatter(handler_id: String) -> Result(Nil, String)
+
+/// Set the default handler's level filter to 'all'.
+@external(erlang, "birch_erlang_logger_ffi", "set_handler_level_all")
+@external(javascript, "../birch_erlang_logger_ffi.mjs", "set_handler_level_all")
+fn do_set_handler_level_all() -> Nil

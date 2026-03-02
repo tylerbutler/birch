@@ -6,7 +6,8 @@
 -module(birch_logger_test_ffi).
 -export([new_capture_buffer/0, append_to_buffer/2, get_buffer_contents/1,
          sleep/1, otp_logger_warning/1, otp_logger_report_with_cb/0,
-         otp_logger_report_with_cb_2arg/0, install_crashing_formatter/0]).
+         otp_logger_report_with_cb_2arg/0, install_crashing_formatter/0,
+         get_handler_level/0]).
 
 %% Create a new ETS-based capture buffer.
 %% Returns an ETS table reference (unnamed, public for cross-process access).
@@ -43,6 +44,16 @@ install_crashing_formatter() ->
     logger:update_handler_config(default, formatter,
         {birch_erlang_logger_ffi, #{format_fn => CrashingFn}}),
     nil.
+
+%% Get the handler level for the default :logger handler.
+%% Returns the level atom (e.g., all, notice, debug) as a binary string.
+get_handler_level() ->
+    case logger:get_handler_config(default) of
+        {ok, #{level := Level}} ->
+            atom_to_binary(Level, utf8);
+        _ ->
+            <<"unknown">>
+    end.
 
 %% Send a structured OTP report with a 1-arg report_cb callback.
 %% Per OTP spec, 1-arg form returns {io:format(), [term()]}.
