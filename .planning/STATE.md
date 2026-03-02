@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Every module in birch should reflect how an experienced Gleam/OTP developer would write it — idiomatic, production-hardened, and measurably performant.
-**Current focus:** Phase 1 — OTP Integration Hardening
+**Current focus:** Phase 2 — Resource and Safety Hardening
 
 ## Current Position
 
