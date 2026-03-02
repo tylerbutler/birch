@@ -20,6 +20,8 @@
 
 -module(birch_erlang_logger_ffi).
 
+-include_lib("birch/include/birch@record_LogRecord.hrl").
+
 %% API exports
 -export([emit_to_logger/2,
          logger_log/2, logger_log_structured/5,
@@ -71,7 +73,7 @@ erlang_level_to_gleam(_) -> info.
 -spec emit_to_logger(tuple(), tuple()) -> nil.
 emit_to_logger(GleamLevel, LogRecord) ->
     Level = gleam_level_to_atom(GleamLevel),
-    Message = erlang:element(5, LogRecord),
+    Message = LogRecord#log_record.message,
     logger:log(Level, "~ts", [Message], #{
         birch_log_record => LogRecord
     }),
@@ -199,7 +201,14 @@ build_log_record_from_otp(Level, Msg, Meta) ->
     LoggerName = format_logger_name(Meta),
     Message = format_msg(Msg, Meta),
     Metadata = format_metadata(Meta),
-    {log_record, Timestamp, GleamLevel, LoggerName, Message, Metadata, none}.
+    #log_record{
+        timestamp = Timestamp,
+        level = GleamLevel,
+        logger_name = LoggerName,
+        message = Message,
+        metadata = Metadata,
+        caller_id = none
+    }.
 
 %% ============================================================================
 %% Helper functions
