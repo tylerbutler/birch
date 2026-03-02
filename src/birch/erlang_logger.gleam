@@ -24,6 +24,27 @@
 //// formatter builds a LogRecord from `:logger` event fields and formats
 //// structured reports using their `report_cb` callbacks when available.
 ////
+//// ## Level Mapping
+////
+//// Birch has 9 log levels; OTP's `:logger` has 8. The mapping is 1:1 for all
+//// levels except Trace, which shares `debug` with Debug:
+////
+//// | Birch Level | OTP Level   | Round-Trip Result | Lossy? |
+//// |-------------|-------------|-------------------|--------|
+//// | Trace       | debug       | Debug             | Yes    |
+//// | Debug       | debug       | Debug             | No     |
+//// | Info        | info        | Info              | No     |
+//// | Notice      | notice      | Notice            | No     |
+//// | Warn        | warning     | Warn              | No     |
+//// | Err         | error       | Err               | No     |
+//// | Critical    | critical    | Critical          | No     |
+//// | Alert       | alert       | Alert             | No     |
+//// | Fatal       | emergency   | Fatal             | No     |
+////
+//// **Trace is lossy**: `Trace -> debug -> Debug`. Since OTP has no `trace`
+//// level, both Trace and Debug map to `debug`. On the return trip, `debug`
+//// always maps to Debug. Level ordering is preserved for all other levels.
+////
 //// ## Automatic Setup
 ////
 //// When birch's default configuration is used (i.e., no explicit `config_handlers`
@@ -129,7 +150,8 @@ pub type ErlangLevel {
 ///
 /// The mapping follows RFC 5424 semantics with a 1:1 correspondence
 /// for all levels except Trace (which has no RFC 5424 equivalent and
-/// maps to debug):
+/// maps to debug). The Trace->debug lossy mapping is verified by
+/// property tests in `property_test.gleam`.
 ///
 /// | Gleam Level | Erlang Level |
 /// |-------------|--------------|

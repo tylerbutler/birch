@@ -2,6 +2,7 @@
 ////
 //// These tests verify invariants that should hold for all inputs.
 
+import birch/erlang_logger
 import birch/formatter
 import birch/level.{
   Alert, Critical, Debug, Err, Fatal, Info, Notice, Trace, Warn,
@@ -167,6 +168,72 @@ pub fn level_compare_antisymmetric_test() {
     order.Eq -> ba |> should.equal(order.Eq)
     order.Gt -> ba |> should.equal(order.Lt)
   }
+}
+
+// ============================================================================
+// OTP Level Round-Trip Property Tests
+// ============================================================================
+
+/// Property: Level ordering is preserved through OTP round-trip.
+/// For any two levels a, b where neither is Trace:
+///   compare(roundtrip(a), roundtrip(b)) == compare(a, b)
+///
+/// Trace is excluded because it collapses to Debug (a documented, lossy mapping).
+pub fn otp_roundtrip_preserves_ordering_test() {
+  // Generator for non-Trace levels (Trace is lossy, excluded)
+  let non_trace_gen =
+    qcheck.from_generators(qcheck.return(Debug), [
+      qcheck.return(Info),
+      qcheck.return(Notice),
+      qcheck.return(Warn),
+      qcheck.return(Err),
+      qcheck.return(Critical),
+      qcheck.return(Alert),
+      qcheck.return(Fatal),
+    ])
+
+  use #(a, b) <- qcheck.given(qcheck.tuple2(non_trace_gen, non_trace_gen))
+
+  let roundtrip_a =
+    a
+    |> erlang_logger.gleam_level_to_erlang
+    |> erlang_logger.erlang_level_to_gleam
+  let roundtrip_b =
+    b
+    |> erlang_logger.gleam_level_to_erlang
+    |> erlang_logger.erlang_level_to_gleam
+
+  level.compare(roundtrip_a, roundtrip_b)
+  |> should.equal(level.compare(a, b))
+}
+
+/// Property: All non-Trace levels survive the OTP round-trip unchanged.
+pub fn otp_roundtrip_identity_for_non_trace_test() {
+  let non_trace_gen =
+    qcheck.from_generators(qcheck.return(Debug), [
+      qcheck.return(Info),
+      qcheck.return(Notice),
+      qcheck.return(Warn),
+      qcheck.return(Err),
+      qcheck.return(Critical),
+      qcheck.return(Alert),
+      qcheck.return(Fatal),
+    ])
+
+  use lvl <- qcheck.given(non_trace_gen)
+
+  lvl
+  |> erlang_logger.gleam_level_to_erlang
+  |> erlang_logger.erlang_level_to_gleam
+  |> should.equal(lvl)
+}
+
+/// Property: Trace always collapses to Debug through OTP round-trip.
+pub fn otp_roundtrip_trace_collapses_to_debug_test() {
+  Trace
+  |> erlang_logger.gleam_level_to_erlang
+  |> erlang_logger.erlang_level_to_gleam
+  |> should.equal(Debug)
 }
 
 // ============================================================================
