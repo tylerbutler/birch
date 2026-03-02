@@ -12,8 +12,8 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [x] **OTP-01**: Formatter `format/2` callback wraps entire body in try/catch with fallback formatted string
 - [x] **OTP-02**: `is_healthy/0` health check verifies :logger handler is still installed (not just persistent_term cache)
 - [x] **OTP-03**: Erlang FFI replaces `erlang:element(5, LogRecord)` with safe accessor pattern that won't break on field reorder
-- [ ] **OTP-04**: All 9 birch levels correctly map to/from OTP's 8 levels with round-trip consistency validated
-- [ ] **OTP-05**: :logger primary level interaction documented and handled (debug/info not silently dropped)
+- [x] **OTP-04**: All 9 birch levels correctly map to/from OTP's 8 levels with round-trip consistency validated
+- [x] **OTP-05**: :logger primary level interaction documented and handled (debug/info not silently dropped)
 
 ### Resource & Safety Hardening
 
@@ -80,8 +80,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OTP-01 | Phase 1 | Complete |
 | OTP-02 | Phase 1 | Complete |
 | OTP-03 | Phase 1 | Complete |
-| OTP-04 | Phase 1 | Pending |
-| OTP-05 | Phase 1 | Pending |
+| OTP-04 | Phase 1 | Complete |
+| OTP-05 | Phase 1 | Complete |
 | RES-01 | Phase 2 | Pending |
 | RES-02 | Phase 2 | Pending |
 | RES-03 | Phase 2 | Pending |
