@@ -355,6 +355,48 @@ pub fn is_healthy_detects_stale_persistent_term_cache_test() {
   }
 }
 
+// ============================================================================
+// Formatter Crash Recovery Tests (OTP-01)
+// ============================================================================
+
+pub fn format_crash_handler_survives_test() {
+  case is_erlang_target() {
+    True -> {
+      // Install a deliberately crashing formatter
+      install_crashing_formatter()
+
+      // Send a message -- this triggers the crash, format/2 returns fallback
+      do_otp_logger_warning("trigger crash")
+      sleep(100)
+
+      // Handler should still be installed (birch's try/catch caught the crash)
+      erlang_logger.is_healthy()
+      |> should.be_true
+
+      // Verify handler still works: install capture formatter and send message
+      let captured = new_capture_buffer()
+      let capture_fn = fn(r: record.LogRecord) -> String {
+        let formatted = formatter.human_readable(r)
+        append_to_buffer(captured, formatted)
+        formatted
+      }
+      let assert Ok(Nil) =
+        erlang_logger.install_formatter_on("default", capture_fn)
+
+      do_otp_logger_warning("after crash recovery")
+      sleep(100)
+
+      let output = get_buffer_contents(captured)
+      output |> string.contains("after crash recovery") |> should.be_true
+
+      // Cleanup
+      let assert Ok(Nil) = erlang_logger.setup()
+      Nil
+    }
+    False -> Nil
+  }
+}
+
 pub fn emit_does_not_crash_test() {
   // Direct emit should work without crashing
   let r =
@@ -590,6 +632,11 @@ fn do_otp_logger_warning(message: String) -> Nil
 @external(erlang, "birch_logger_test_ffi", "otp_logger_report_with_cb")
 @external(javascript, "./birch_logger_test_ffi.mjs", "otp_logger_report_with_cb")
 fn do_otp_logger_report_with_cb() -> Nil
+
+/// Install a formatter that deliberately crashes on every call.
+@external(erlang, "birch_logger_test_ffi", "install_crashing_formatter")
+@external(javascript, "./birch_logger_test_ffi.mjs", "install_crashing_formatter")
+fn install_crashing_formatter() -> Nil
 
 /// Opaque type for the capture buffer
 type CaptureBuffer

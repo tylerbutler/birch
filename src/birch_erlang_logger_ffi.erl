@@ -188,17 +188,32 @@ is_healthy() ->
 %% 1. Birch-originated: `birch_log_record` in metadata → use it directly
 %% 2. OTP/library: Build a LogRecord from :logger event fields
 -spec format(logger:log_event(), #{format_fn => function()}) -> unicode:chardata().
-format(#{level := Level, msg := Msg, meta := Meta}, #{format_fn := FormatFn}) ->
-    LogRecord = case maps:get(birch_log_record, Meta, undefined) of
-        undefined ->
-            %% OTP/library log — build LogRecord from :logger event
-            build_log_record_from_otp(Level, Msg, Meta);
-        Record ->
-            %% Birch-originated — use the LogRecord directly
-            Record
-    end,
-    Formatted = FormatFn(LogRecord),
-    [Formatted, $\n];
+format(#{level := Level, msg := Msg, meta := Meta} = _Event, #{format_fn := FormatFn} = _Config) ->
+    try
+        LogRecord = case maps:get(birch_log_record, Meta, undefined) of
+            undefined ->
+                %% OTP/library log — build LogRecord from :logger event
+                build_log_record_from_otp(Level, Msg, Meta);
+            Record ->
+                %% Birch-originated — use the LogRecord directly
+                Record
+        end,
+        Formatted = FormatFn(LogRecord),
+        [Formatted, $\n]
+    catch
+        Class:Reason:_Stacktrace ->
+            %% Formatter crashed — emit a fallback that preserves visibility.
+            %% Includes FORMATTER_ERROR marker so the crash is obvious in logs.
+            Timestamp = format_timestamp(maps:get(time, Meta, undefined)),
+            FallbackMsg = try format_msg(Msg, Meta)
+                          catch _:_ -> iolist_to_binary(io_lib:format("~p", [Msg]))
+                          end,
+            [Timestamp, <<" | ">>,
+             level_to_string(Level), <<" | FORMATTER_ERROR | ">>,
+             FallbackMsg, <<" | crash: ">>,
+             iolist_to_binary(io_lib:format("~p:~p", [Class, Reason])),
+             $\n]
+    end;
 
 %% Fallback: no format_fn in config, use a basic format
 format(#{level := Level, msg := Msg, meta := Meta}, _Config) ->

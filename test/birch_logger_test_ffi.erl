@@ -5,7 +5,8 @@
 
 -module(birch_logger_test_ffi).
 -export([new_capture_buffer/0, append_to_buffer/2, get_buffer_contents/1,
-         sleep/1, otp_logger_warning/1, otp_logger_report_with_cb/0]).
+         sleep/1, otp_logger_warning/1, otp_logger_report_with_cb/0,
+         install_crashing_formatter/0]).
 
 %% Create a new ETS-based capture buffer.
 %% Returns an ETS table reference (unnamed, public for cross-process access).
@@ -33,6 +34,14 @@ sleep(Ms) ->
 %% Uses warning level which is above the default :logger threshold (notice).
 otp_logger_warning(Message) ->
     logger:warning("~ts", [Message]),
+    nil.
+
+%% Install a formatter that deliberately crashes on every call.
+%% Used to test format/2 try/catch recovery.
+install_crashing_formatter() ->
+    CrashingFn = fun(_LogRecord) -> error(deliberate_formatter_crash) end,
+    logger:update_handler_config(default, formatter,
+        {birch_erlang_logger_ffi, #{format_fn => CrashingFn}}),
     nil.
 
 %% Send a structured OTP report with a report_cb callback.
