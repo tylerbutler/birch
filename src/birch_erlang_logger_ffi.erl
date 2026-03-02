@@ -26,7 +26,8 @@
 -export([emit_to_logger/2,
          logger_log/2, logger_log_structured/5,
          install_formatter/2, remove_formatter/1,
-         is_formatter_configured/0, ensure_initialized/0]).
+         is_formatter_configured/0, ensure_initialized/0,
+         is_healthy/0]).
 
 %% :logger formatter callback
 -export([format/2]).
@@ -162,6 +163,19 @@ is_formatter_configured() ->
     case logger:get_handler_config(default) of
         {ok, #{formatter := {birch_erlang_logger_ffi, _}}} -> true;
         _ -> false
+    end.
+
+%% Check if birch's :logger integration is healthy.
+%% Unlike ensure_initialized/0 (which checks persistent_term cache),
+%% this queries the actual :logger handler state.
+%% Use for health checks and monitoring, not in hot paths.
+-spec is_healthy() -> boolean().
+is_healthy() ->
+    case logger:get_handler_config(default) of
+        {ok, #{formatter := {birch_erlang_logger_ffi, #{format_fn := _}}}} ->
+            true;
+        _ ->
+            false
     end.
 
 %% ============================================================================

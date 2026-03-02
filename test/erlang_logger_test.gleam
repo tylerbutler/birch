@@ -292,6 +292,69 @@ pub fn ensure_formatter_configured_does_not_crash_test() {
   erlang_logger.ensure_formatter_configured()
 }
 
+// ============================================================================
+// Health Check Tests
+// ============================================================================
+
+pub fn is_healthy_returns_true_when_formatter_installed_test() {
+  case is_erlang_target() {
+    True -> {
+      // Install formatter
+      let assert Ok(Nil) = erlang_logger.setup()
+
+      // Should be healthy
+      erlang_logger.is_healthy()
+      |> should.be_true
+
+      // Cleanup
+      let _ = erlang_logger.remove_formatter()
+      Nil
+    }
+    False -> {
+      // On JS, should always return false
+      erlang_logger.is_healthy()
+      |> should.be_false
+    }
+  }
+}
+
+pub fn is_healthy_returns_false_when_formatter_removed_test() {
+  case is_erlang_target() {
+    True -> {
+      // Install then remove formatter
+      let assert Ok(Nil) = erlang_logger.setup()
+      let assert Ok(Nil) = erlang_logger.remove_formatter()
+
+      // Should NOT be healthy even though persistent_term may be stale
+      erlang_logger.is_healthy()
+      |> should.be_false
+    }
+    False -> Nil
+  }
+}
+
+pub fn is_healthy_detects_stale_persistent_term_cache_test() {
+  case is_erlang_target() {
+    True -> {
+      // Install formatter (sets persistent_term to true)
+      let assert Ok(Nil) = erlang_logger.setup()
+
+      // Verify is_initialized returns true (from cache)
+      erlang_logger.is_initialized()
+      |> should.be_true
+
+      // Remove formatter (sets persistent_term to false, but let's verify
+      // is_healthy works independently of the cache)
+      let assert Ok(Nil) = erlang_logger.remove_formatter()
+
+      // is_healthy should return false because it checks real state
+      erlang_logger.is_healthy()
+      |> should.be_false
+    }
+    False -> Nil
+  }
+}
+
 pub fn emit_does_not_crash_test() {
   // Direct emit should work without crashing
   let r =

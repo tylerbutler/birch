@@ -125,6 +125,14 @@ export function is_formatter_configured() {
 }
 
 /**
+ * Check if birch's :logger integration is healthy.
+ * Always returns false on JavaScript since :logger is not available.
+ */
+export function is_healthy() {
+  return false;
+}
+
+/**
  * Install birch as a :logger formatter.
  * Not available on JavaScript - always returns an error.
  */

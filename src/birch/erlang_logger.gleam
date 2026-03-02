@@ -197,6 +197,20 @@ pub fn is_initialized() -> Bool {
   do_ensure_initialized()
 }
 
+/// Check if birch's :logger integration is healthy.
+///
+/// Unlike `is_initialized()` which checks a fast persistent_term cache,
+/// this function verifies the actual :logger handler state by querying
+/// the handler configuration directly. Use for health checks and
+/// monitoring, not in hot paths (involves a gen_server call).
+///
+/// Returns `True` only if:
+/// 1. The default :logger handler exists
+/// 2. The birch formatter is installed on it with a valid format function
+pub fn is_healthy() -> Bool {
+  do_is_healthy()
+}
+
 // ============================================================================
 // Formatter Setup for :logger's Default Handler
 // ============================================================================
@@ -456,6 +470,11 @@ fn do_emit_to_logger(level: ErlangLevel, record: record.LogRecord) -> Nil
 @external(erlang, "birch_erlang_logger_ffi", "ensure_initialized")
 @external(javascript, "../birch_erlang_logger_ffi.mjs", "ensure_initialized")
 fn do_ensure_initialized() -> Bool
+
+/// Check if birch's :logger integration is healthy (real :logger state check).
+@external(erlang, "birch_erlang_logger_ffi", "is_healthy")
+@external(javascript, "../birch_erlang_logger_ffi.mjs", "is_healthy")
+fn do_is_healthy() -> Bool
 
 /// Log a pre-formatted message to Erlang's :logger (legacy).
 @external(erlang, "birch_erlang_logger_ffi", "logger_log")
