@@ -9,7 +9,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### OTP Integration Hardening
 
-- [ ] **OTP-01**: Formatter `format/2` callback wraps entire body in try/catch with fallback formatted string
+- [x] **OTP-01**: Formatter `format/2` callback wraps entire body in try/catch with fallback formatted string
 - [x] **OTP-02**: `is_healthy/0` health check verifies :logger handler is still installed (not just persistent_term cache)
 - [x] **OTP-03**: Erlang FFI replaces `erlang:element(5, LogRecord)` with safe accessor pattern that won't break on field reorder
 - [ ] **OTP-04**: All 9 birch levels correctly map to/from OTP's 8 levels with round-trip consistency validated
@@ -77,7 +77,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| OTP-01 | Phase 1 | Pending |
+| OTP-01 | Phase 1 | Complete |
 | OTP-02 | Phase 1 | Complete |
 | OTP-03 | Phase 1 | Complete |
 | OTP-04 | Phase 1 | Pending |
