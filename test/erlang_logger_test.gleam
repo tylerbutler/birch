@@ -397,6 +397,36 @@ pub fn format_crash_handler_survives_test() {
   }
 }
 
+// ============================================================================
+// report_cb Correctness Tests (OTP-01)
+// ============================================================================
+
+pub fn report_cb_2arg_formatting_test() {
+  case is_erlang_target() {
+    True -> {
+      let captured = new_capture_buffer()
+      let capture_fn = fn(r: record.LogRecord) -> String {
+        let formatted = formatter.human_readable(r)
+        append_to_buffer(captured, formatted)
+        formatted
+      }
+
+      let assert Ok(Nil) =
+        erlang_logger.install_formatter_on("default", capture_fn)
+
+      do_otp_logger_report_with_cb_2arg()
+      sleep(100)
+
+      let output = get_buffer_contents(captured)
+      output |> string.contains("Two-arg report: world") |> should.be_true
+
+      let _ = erlang_logger.remove_formatter()
+      Nil
+    }
+    False -> Nil
+  }
+}
+
 pub fn emit_does_not_crash_test() {
   // Direct emit should work without crashing
   let r =
@@ -632,6 +662,11 @@ fn do_otp_logger_warning(message: String) -> Nil
 @external(erlang, "birch_logger_test_ffi", "otp_logger_report_with_cb")
 @external(javascript, "./birch_logger_test_ffi.mjs", "otp_logger_report_with_cb")
 fn do_otp_logger_report_with_cb() -> Nil
+
+/// Send a structured OTP report with a 2-arg report_cb callback
+@external(erlang, "birch_logger_test_ffi", "otp_logger_report_with_cb_2arg")
+@external(javascript, "./birch_logger_test_ffi.mjs", "otp_logger_report_with_cb_2arg")
+fn do_otp_logger_report_with_cb_2arg() -> Nil
 
 /// Install a formatter that deliberately crashes on every call.
 @external(erlang, "birch_logger_test_ffi", "install_crashing_formatter")

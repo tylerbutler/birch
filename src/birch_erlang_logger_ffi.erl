@@ -250,18 +250,19 @@ format_msg({report, Report}, Meta) ->
     %% Check for report_cb callback in metadata (OTP structured reports)
     case maps:get(report_cb, Meta, undefined) of
         Fun when is_function(Fun, 1) ->
-            %% Single-arg callback: returns chardata directly
+            %% 1-arg form: returns {io:format(), [term()]} per OTP spec
             try
-                unicode:characters_to_binary(Fun(Report))
+                {Format, Args} = Fun(Report),
+                unicode:characters_to_binary(io_lib:format(Format, Args))
             catch
                 _:_ ->
                     unicode:characters_to_binary(io_lib:format("~p", [Report]))
             end;
         Fun when is_function(Fun, 2) ->
-            %% Two-arg callback: returns {Format, Args}
+            %% 2-arg form: returns unicode:chardata() per OTP spec
             try
-                {Format, Args} = Fun(Report, #{single_line => true, depth => 30}),
-                unicode:characters_to_binary(io_lib:format(Format, Args))
+                unicode:characters_to_binary(
+                    Fun(Report, #{single_line => true, depth => 30, chars_limit => unlimited}))
             catch
                 _:_ ->
                     unicode:characters_to_binary(io_lib:format("~p", [Report]))
