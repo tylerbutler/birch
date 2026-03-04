@@ -46,7 +46,12 @@ Plans:
   3. The async actor tracks queue length as an O(1) integer field, not by calling `list.length` on every message
   4. The async actor detects when its monitored process crashes and recovers or logs the failure
   5. The file handler caches file size in memory and only stat()s disk during rotation checks
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [x] 02-01-PLAN.md — Single persistent_term key + ETS async registry (RES-01, RES-02)
+- [ ] 02-02-PLAN.md — O(1) queue length tracking (RES-03)
+- [ ] 02-03-PLAN.md — File size caching (RES-05)
 
 ### Phase 3: API Surface and Idiomatic Gleam Audit
 **Goal**: The public API reflects idiomatic Gleam conventions and is ready to stabilize at 1.0
@@ -80,6 +85,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. OTP Integration Hardening | 3/3 | Complete | 2026-03-02 |
-| 2. Resource and Safety Hardening | 0/? | Not started | - |
+| 2. Resource and Safety Hardening | 1/3 | In Progress | 2026-03-04 |
 | 3. API Surface and Idiomatic Gleam Audit | 0/? | Not started | - |
 | 4. Benchmarking Suite | 0/? | Not started | - |
