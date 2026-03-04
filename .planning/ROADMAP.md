@@ -13,7 +13,7 @@ This milestone hardens birch from a working implementation to a production-ready
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: OTP Integration Hardening** - Fix formatter crash, safe Erlang FFI, validated level mapping
-- [ ] **Phase 2: Resource and Safety Hardening** - persistent_term consolidation, async actor correctness, file handler optimization
+- [x] **Phase 2: Resource and Safety Hardening** - persistent_term consolidation, async actor correctness, file handler optimization
 - [ ] **Phase 3: API Surface and Idiomatic Gleam Audit** - Naming consistency, opaque types, idiomatic patterns module-by-module
 - [ ] **Phase 4: Benchmarking Suite** - gleamy_bench microbenchmarks + hyperfine CLI comparison vs raw :logger
 
@@ -50,8 +50,8 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md — Single persistent_term key + ETS async registry (RES-01, RES-02)
-- [ ] 02-02-PLAN.md — O(1) queue length tracking (RES-03)
-- [ ] 02-03-PLAN.md — File size caching (RES-05)
+- [x] 02-02-PLAN.md — O(1) queue length tracking (RES-03, RES-04)
+- [x] 02-03-PLAN.md — File size caching (RES-06)
 
 ### Phase 3: API Surface and Idiomatic Gleam Audit
 **Goal**: The public API reflects idiomatic Gleam conventions and is ready to stabilize at 1.0
@@ -85,6 +85,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. OTP Integration Hardening | 3/3 | Complete | 2026-03-02 |
-| 2. Resource and Safety Hardening | 1/3 | In Progress | 2026-03-04 |
+| 2. Resource and Safety Hardening | 3/3 | Complete | 2026-03-04 |
 | 3. API Surface and Idiomatic Gleam Audit | 0/? | Not started | - |
 | 4. Benchmarking Suite | 0/? | Not started | - |
