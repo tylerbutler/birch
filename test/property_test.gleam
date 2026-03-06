@@ -271,8 +271,8 @@ fn log_record_generator() -> qcheck.Generator(record.LogRecord) {
   )
 }
 
-/// Property: get_metadata returns first matching key
-pub fn record_get_metadata_first_match_test() {
+/// Property: metadata returns first matching key
+pub fn record_metadata_first_match_test() {
   use #(key, value1, value2) <- qcheck.given(qcheck.tuple3(
     qcheck.non_empty_string_from(qcheck.alphanumeric_ascii_codepoint()),
     qcheck.string_from(qcheck.printable_ascii_codepoint()),
@@ -289,16 +289,16 @@ pub fn record_get_metadata_first_match_test() {
     )
 
   // Should return the first occurrence
-  record.get_metadata(r, key)
+  record.metadata(r, key)
   |> should.equal(Ok(StringVal(value1)))
 }
 
-/// Property: get_metadata returns Error for non-existent keys
-pub fn record_get_metadata_missing_test() {
+/// Property: metadata returns Error for non-existent keys
+pub fn record_metadata_missing_test() {
   use rec <- qcheck.given(log_record_generator())
 
   // Use a key that's very unlikely to be in the metadata
-  record.get_metadata(rec, "___nonexistent_key_12345___")
+  record.metadata(rec, "___nonexistent_key_12345___")
   |> should.equal(Error(Nil))
 }
 
@@ -319,7 +319,7 @@ pub fn record_with_metadata_prepends_test() {
     )
     |> record.with_metadata([#(key, StringVal(value))])
 
-  record.get_metadata(r, key)
+  record.metadata(r, key)
   |> should.equal(Ok(StringVal(value)))
 }
 
