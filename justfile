@@ -12,7 +12,6 @@ alias f := format
 alias c := check
 alias d := docs
 alias cl := change
-alias g := generate-configs
 
 # Build the project (Erlang target)
 build:
@@ -68,17 +67,17 @@ clean:
     rm -rf build
 
 # Run all checks (format + config sync + tests)
-check: format-check check-configs-sync test
+check: format-check test
 
 # Run quick checks (format + config sync + erlang tests only)
-check-quick: format-check check-configs-sync test-erlang
+check-quick: format-check test-erlang
 
 # Full local validation (no act/Docker required)
 # Covers: format, config sync, strict build, tests, examples (Erlang), integration (Node.js)
-check-full: format-check check-configs-sync build-strict-all test test-examples test-integration-node demo
+check-full: format-check build-strict-all test test-examples test-integration-node demo
 
 # CI parity recipes
-pr: format-check check-configs-sync build-strict test docs demo
+pr: format-check build-strict test docs demo
 main: pr test-examples
 
 # Watch and rebuild on changes (requires watchexec)
@@ -316,19 +315,6 @@ ci-host:
 # Run specific CI job on host system without Docker
 ci-host-job job:
     act -j {{job}} -P ubuntu-latest=-self-hosted
-
-# ============================================================================
-# Configuration Generation
-# Requires: commit-config-gen (go install github.com/tylerbutler/commit-config-gen@latest)
-# ============================================================================
-
-# Generate cliff.toml and .commitlintrc.json from commit-types.json
-generate-configs:
-    commit-config-gen generate
-
-# Check that generated configs are in sync with commit-types.json
-check-configs-sync:
-    commit-config-gen check
 
 # Create a new changelog entry
 change:

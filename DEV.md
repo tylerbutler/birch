@@ -138,7 +138,7 @@ When modifying platform-specific code:
 
 ## Commit Conventions
 
-This project uses [conventional commits](https://www.conventionalcommits.org/). Commit types and rules are defined in `commit-types.json` (single source of truth).
+This project uses [conventional commits](https://www.conventionalcommits.org/).
 
 | Type | Description | In Changelog? |
 |------|-------------|---------------|
@@ -155,15 +155,6 @@ This project uses [conventional commits](https://www.conventionalcommits.org/). 
 | `revert` | Reverts a previous commit | No |
 
 Commits with scopes `ci` or `deps` are excluded from the changelog regardless of type.
-
-If you edit `commit-types.json`, regenerate derived config files:
-
-```bash
-just generate-configs    # Regenerate commitlint and git-cliff configs
-just check-configs-sync  # Verify configs are in sync
-```
-
-This requires the `commit-config-gen` tool (`go install github.com/tylerbutler/commit-config-gen@latest`).
 
 ## Release Process
 
