@@ -83,10 +83,7 @@ pub fn with_metadata(record: LogRecord, metadata: Metadata) -> LogRecord {
 }
 
 /// Get a metadata value by key.
-pub fn metadata(
-  record: LogRecord,
-  key: String,
-) -> Result(MetadataValue, Nil) {
+pub fn metadata(record: LogRecord, key: String) -> Result(MetadataValue, Nil) {
   list.find_map(record.metadata, fn(pair) {
     case pair {
       #(k, v) if k == key -> Ok(v)
@@ -99,6 +96,31 @@ pub fn metadata(
 /// The caller ID identifies the process or thread that created the log.
 pub fn with_caller_id(record: LogRecord, caller_id: String) -> LogRecord {
   LogRecord(..record, caller_id: option.Some(caller_id))
+}
+
+/// Get the timestamp from a log record.
+pub fn timestamp(record: LogRecord) -> String {
+  record.timestamp
+}
+
+/// Get the log level from a log record.
+pub fn level(record: LogRecord) -> Level {
+  record.level
+}
+
+/// Get the logger name from a log record.
+pub fn logger_name(record: LogRecord) -> String {
+  record.logger_name
+}
+
+/// Get the message from a log record.
+pub fn message(record: LogRecord) -> String {
+  record.message
+}
+
+/// Get all metadata from a log record.
+pub fn all_metadata(record: LogRecord) -> Metadata {
+  record.metadata
 }
 
 /// Get the caller ID from a log record, if set.

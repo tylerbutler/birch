@@ -58,6 +58,16 @@ fn clamp_rate(rate: Float) -> Float {
   float.clamp(rate, 0.0, 1.0)
 }
 
+/// Get the level threshold from a SampleConfig.
+pub fn sample_level(sample_config: SampleConfig) -> Level {
+  sample_config.level
+}
+
+/// Get the sampling rate from a SampleConfig.
+pub fn rate(sample_config: SampleConfig) -> Float {
+  sample_config.rate
+}
+
 /// Check if a log at the given level should be sampled (logged).
 ///
 /// Returns True if the log should be emitted, False if it should be dropped.

@@ -130,10 +130,41 @@ pub fn get_level(config: GlobalConfig) -> Level {
   config.level
 }
 
+/// Get the handlers from a GlobalConfig.
+pub fn get_handlers(config: GlobalConfig) -> List(Handler) {
+  config.handlers
+}
+
+/// Get the context metadata from a GlobalConfig.
+pub fn get_context(config: GlobalConfig) -> Metadata {
+  config.context
+}
+
+/// Get the sampling configuration from a GlobalConfig.
+pub fn get_sampling(config: GlobalConfig) -> Option(SampleConfig) {
+  config.sampling
+}
+
 /// Get the error callback from a GlobalConfig, if set.
-@deprecated("Access config.on_error directly instead")
 pub fn get_on_error(config: GlobalConfig) -> Option(ErrorCallback) {
   config.on_error
+}
+
+/// Create a new GlobalConfig with the given parameters.
+pub fn new_config(
+  level level: Level,
+  handlers handlers: List(Handler),
+  context context: Metadata,
+  on_error on_error: Option(ErrorCallback),
+  sampling sampling: Option(SampleConfig),
+) -> GlobalConfig {
+  GlobalConfig(
+    level: level,
+    handlers: handlers,
+    context: context,
+    on_error: on_error,
+    sampling: sampling,
+  )
 }
 
 // ============================================================================
