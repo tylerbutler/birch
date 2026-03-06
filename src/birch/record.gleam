@@ -24,11 +24,8 @@ pub fn metadata_value_to_string(value: MetadataValue) -> String {
     StringVal(s) -> s
     IntVal(i) -> int.to_string(i)
     FloatVal(f) -> float.to_string(f)
-    BoolVal(b) ->
-      case b {
-        True -> "true"
-        False -> "false"
-      }
+    BoolVal(True) -> "true"
+    BoolVal(False) -> "false"
   }
 }
 

@@ -148,15 +148,8 @@ fn format_simple(
   auto_indent: Bool,
 ) -> formatter.Formatter {
   fn(record: LogRecord) -> String {
-    let base =
-      format_record_simple(record, use_color, show_timestamp, level_fmt)
-    case auto_indent {
-      False -> base
-      True -> {
-        let depth = platform.get_scope_depth()
-        string.repeat("  ", depth) <> base
-      }
-    }
+    format_record_simple(record, use_color, show_timestamp, level_fmt)
+    |> apply_auto_indent(auto_indent)
   }
 }
 
@@ -209,14 +202,16 @@ fn format_fancy(
   auto_indent: Bool,
 ) -> formatter.Formatter {
   fn(record: LogRecord) -> String {
-    let base = format_record_fancy(record, use_color, show_timestamp, level_fmt)
-    case auto_indent {
-      False -> base
-      True -> {
-        let depth = platform.get_scope_depth()
-        string.repeat("  ", depth) <> base
-      }
-    }
+    format_record_fancy(record, use_color, show_timestamp, level_fmt)
+    |> apply_auto_indent(auto_indent)
+  }
+}
+
+/// Apply scope-based auto-indentation to a formatted log line.
+fn apply_auto_indent(formatted: String, auto_indent: Bool) -> String {
+  case auto_indent {
+    False -> formatted
+    True -> string.repeat("  ", platform.get_scope_depth()) <> formatted
   }
 }
 
