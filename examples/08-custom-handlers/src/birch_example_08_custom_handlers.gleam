@@ -90,8 +90,11 @@ fn emoji_format(record: LogRecord) -> String {
     level.Trace -> "🔍"
     level.Debug -> "🐛"
     level.Info -> "ℹ️"
+    level.Notice -> "📋"
     level.Warn -> "⚠️"
     level.Err -> "❌"
+    level.Critical -> "🔥"
+    level.Alert -> "🚨"
     level.Fatal -> "💀"
   }
 

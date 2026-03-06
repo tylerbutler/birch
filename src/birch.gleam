@@ -85,6 +85,10 @@ pub type Config =
 
 /// Configure the global logging settings.
 ///
+/// On the Erlang target, this uses `persistent_term` which triggers a global
+/// garbage collection. Best suited for infrequent changes like application
+/// startup, not per-request use.
+///
 /// Example:
 /// ```gleam
 /// import birch as log
@@ -114,6 +118,9 @@ pub fn get_config() -> GlobalConfig {
 }
 
 /// Reset the global configuration to defaults.
+///
+/// On the Erlang target, this erases a `persistent_term` key which triggers
+/// a global garbage collection. Best suited for infrequent use.
 pub fn reset_config() -> Nil {
   config.clear_global_config()
   clear_cached_default_logger()
@@ -127,6 +134,10 @@ pub fn reset_config() -> Nil {
 ///
 /// This changes the log level for all new log operations immediately.
 /// Other configuration (handlers, context) is preserved.
+///
+/// On the Erlang target, this uses `persistent_term` which triggers a global
+/// garbage collection. Best suited for infrequent changes like startup or
+/// debug toggling, not per-request use.
 ///
 /// Example:
 /// ```gleam
@@ -222,8 +233,10 @@ pub fn default_config() -> GlobalConfig {
 
 @target(erlang)
 fn default_handlers() -> List(Handler) {
+  // On BEAM, birch sends LogRecords directly to :logger — no birch handler needed.
+  // Ensure the birch formatter is installed on :logger's default handler.
   erlang_logger.ensure_formatter_configured()
-  [erlang_logger.forward_to_logger_raw()]
+  []
 }
 
 @target(javascript)
@@ -480,6 +493,14 @@ pub fn info_m(message: String, metadata: Metadata) -> Nil {
   }
 }
 
+/// Log a notice message using the default logger.
+pub fn notice(message: String) -> Nil {
+  case should_sample(level.Notice) {
+    False -> Nil
+    True -> logger.notice(default_logger(), message, [])
+  }
+}
+
 /// Log a warning message using the default logger.
 pub fn warn(message: String) -> Nil {
   case should_sample(level.Warn) {
@@ -511,6 +532,22 @@ pub fn error_m(message: String, metadata: Metadata) -> Nil {
   case should_sample(level.Err) {
     False -> Nil
     True -> logger.error(default_logger(), message, metadata)
+  }
+}
+
+/// Log a critical message using the default logger.
+pub fn critical(message: String) -> Nil {
+  case should_sample(level.Critical) {
+    False -> Nil
+    True -> logger.critical(default_logger(), message, [])
+  }
+}
+
+/// Log an alert message using the default logger.
+pub fn alert(message: String) -> Nil {
+  case should_sample(level.Alert) {
+    False -> Nil
+    True -> logger.alert(default_logger(), message, [])
   }
 }
 

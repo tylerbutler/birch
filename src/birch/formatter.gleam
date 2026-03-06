@@ -49,12 +49,14 @@ pub fn simple(record: LogRecord) -> String {
   "[" <> level.to_string(record.level) <> "] " <> record.message
 }
 
-/// Pad a level string to 5 characters for alignment.
+/// Pad a level string to 8 characters for alignment.
 /// Uses pattern matching on known log level strings for efficiency.
 pub fn pad_level(level_str: String) -> String {
   case level_str {
-    "TRACE" | "DEBUG" | "ERROR" | "FATAL" -> level_str
-    "INFO" | "WARN" -> level_str <> " "
+    "CRITICAL" -> level_str
+    "NOTICE" -> level_str <> "  "
+    "TRACE" | "DEBUG" | "ERROR" | "FATAL" | "ALERT" -> level_str <> "   "
+    "INFO" | "WARN" -> level_str <> "    "
     _ -> level_str
   }
 }

@@ -63,7 +63,7 @@ Build a cross-platform logging library for Gleam that is simple for basic use ca
 |**P1**  |Context propagation (request IDs, etc.)          |
 |**P2**  |Sampling and rate limiting                       |
 |**P2**  |Runtime log level changes                        |
-|**P2**  |Erlang :logger backend integration               |
+|**P0**  |Erlang :logger integration (default on BEAM)       |
 
 ### 3.2 Non-Goals
 
@@ -81,10 +81,10 @@ Build a cross-platform logging library for Gleam that is simple for basic use ca
 
 #### FR-1: Log Levels
 
-The library MUST support the following log levels in order of severity:
+The library MUST support the following log levels in order of severity, following RFC 5424 (syslog) semantics with an additional Trace level:
 
 ```
-TRACE < DEBUG < INFO < WARN < ERROR < FATAL
+TRACE < DEBUG < INFO < NOTICE < WARN < ERR < CRITICAL < ALERT < FATAL
 ```
 
 Each level MUST have a corresponding convenience function:
@@ -93,10 +93,15 @@ Each level MUST have a corresponding convenience function:
 log.trace("detailed diagnostic")
 log.debug("debugging info")
 log.info("normal operation")
+log.notice("significant condition")
 log.warn("potential issue")
 log.error("error occurred")
+log.critical("subsystem failure")
+log.alert("immediate action needed")
 log.fatal("system cannot continue")
 ```
+
+Note: `Err` is used as the type variant name to avoid conflict with the `Result` type's `Error` constructor. The convenience function is `log.error()`.
 
 #### FR-2: Level Filtering
 
@@ -118,14 +123,23 @@ Log messages MUST support:
 Every log call MUST accept optional key-value metadata:
 
 ```gleam
+import birch/meta
+
 log.info("Request complete", [
-  #("method", "POST"),
-  #("path", "/api/users"),
-  #("duration_ms", int.to_string(42)),
+  meta.string("method", "POST"),
+  meta.string("path", "/api/users"),
+  meta.int("duration_ms", 42),
 ])
 ```
 
-Metadata values MUST be strings (formatted by caller) for simplicity and cross-target compatibility.
+Metadata values use a typed sum type `MetadataValue` with the following variants:
+
+- `StringVal(String)` - String values
+- `IntVal(Int)` - Integer values
+- `FloatVal(Float)` - Floating-point values
+- `BoolVal(Bool)` - Boolean values
+
+The `birch/meta` module provides ergonomic constructors (`meta.string`, `meta.int`, `meta.float`, `meta.bool`) following the same pattern as `gleam/json`. Values are converted to strings at formatting time via `metadata_value_to_string`.
 
 ### 4.2 Loggers and Handlers
 
@@ -382,7 +396,7 @@ let logger = log.new("api")
 
 - Log levels are a custom type, not strings or integers
 - Handlers implement a well-defined interface
-- Metadata keys and values are typed (String, String)
+- Metadata keys are strings; values are typed via the `MetadataValue` sum type
 
 -----
 
@@ -432,13 +446,11 @@ How should the default logger be managed?
 
 ### 8.3 Erlang Logger Integration
 
-Should we:
+**Decision:** :logger integration is the **default** on the Erlang target.
 
-- **A)** Build entirely independent logging
-- **B)** Use Erlang's :logger as backend on BEAM
-- **C)** Provide optional :logger backend
+`default_handlers()` automatically installs birch's formatter on `:logger`'s default handler. On BEAM, birch sends `LogRecord` values directly to `:logger` — no intermediate birch handler is needed. `:logger` controls output routing and overload protection, while birch controls formatting. Both birch-originated and OTP/library log events receive birch-style formatting.
 
-**Recommendation:** Option C - allows integration with Erlang/Elixir ecosystems when desired
+Users opt out by calling `configure()` with explicit handlers, which bypasses `:logger` integration.
 
 ### 8.4 Scoped Context on JavaScript
 
@@ -453,38 +465,50 @@ JavaScript lacks Erlang's process dictionary. Options:
 
 -----
 
+## 8.5 Decision Log
+
+Implementation diverged from the original spec in these areas:
+
+- **Typed metadata instead of string-only values (FR-4):** The spec called for `#(String, String)` metadata for simplicity. Implementation uses a `MetadataValue` sum type (`StringVal`, `IntVal`, `FloatVal`, `BoolVal`) because typed values enable better structured logging output (e.g., JSON numbers vs. quoted strings) while the `birch/meta` module keeps the ergonomics simple.
+
+- **:logger as default, not optional (Section 8.3):** The spec recommended Option C (optional :logger backend). Implementation makes :logger the default on Erlang because it is the idiomatic OTP approach: `:logger` handles output routing and overload protection while birch controls formatting. This ensures birch logs and OTP/library logs are formatted consistently without extra setup.
+
+- **RFC 5424 log levels:** The spec listed six levels (Trace through Fatal). Implementation expanded to nine levels (`Trace < Debug < Info < Notice < Warn < Err < Critical < Alert < Fatal`) following RFC 5424 syslog semantics for clean 1:1 mapping with Erlang's `:logger` levels.
+
+-----
+
 ## 9. Implementation Phases
 
 ### Phase 1: Core (MVP)
 
-- [ ] LogLevel type and filtering
-- [ ] LogRecord type
-- [ ] Basic Logger with context
-- [ ] Console handler (sync, colored)
-- [ ] Human-readable formatter
-- [ ] Global default logger
-- [ ] Works on Erlang and JavaScript
+- [x] LogLevel type and filtering
+- [x] LogRecord type
+- [x] Basic Logger with context
+- [x] Console handler (sync, colored)
+- [x] Human-readable formatter
+- [x] Global default logger
+- [x] Works on Erlang and JavaScript
 
 **Deliverable:** Usable for basic application logging
 
 ### Phase 2: Production Features
 
-- [ ] JSON formatter
-- [ ] File handler
-- [ ] Size-based rotation
-- [ ] Async console handler
-- [ ] Multiple handlers per logger
-- [ ] Runtime level changes
+- [x] JSON formatter
+- [x] File handler
+- [x] Size-based rotation
+- [x] Async console handler
+- [x] Multiple handlers per logger
+- [x] Runtime level changes
 
 **Deliverable:** Suitable for production deployments
 
 ### Phase 3: Advanced Features
 
 - [ ] Time-based rotation
-- [ ] Sampling/rate limiting
-- [ ] Erlang :logger backend
-- [ ] Scoped context (with JS AsyncLocalStorage option)
-- [ ] Handler error callbacks
+- [x] Sampling/rate limiting
+- [x] Erlang :logger integration (default on BEAM)
+- [x] Scoped context (with JS AsyncLocalStorage option)
+- [x] Handler error callbacks
 - [ ] Compression of rotated files
 
 **Deliverable:** Feature parity with mature logging libraries
@@ -568,7 +592,7 @@ JavaScript lacks Erlang's process dictionary. Options:
 |Log rotation              |Yes      |
 |Async handlers            |Yes      |
 |Sampling                  |Yes      |
-|Erlang :logger integration|Yes (optional)|
+|Erlang :logger integration|Yes (default on BEAM)|
 
 -----
 

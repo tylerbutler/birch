@@ -70,8 +70,10 @@ pub fn new(name: String) -> Logger {
 
 @target(erlang)
 fn default_handlers() -> List(Handler) {
+  // On BEAM, birch sends LogRecords directly to :logger — no birch handler needed.
+  // Ensure the birch formatter is installed on :logger's default handler.
   erlang_logger.ensure_formatter_configured()
-  [erlang_logger.forward_to_logger_raw()]
+  []
 }
 
 @target(javascript)
@@ -277,7 +279,13 @@ fn merge_metadata(logger: Logger, call_metadata: Metadata) -> Metadata {
   list.append(call_metadata, list.append(scope_context, logger.context))
 }
 
-/// Create a log record and dispatch it to handlers.
+/// Create a log record and dispatch it.
+///
+/// On BEAM: sends the LogRecord directly to `:logger`, where the birch
+/// formatter handles output. Also dispatches to any birch handlers
+/// (for users who want additional output beyond `:logger`).
+///
+/// On JavaScript: dispatches to birch handlers only.
 fn emit_record(
   logger: Logger,
   log_level: Level,
@@ -297,7 +305,22 @@ fn emit_record(
     Some(caller_id) -> record.with_caller_id(base_record, caller_id)
     None -> base_record
   }
+
+  // On BEAM, send directly to :logger
+  let _ = emit_to_beam(final_record)
+
+  // Dispatch to any birch handlers (additional output beyond :logger)
   handler.handle_all(logger.handlers, final_record)
+}
+
+@target(erlang)
+fn emit_to_beam(record: record.LogRecord) -> Nil {
+  erlang_logger.emit(record)
+}
+
+@target(javascript)
+fn emit_to_beam(_record: record.LogRecord) -> Nil {
+  Nil
 }
 
 /// Log a message at the specified level.
@@ -381,6 +404,20 @@ pub fn info_lazy(
   log_lazy(logger, level.Info, message_fn, metadata)
 }
 
+/// Log a notice message.
+pub fn notice(logger: Logger, message: String, metadata: Metadata) -> Nil {
+  log(logger, level.Notice, message, metadata)
+}
+
+/// Log a notice message with lazy evaluation.
+pub fn notice_lazy(
+  logger: Logger,
+  message_fn: fn() -> String,
+  metadata: Metadata,
+) -> Nil {
+  log_lazy(logger, level.Notice, message_fn, metadata)
+}
+
 /// Log a warning message.
 pub fn warn(logger: Logger, message: String, metadata: Metadata) -> Nil {
   log(logger, level.Warn, message, metadata)
@@ -407,6 +444,34 @@ pub fn error_lazy(
   metadata: Metadata,
 ) -> Nil {
   log_lazy(logger, level.Err, message_fn, metadata)
+}
+
+/// Log a critical message.
+pub fn critical(logger: Logger, message: String, metadata: Metadata) -> Nil {
+  log(logger, level.Critical, message, metadata)
+}
+
+/// Log a critical message with lazy evaluation.
+pub fn critical_lazy(
+  logger: Logger,
+  message_fn: fn() -> String,
+  metadata: Metadata,
+) -> Nil {
+  log_lazy(logger, level.Critical, message_fn, metadata)
+}
+
+/// Log an alert message.
+pub fn alert(logger: Logger, message: String, metadata: Metadata) -> Nil {
+  log(logger, level.Alert, message, metadata)
+}
+
+/// Log an alert message with lazy evaluation.
+pub fn alert_lazy(
+  logger: Logger,
+  message_fn: fn() -> String,
+  metadata: Metadata,
+) -> Nil {
+  log_lazy(logger, level.Alert, message_fn, metadata)
 }
 
 /// Log a fatal message.

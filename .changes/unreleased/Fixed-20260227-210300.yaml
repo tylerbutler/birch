@@ -1,0 +1,5 @@
+kind: Fixed
+body: |-
+    Fix `:logger` forwarding always logging at info level
+    `forward_to_logger()` silently discarded the log record's severity, sending every message to Erlang's `:logger` at the `info` level. Warnings, errors, and fatal messages all appeared as informational. Use the new `forward_to_beam()` handler which preserves levels correctly.
+time: 2026-02-27T21:03:00.000000000-08:00

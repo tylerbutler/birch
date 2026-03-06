@@ -1,0 +1,5 @@
+kind: Added
+body: |-
+    RFC 5424 log levels: Notice, Critical, Alert (BREAKING)
+    The `Level` type now includes `Notice`, `Critical`, and `Alert` variants following RFC 5424 syslog severity levels. New convenience functions added: `birch.notice()`, `birch.critical()`, `birch.alert()` and corresponding `logger.notice()`, `logger.critical()`, `logger.alert()` with lazy variants. Level integer values have been renumbered (Warn=4, Err=5, Critical=6, Alert=7, Fatal=8). **Breaking**: exhaustive pattern matches on `Level` must be updated to handle the new variants, and code relying on `to_int` values for Warn/Err/Fatal will see different numbers.
+time: 2026-02-27T21:01:00.000000000-08:00
