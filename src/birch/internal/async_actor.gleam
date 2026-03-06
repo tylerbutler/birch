@@ -10,6 +10,11 @@
 ////
 //// On JavaScript, this module is not used - the platform FFI handles async there.
 
+// This module is Erlang-only. A placeholder is needed for the JavaScript
+// target to avoid an "empty module" warning with --warnings-as-errors.
+@target(javascript)
+pub const erlang_only = True
+
 @target(erlang)
 import birch/handler.{type Handler}
 
