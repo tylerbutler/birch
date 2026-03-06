@@ -26,7 +26,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### API & Idiomatic Gleam
 
-- [ ] **API-01**: API naming consistency resolved (e.g., `name()` vs `get_level()` style inconsistency)
+- [x] **API-01**: API naming consistency resolved (e.g., `name()` vs `get_level()` style inconsistency)
 - [ ] **API-02**: Idiomatic `use`/`result.try` pipelines applied where appropriate across modules
 - [ ] **API-03**: Opaque type boundaries reviewed and tightened where types leak internal structure
 - [ ] **API-04**: Builder patterns follow Gleam conventions consistently
@@ -88,7 +88,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RES-04 | Phase 2 | Pending |
 | RES-05 | Phase 2 | Pending |
 | RES-06 | Phase 2 | Pending |
-| API-01 | Phase 3 | Pending |
+| API-01 | Phase 3 | Complete |
 | API-02 | Phase 3 | Pending |
 | API-03 | Phase 3 | Pending |
 | API-04 | Phase 3 | Pending |
