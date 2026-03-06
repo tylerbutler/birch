@@ -1,4 +1,5 @@
 import birch as log
+import birch/config
 import birch/formatter
 import birch/handler
 import birch/handler/async
@@ -103,19 +104,19 @@ pub fn record_creation_test() {
       metadata: [meta.string("key", "value")],
     )
 
-  r.timestamp
+  record.timestamp(r)
   |> should.equal("2024-12-26T10:30:45.123Z")
 
-  r.level
+  record.level(r)
   |> should.equal(level.Info)
 
-  r.logger_name
+  record.logger_name(r)
   |> should.equal("test")
 
-  r.message
+  record.message(r)
   |> should.equal("Hello")
 
-  r.metadata
+  record.all_metadata(r)
   |> should.equal([meta.string("key", "value")])
 }
 
@@ -130,7 +131,7 @@ pub fn record_with_metadata_test() {
     )
     |> record.with_metadata([meta.string("new_key", "new_value")])
 
-  r.metadata
+  record.all_metadata(r)
   |> should.equal([meta.string("new_key", "new_value")])
 }
 
@@ -799,9 +800,9 @@ pub fn json_add_custom_uses_record_data_test() {
   // Custom extractor should have access to record data
   let format =
     json.builder()
-    |> json.add_custom(fn(record) {
+    |> json.add_custom(fn(rec) {
       // Use record data in custom field
-      let level_uppercase = level.to_string(record.level)
+      let level_uppercase = level.to_string(record.level(rec))
       [#("severity", gleam_json.string(level_uppercase))]
     })
     |> json.build()
@@ -904,15 +905,15 @@ pub fn main_api_level_to_string_test() {
 
 pub fn config_default_test() {
   // Get default config before any configuration
-  let config = log.get_config()
+  let cfg = log.get_config()
 
   // Default level should be Info
-  config.level
+  config.get_level(cfg)
   |> should.equal(level.Info)
 
   // On BEAM: default has no birch handlers (birch sends to :logger directly)
   // On JS: default has one handler (console)
-  config.handlers
+  config.get_handlers(cfg)
   |> list.length
   |> should.equal(platform_default_handler_count())
 }
@@ -931,8 +932,8 @@ pub fn config_set_level_test() {
   // Configure with Debug level
   log.configure([log.config_level(level.Debug)])
 
-  let config = log.get_config()
-  config.level
+  let cfg = log.get_config()
+  config.get_level(cfg)
   |> should.equal(level.Debug)
 
   // Reset to default for other tests
@@ -944,13 +945,13 @@ pub fn config_set_handlers_test() {
   let null_handler = handler.null()
   log.configure([log.config_handlers([null_handler])])
 
-  let config = log.get_config()
-  config.handlers
+  let cfg = log.get_config()
+  config.get_handlers(cfg)
   |> list.length
   |> should.equal(1)
 
   // The handler should be the null handler
-  config.handlers
+  config.get_handlers(cfg)
   |> list.first
   |> should.be_ok
   |> handler.name
@@ -969,8 +970,8 @@ pub fn config_set_context_test() {
     ]),
   ])
 
-  let config = log.get_config()
-  config.context
+  let cfg = log.get_config()
+  config.get_context(cfg)
   |> should.equal([meta.string("app", "test"), meta.string("env", "testing")])
 
   // Reset to default
@@ -986,13 +987,13 @@ pub fn config_multiple_options_test() {
     log.config_context([meta.string("service", "api")]),
   ])
 
-  let config = log.get_config()
-  config.level
+  let cfg = log.get_config()
+  config.get_level(cfg)
   |> should.equal(level.Warn)
-  config.handlers
+  config.get_handlers(cfg)
   |> list.length
   |> should.equal(1)
-  config.context
+  config.get_context(cfg)
   |> should.equal([meta.string("service", "api")])
 
   // Reset to default
@@ -1004,16 +1005,16 @@ pub fn config_reset_test() {
   log.configure([log.config_level(level.Fatal)])
 
   // Verify it was set
-  let config1 = log.get_config()
-  config1.level
+  let cfg1 = log.get_config()
+  config.get_level(cfg1)
   |> should.equal(level.Fatal)
 
   // Reset to default
   log.reset_config()
 
   // Verify it was reset
-  let config2 = log.get_config()
-  config2.level
+  let cfg2 = log.get_config()
+  config.get_level(cfg2)
   |> should.equal(level.Info)
 }
 
@@ -1325,24 +1326,24 @@ pub fn set_level_takes_effect_immediately_test() {
   log.reset_config()
 
   // Verify starting at Info
-  let config1 = log.get_config()
-  config1.level
+  let cfg1 = log.get_config()
+  config.get_level(cfg1)
   |> should.equal(level.Info)
 
   // Change to Trace
   log.set_level(level.Trace)
 
   // Should take effect immediately
-  let config2 = log.get_config()
-  config2.level
+  let cfg2 = log.get_config()
+  config.get_level(cfg2)
   |> should.equal(level.Trace)
 
   // Change again to Fatal
   log.set_level(level.Fatal)
 
   // Should take effect immediately
-  let config3 = log.get_config()
-  config3.level
+  let cfg3 = log.get_config()
+  config.get_level(cfg3)
   |> should.equal(level.Fatal)
 
   // Reset for other tests
@@ -1363,22 +1364,22 @@ pub fn set_level_preserves_other_config_test() {
   // Set level (should preserve other settings)
   log.set_level(level.Debug)
 
-  let config = log.get_config()
-  config.level
+  let cfg = log.get_config()
+  config.get_level(cfg)
   |> should.equal(level.Debug)
 
   // Handlers and context should be preserved
-  config.handlers
+  config.get_handlers(cfg)
   |> list.length
   |> should.equal(1)
 
-  config.handlers
+  config.get_handlers(cfg)
   |> list.first
   |> should.be_ok
   |> handler.name
   |> should.equal("null")
 
-  config.context
+  config.get_context(cfg)
   |> should.equal([meta.string("app", "test")])
 
   // Reset for other tests
@@ -1665,7 +1666,7 @@ pub fn handler_error_type_test() {
   err.error
   |> should.equal("write failed")
 
-  err.record.message
+  record.message(err.record)
   |> should.equal("test message")
 }
 
@@ -1754,10 +1755,10 @@ pub fn handler_error_includes_record_test() {
 
   let error_callback = fn(err: handler.HandlerError) {
     // Verify the record is passed through
-    err.record.message
+    record.message(err.record)
     |> should.equal("original message")
 
-    err.record.logger_name
+    record.logger_name(err.record)
     |> should.equal("test.logger")
   }
 
@@ -2081,23 +2082,23 @@ pub fn with_logger_silent_logger_test() {
 // ============================================================================
 
 pub fn sampling_config_creation_test() {
-  let config = sampling.config(level.Debug, 0.5)
+  let sample_cfg = sampling.config(level.Debug, 0.5)
 
-  config.level
+  sampling.sample_level(sample_cfg)
   |> should.equal(level.Debug)
 
-  config.rate
+  sampling.rate(sample_cfg)
   |> should.equal(0.5)
 }
 
 pub fn sampling_config_rate_clamping_test() {
   // Rates should be clamped to 0.0 - 1.0 range
-  let config_high = sampling.config(level.Debug, 2.0)
-  config_high.rate
+  let cfg_high = sampling.config(level.Debug, 2.0)
+  sampling.rate(cfg_high)
   |> should.equal(1.0)
 
-  let config_low = sampling.config(level.Debug, -0.5)
-  config_low.rate
+  let cfg_low = sampling.config(level.Debug, -0.5)
+  sampling.rate(cfg_low)
   |> should.equal(0.0)
 }
 
@@ -2216,10 +2217,10 @@ pub fn config_with_sampling_test() {
     log.config_sampling(sampling.config(level.Debug, 0.5)),
   ])
 
-  let config = log.get_config()
+  let cfg = log.get_config()
 
   // Verify sampling config is set
-  config.sampling
+  config.get_sampling(cfg)
   |> option.is_some
   |> should.be_true
 
@@ -2231,10 +2232,10 @@ pub fn config_without_sampling_test() {
   // Reset to known state
   log.reset_config()
 
-  let config = log.get_config()
+  let cfg = log.get_config()
 
   // Default should have no sampling
-  config.sampling
+  config.get_sampling(cfg)
   |> option.is_none
   |> should.be_true
 
@@ -3532,7 +3533,7 @@ pub fn main_api_config_handlers_test() {
   log.configure([log.config_handlers([h1, h2])])
 
   let cfg = log.get_config()
-  list.length(cfg.handlers)
+  list.length(config.get_handlers(cfg))
   |> should.equal(2)
 
   log.reset_config()
@@ -3549,7 +3550,7 @@ pub fn main_api_config_context_test() {
   ])
 
   let cfg = log.get_config()
-  cfg.context
+  config.get_context(cfg)
   |> should.equal([
     meta.string("env", "production"),
     meta.string("version", "1.0"),
@@ -3568,7 +3569,7 @@ pub fn main_api_config_on_error_test() {
 
   let cfg = log.get_config()
   // Verify callback is set (Some rather than None)
-  case cfg.on_error {
+  case config.get_on_error(cfg) {
     Some(_) -> True
     None -> False
   }
@@ -3585,7 +3586,7 @@ pub fn main_api_config_sampling_test() {
 
   let cfg = log.get_config()
   // Verify sampling is configured
-  cfg.sampling
+  config.get_sampling(cfg)
   |> option.is_some
   |> should.be_true
 

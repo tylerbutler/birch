@@ -29,7 +29,7 @@
 //// let config = sampling.rate_limit_config(100, 10)
 //// ```
 
-import birch/config.{type SampleConfig, SampleConfig}
+import birch/config.{type SampleConfig}
 import birch/level.{type Level}
 import gleam/float
 import gleam/int
@@ -49,8 +49,8 @@ import gleam/time/timestamp
 /// - `rate`: Probability of logging (0.0 = never, 1.0 = always)
 ///
 /// The rate is clamped to the valid range [0.0, 1.0].
-pub fn config(lvl: Level, rate: Float) -> SampleConfig {
-  SampleConfig(level: lvl, rate: clamp_rate(rate))
+pub fn config(lvl: Level, r: Float) -> SampleConfig {
+  config.new_sample_config(level: lvl, rate: clamp_rate(r))
 }
 
 /// Clamp a rate to the valid range [0.0, 1.0].
@@ -60,12 +60,12 @@ fn clamp_rate(rate: Float) -> Float {
 
 /// Get the level threshold from a SampleConfig.
 pub fn sample_level(sample_config: SampleConfig) -> Level {
-  sample_config.level
+  config.sample_config_level(sample_config)
 }
 
 /// Get the sampling rate from a SampleConfig.
 pub fn rate(sample_config: SampleConfig) -> Float {
-  sample_config.rate
+  config.sample_config_rate(sample_config)
 }
 
 /// Check if a log at the given level should be sampled (logged).
@@ -76,11 +76,11 @@ pub fn rate(sample_config: SampleConfig) -> Float {
 /// - Logs at or below the sample config level are sampled probabilistically
 pub fn should_sample(sample_config: SampleConfig, log_level: Level) -> Bool {
   // If log level is above the sampling threshold, always log
-  case level.gt(log_level, sample_config.level) {
+  case level.gt(log_level, sample_level(sample_config)) {
     True -> True
     False -> {
       // For levels at or below threshold, apply probabilistic sampling
-      case sample_config.rate {
+      case rate(sample_config) {
         r if r >=. 1.0 -> True
         r if r <=. 0.0 -> False
         rate -> {

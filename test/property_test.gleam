@@ -340,7 +340,7 @@ pub fn record_new_simple_empty_metadata_test() {
       metadata: [],
     )
 
-  r.metadata
+  record.all_metadata(r)
   |> should.equal([])
 }
 
@@ -353,14 +353,14 @@ pub fn formatter_simple_contains_level_and_message_test() {
   use rec <- qcheck.given(log_record_generator())
 
   let formatted = formatter.simple(rec)
-  let level_str = level.to_string(rec.level)
+  let level_str = level.to_string(record.level(rec))
 
   formatted
   |> string.contains(level_str)
   |> should.be_true
 
   formatted
-  |> string.contains(rec.message)
+  |> string.contains(record.message(rec))
   |> should.be_true
 }
 
@@ -371,7 +371,7 @@ pub fn formatter_human_readable_contains_timestamp_test() {
   let formatted = formatter.human_readable(rec)
 
   formatted
-  |> string.contains(rec.timestamp)
+  |> string.contains(record.timestamp(rec))
   |> should.be_true
 }
 
@@ -382,6 +382,6 @@ pub fn formatter_human_readable_contains_logger_test() {
   let formatted = formatter.human_readable(rec)
 
   formatted
-  |> string.contains(rec.logger_name)
+  |> string.contains(record.logger_name(rec))
   |> should.be_true
 }

@@ -147,9 +147,8 @@ fn format_simple(
   level_fmt: LevelFormatter,
   auto_indent: Bool,
 ) -> formatter.Formatter {
-  fn(record: LogRecord) -> String {
-    let base =
-      format_record_simple(record, use_color, show_timestamp, level_fmt)
+  fn(rec: LogRecord) -> String {
+    let base = format_record_simple(rec, use_color, show_timestamp, level_fmt)
     case auto_indent {
       False -> base
       True -> {
@@ -162,21 +161,22 @@ fn format_simple(
 
 /// Format a log record in simple style.
 fn format_record_simple(
-  record: LogRecord,
+  rec: LogRecord,
   use_color: Bool,
   show_timestamp: Bool,
   level_fmt: LevelFormatter,
 ) -> String {
   let level_part =
-    level_formatter.format_level_padded(level_fmt, record.level, use_color)
+    level_formatter.format_level_padded(level_fmt, record.level(rec), use_color)
 
   let timestamp_part = case show_timestamp, use_color {
-    True, True -> ansi.gray <> record.timestamp <> ansi.reset <> " | "
-    True, False -> record.timestamp <> " | "
+    True, True -> ansi.gray <> record.timestamp(rec) <> ansi.reset <> " | "
+    True, False -> record.timestamp(rec) <> " | "
     False, _ -> ""
   }
 
-  let metadata_str = format_metadata_visible(record.metadata, use_color)
+  let metadata_str =
+    format_metadata_visible(record.all_metadata(rec), use_color)
 
   let metadata_part = case metadata_str {
     "" -> ""
@@ -191,9 +191,9 @@ fn format_record_simple(
   timestamp_part
   <> level_part
   <> " | "
-  <> record.logger_name
+  <> record.logger_name(rec)
   <> " | "
-  <> record.message
+  <> record.message(rec)
   <> metadata_part
 }
 
@@ -208,8 +208,8 @@ fn format_fancy(
   level_fmt: LevelFormatter,
   auto_indent: Bool,
 ) -> formatter.Formatter {
-  fn(record: LogRecord) -> String {
-    let base = format_record_fancy(record, use_color, show_timestamp, level_fmt)
+  fn(rec: LogRecord) -> String {
+    let base = format_record_fancy(rec, use_color, show_timestamp, level_fmt)
     case auto_indent {
       False -> base
       True -> {
@@ -222,7 +222,7 @@ fn format_fancy(
 
 /// Format a log record in fancy style.
 fn format_record_fancy(
-  record: LogRecord,
+  rec: LogRecord,
   use_color: Bool,
   show_timestamp: Bool,
   level_fmt: LevelFormatter,
@@ -231,21 +231,22 @@ fn format_record_fancy(
   let reset = ansi.reset
 
   let level_part =
-    level_formatter.format_level_padded(level_fmt, record.level, use_color)
+    level_formatter.format_level_padded(level_fmt, record.level(rec), use_color)
 
   let timestamp_part = case show_timestamp, use_color {
-    True, True -> dim <> record.timestamp <> reset <> " "
-    True, False -> record.timestamp <> " "
+    True, True -> dim <> record.timestamp(rec) <> reset <> " "
+    True, False -> record.timestamp(rec) <> " "
     False, _ -> ""
   }
 
-  let scope_part = case record.logger_name, use_color {
+  let scope_part = case record.logger_name(rec), use_color {
     "", _ -> ""
     name, True -> dim <> "[" <> name <> "]" <> reset <> " "
     name, False -> "[" <> name <> "] "
   }
 
-  let metadata_str = format_metadata_visible(record.metadata, use_color)
+  let metadata_str =
+    format_metadata_visible(record.all_metadata(rec), use_color)
   let metadata_part = case metadata_str, use_color {
     "", _ -> ""
     m, True -> " " <> dim <> m <> reset
@@ -256,7 +257,7 @@ fn format_record_fancy(
   <> level_part
   <> " "
   <> scope_part
-  <> record.message
+  <> record.message(rec)
   <> metadata_part
 }
 
@@ -486,8 +487,8 @@ fn format_indented(
   level_fmt: LevelFormatter,
   indent: String,
 ) -> formatter.Formatter {
-  fn(record: LogRecord) -> String {
-    let base = format_record_fancy(record, use_color, show_timestamp, level_fmt)
+  fn(rec: LogRecord) -> String {
+    let base = format_record_fancy(rec, use_color, show_timestamp, level_fmt)
     indent <> base
   }
 }

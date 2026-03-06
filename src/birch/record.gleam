@@ -38,7 +38,7 @@ pub type Metadata =
   List(#(String, MetadataValue))
 
 /// A log record representing a single log event.
-pub type LogRecord {
+pub opaque type LogRecord {
   LogRecord(
     /// When the log event occurred (ISO 8601 timestamp)
     timestamp: String,

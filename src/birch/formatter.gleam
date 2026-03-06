@@ -20,22 +20,22 @@ pub type Formatter =
 /// ```
 /// 2024-12-26T10:30:45.123Z | INFO  | myapp.http | Request complete | key=value
 /// ```
-pub fn human_readable(record: LogRecord) -> String {
-  let level_str = level.to_string(record.level) |> pad_level
-  let metadata_str = format_metadata(record.metadata)
+pub fn human_readable(rec: LogRecord) -> String {
+  let level_str = level.to_string(record.level(rec)) |> pad_level
+  let metadata_str = format_metadata(record.all_metadata(rec))
 
   let metadata_part = case metadata_str {
     "" -> ""
     m -> " | " <> m
   }
 
-  record.timestamp
+  record.timestamp(rec)
   <> " | "
   <> level_str
   <> " | "
-  <> record.logger_name
+  <> record.logger_name(rec)
   <> " | "
-  <> record.message
+  <> record.message(rec)
   <> metadata_part
 }
 
@@ -45,8 +45,8 @@ pub fn human_readable(record: LogRecord) -> String {
 /// ```
 /// [INFO] Request complete
 /// ```
-pub fn simple(record: LogRecord) -> String {
-  "[" <> level.to_string(record.level) <> "] " <> record.message
+pub fn simple(rec: LogRecord) -> String {
+  "[" <> level.to_string(record.level(rec)) <> "] " <> record.message(rec)
 }
 
 /// Pad a level string to 8 characters for alignment.

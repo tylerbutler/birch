@@ -17,7 +17,7 @@ import gleam/option.{type Option, None, Some}
 ///
 /// Logs at or below the configured level will be sampled at the specified rate.
 /// Logs above the configured level are always logged (no sampling applied).
-pub type SampleConfig {
+pub opaque type SampleConfig {
   SampleConfig(
     /// Apply sampling to this level and below
     level: Level,
@@ -26,13 +26,28 @@ pub type SampleConfig {
   )
 }
 
+/// Create a new SampleConfig.
+pub fn new_sample_config(level lvl: Level, rate r: Float) -> SampleConfig {
+  SampleConfig(level: lvl, rate: r)
+}
+
+/// Get the level threshold from a SampleConfig.
+pub fn sample_config_level(sample_config: SampleConfig) -> Level {
+  sample_config.level
+}
+
+/// Get the sampling rate from a SampleConfig.
+pub fn sample_config_rate(sample_config: SampleConfig) -> Float {
+  sample_config.rate
+}
+
 // ============================================================================
 // Global Configuration
 // ============================================================================
 
 /// Global configuration that affects the default logger and
 /// application-wide settings.
-pub type GlobalConfig {
+pub opaque type GlobalConfig {
   GlobalConfig(
     /// Minimum log level for the default logger
     level: Level,

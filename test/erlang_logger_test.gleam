@@ -8,6 +8,7 @@
 //// - **Round-trip tests**: Erlang-only, verify birch→:logger→birch formatting
 
 import birch as log
+import birch/config
 import birch/erlang_logger
 import birch/formatter
 import birch/handler/console
@@ -219,18 +220,18 @@ pub fn configure_default_test() {
   // Reset config first
   log.reset_config()
 
-  let config = log.get_config()
+  let cfg = log.get_config()
 
   case is_erlang_target() {
     True -> {
       // On BEAM: no birch handlers (birch sends to :logger directly)
-      config.handlers
+      config.get_handlers(cfg)
       |> list.length
       |> should.equal(0)
     }
     False -> {
       // On JS: one console handler
-      config.handlers
+      config.get_handlers(cfg)
       |> list.length
       |> should.equal(1)
     }

@@ -223,9 +223,9 @@ pub fn erlang_level_to_gleam(erlang_level: ErlangLevel) -> Level {
 ///
 /// Called automatically by `logger.emit_record()` on the Erlang target.
 /// On JavaScript, this is a no-op (birch handlers handle output directly).
-pub fn emit(record: record.LogRecord) -> Nil {
-  let erlang_level = gleam_level_to_erlang(record.level)
-  do_emit_to_logger(erlang_level, record)
+pub fn emit(rec: record.LogRecord) -> Nil {
+  let erlang_level = gleam_level_to_erlang(record.level(rec))
+  do_emit_to_logger(erlang_level, rec)
 }
 
 /// Check if the birch formatter is initialized on the default :logger handler.
@@ -417,13 +417,13 @@ pub fn remove_formatter_from(handler_id: String) -> Result(Nil, String) {
 @deprecated("No longer needed — birch sends to :logger directly on BEAM. Remove this handler.")
 pub fn forward_to_beam() -> Handler {
   handler.new_with_record_write(name: "erlang:logger", write: fn(r) {
-    let erlang_level = gleam_level_to_erlang(r.level)
+    let erlang_level = gleam_level_to_erlang(record.level(r))
     do_logger_log_structured(
       erlang_level,
-      r.message,
-      r.logger_name,
-      r.metadata,
-      r.caller_id,
+      record.message(r),
+      record.logger_name(r),
+      record.all_metadata(r),
+      record.caller_id(r),
     )
   })
 }
@@ -452,13 +452,13 @@ fn forward_write(message: String) -> Nil {
 @deprecated("No longer needed — birch sends to :logger directly on BEAM")
 pub fn forward_to_logger_raw() -> Handler {
   handler.new_with_record_write(name: "erlang:logger", write: fn(r) {
-    let erlang_level = gleam_level_to_erlang(r.level)
+    let erlang_level = gleam_level_to_erlang(record.level(r))
     do_logger_log_structured(
       erlang_level,
-      r.message,
-      r.logger_name,
-      r.metadata,
-      r.caller_id,
+      record.message(r),
+      record.logger_name(r),
+      record.all_metadata(r),
+      record.caller_id(r),
     )
   })
 }

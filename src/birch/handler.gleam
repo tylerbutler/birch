@@ -85,11 +85,11 @@ pub fn should_handle(handler: Handler, record_level: Level) -> Bool {
 /// If the handler has an error callback attached and the write fails,
 /// the error callback will be invoked with details about the failure.
 /// Handler failures never crash the application.
-pub fn handle(handler: Handler, record: LogRecord) -> Nil {
-  case should_handle(handler, record.level) {
+pub fn handle(handler: Handler, log_record: LogRecord) -> Nil {
+  case should_handle(handler, record.level(log_record)) {
     True -> {
       // Use safe_call to catch any errors from the write function
-      case platform.safe_call(fn() { handler.write(record) }) {
+      case platform.safe_call(fn() { handler.write(log_record) }) {
         Ok(Nil) -> Nil
         Error(error_msg) -> {
           // If there's an error callback, invoke it
@@ -99,7 +99,7 @@ pub fn handle(handler: Handler, record: LogRecord) -> Nil {
                 HandlerError(
                   handler_name: handler.name,
                   error: error_msg,
-                  record: record,
+                  record: log_record,
                 )
               callback(err)
             }
