@@ -105,7 +105,7 @@ pub fn with_level(logger: Logger, min_level: Level) -> Logger {
 }
 
 /// Get the minimum level of a logger.
-pub fn get_level(logger: Logger) -> Level {
+pub fn level(logger: Logger) -> Level {
   logger.min_level
 }
 
@@ -120,7 +120,7 @@ pub fn with_handlers(logger: Logger, handlers: List(Handler)) -> Logger {
 }
 
 /// Get the handlers attached to a logger.
-pub fn get_handlers(logger: Logger) -> List(Handler) {
+pub fn handlers(logger: Logger) -> List(Handler) {
   logger.handlers
 }
 
@@ -131,7 +131,7 @@ pub fn with_context(logger: Logger, context: Metadata) -> Logger {
 }
 
 /// Get the context metadata of a logger.
-pub fn get_context(logger: Logger) -> Metadata {
+pub fn context(logger: Logger) -> Metadata {
   logger.context
 }
 

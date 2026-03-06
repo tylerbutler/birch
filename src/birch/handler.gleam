@@ -156,6 +156,6 @@ pub fn with_error_callback(handler: Handler, callback: ErrorCallback) -> Handler
 }
 
 /// Get the error callback from a handler, if one is set.
-pub fn get_error_callback(handler: Handler) -> Option(ErrorCallback) {
+pub fn error_callback(handler: Handler) -> Option(ErrorCallback) {
   handler.error_callback
 }

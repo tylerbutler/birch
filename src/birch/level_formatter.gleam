@@ -202,7 +202,7 @@ pub fn format_level_padded(
 
 /// Get the target width for a level formatter.
 /// This is useful if you need to apply custom padding logic.
-pub fn get_target_width(formatter: LevelFormatter) -> Int {
+pub fn target_width(formatter: LevelFormatter) -> Int {
   formatter.target_width
 }
 

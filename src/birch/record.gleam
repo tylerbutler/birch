@@ -83,7 +83,7 @@ pub fn with_metadata(record: LogRecord, metadata: Metadata) -> LogRecord {
 }
 
 /// Get a metadata value by key.
-pub fn get_metadata(
+pub fn metadata(
   record: LogRecord,
   key: String,
 ) -> Result(MetadataValue, Nil) {
@@ -102,6 +102,6 @@ pub fn with_caller_id(record: LogRecord, caller_id: String) -> LogRecord {
 }
 
 /// Get the caller ID from a log record, if set.
-pub fn get_caller_id(record: LogRecord) -> Option(String) {
+pub fn caller_id(record: LogRecord) -> Option(String) {
   record.caller_id
 }
