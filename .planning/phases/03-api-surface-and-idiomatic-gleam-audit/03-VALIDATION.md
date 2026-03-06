@@ -38,13 +38,12 @@ created: 2026-03-05
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 03-01-01 | 01 | 1 | API-01 | unit | `gleam test` | Existing (needs update) | pending |
-| 03-01-02 | 01 | 1 | API-01 | unit | `gleam test` | Existing (needs update) | pending |
-| 03-02-01 | 02 | 2 | API-03 | unit | `gleam test` | Existing (needs update) | pending |
-| 03-02-02 | 02 | 2 | API-03 | unit | `gleam test` | Existing (needs update) | pending |
-| 03-03-01 | 03 | 3 | API-02 | unit | `gleam test` | Existing | pending |
-| 03-03-02 | 03 | 3 | API-04 | unit | `gleam test` | Existing | pending |
-| 03-03-03 | 03 | 3 | API-05 | integration | `just test` | Existing | pending |
+| 03-01-T1 | 01 | 1 | API-01 | build | `gleam build` | Existing (needs update) | pending |
+| 03-01-T2 | 01 | 1 | API-01 | unit | `just test` | Existing (needs update) | pending |
+| 03-02-T1 | 02 | 2 | API-03 | unit | `just test` | Existing (needs update) | pending |
+| 03-02-T2 | 02 | 2 | API-03 | unit | `just test` | Existing (needs update) | pending |
+| 03-03-T1 | 03 | 3 | API-02, API-04, API-05 | build | `gleam build && gleam build --target javascript` | Existing | pending |
+| 03-03-T2 | 03 | 3 | API-02, API-04, API-05 | integration | `just test` | Existing | pending |
 
 *Status: pending / green / red / flaky*
 
