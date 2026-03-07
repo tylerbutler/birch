@@ -1,5 +1,5 @@
 ---
-status: testing
+status: complete
 phase: 03-api-surface-and-idiomatic-gleam-audit
 source: [03-01-SUMMARY.md, 03-02-SUMMARY.md, 03-03-SUMMARY.md]
 started: 2026-03-07T04:00:00Z
@@ -9,14 +9,9 @@ updated: 2026-03-07T04:10:00Z
 ## Current Test
 <!-- OVERWRITE each test - shows where we are -->
 
-number: 6
-name: SampleConfig is opaque with accessors
-expected: |
-  `config.gleam` declares `pub opaque type SampleConfig`. Constructor `new_sample_config()` exists.
-  Accessors `sample_config_level()` and `sample_config_rate()` exist in config.gleam, with convenience
-  wrappers `sample_level()` and `rate()` in sampling.gleam.
-  Run: `rg 'pub opaque type SampleConfig' src/birch/config.gleam` should match.
-awaiting: user response
+number: done
+name: All tests complete
+result: 9/9 passed
 
 ## Tests
 
@@ -42,26 +37,26 @@ result: pass
 
 ### 6. SampleConfig is opaque with accessors
 expected: `config.gleam` declares `pub opaque type SampleConfig`. Constructor `new_sample_config()` exists. Accessors `sample_config_level()` and `sample_config_rate()` exist in config.gleam, with convenience wrappers `sample_level()` and `rate()` in sampling.gleam. Run: `rg 'pub opaque type SampleConfig' src/birch/config.gleam` should match.
-result: [pending]
+result: pass
 
 ### 7. All tests pass on both targets
 expected: Run `just test` (with async_actor.gleam stashed). All 256+ tests pass on both Erlang and JavaScript targets with zero failures. This confirms all renames, opaque transitions, and accessor usage are correct end-to-end.
-result: [pending]
+result: pass (256 passed, 0 failures on both targets)
 
 ### 8. Module audit: no use/result.try changes needed
 expected: The 03-03-SUMMARY.md documents that all 15 modules were reviewed and zero `use`/`result.try` candidates were found. This is correct because the codebase uses `case` for control flow branching, not sequential Result pipelines. Verify: `rg 'use result' src/birch/` should return no matches (confirming no forced refactoring).
-result: [pending]
+result: pass (zero matches confirmed)
 
 ### 9. Builder patterns consistent
 expected: All builder types use `with_*` convention (Logger, Handler, AsyncConfig) or `add_*` (JsonBuilder). All return the same type. Verify by checking 03-03-SUMMARY.md builder pattern table shows all "Consistent: Yes".
-result: [pending]
+result: pass (all 4 builder types show "Yes")
 
 ## Summary
 
 total: 9
-passed: 5
+passed: 9
 issues: 0
-pending: 4
+pending: 0
 skipped: 0
 
 ## Gaps
