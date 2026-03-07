@@ -7,6 +7,34 @@
 // Import Gleam's Result constructors and List helpers from the prelude
 import { Ok, Error, toList } from "./gleam.mjs";
 
+// ============================================================================
+// Standardized module loading — single _require via createRequire.
+// ESM (.mjs) doesn't have require() by default. We create one at module
+// load time for Node.js and Bun, then reuse it everywhere.
+// ============================================================================
+
+let _require = null;
+if (typeof process !== "undefined" && process.versions?.node) {
+  try {
+    const mod = await import("node:module");
+    _require = mod.createRequire(import.meta.url);
+  } catch (_e) {
+    // Module loading failed — _require stays null
+  }
+}
+
+// Pre-load fs/zlib for file compression (optional — used by compress_file_gzip)
+let _nodeFs = null;
+let _nodeZlib = null;
+if (_require) {
+  try {
+    _nodeFs = _require("node:fs");
+    _nodeZlib = _require("node:zlib");
+  } catch (_e) {
+    // Not available — compress_file_gzip will fall back to Deno path or error
+  }
+}
+
 /**
  * Check if stdout is a TTY (for color support detection).
  * @returns {boolean}
@@ -153,18 +181,14 @@ export function clear_cached_default_logger() {
 // Async Writer Implementation
 // ============================================================================
 
-// Registry for async writers
+// Registry for async writers (keyed by name only)
 const asyncWriterRegistry = new Map();
-
-// Counter for generating unique writer IDs
-let writerIdCounter = 0;
 
 /**
  * Async writer state class
  */
 class AsyncWriter {
   constructor(name, callback, queueSize, flushIntervalMs, overflow) {
-    this.id = ++writerIdCounter;
     this.name = name;
     this.callback = callback;
     this.queueSize = queueSize;
@@ -299,55 +323,49 @@ class AsyncWriter {
 
 /**
  * Start an async writer.
+ * The writer object itself is returned as the opaque AsyncWriterId.
  * @param {string} name - Writer name for registry
  * @param {function} callback - Gleam callback function
  * @param {number} queueSize - Maximum queue size
  * @param {number} flushIntervalMs - Flush interval in milliseconds
  * @param {number} overflow - Overflow behavior (0=DropOldest, 1=DropNewest, 2=Block)
- * @returns {object} Writer ID (opaque object)
+ * @returns {AsyncWriter} Writer object (opaque to Gleam)
  */
 export function start_async_writer(
   name,
   callback,
   queueSize,
   flushIntervalMs,
-  overflow
+  overflow,
 ) {
   const writer = new AsyncWriter(
     name,
     callback,
     queueSize,
     flushIntervalMs,
-    overflow
+    overflow,
   );
   asyncWriterRegistry.set(name, writer);
-  asyncWriterRegistry.set(writer.id, writer);
-  return { id: writer.id, name: name };
+  return writer;
 }
 
 /**
  * Send a log record to an async writer.
- * @param {object} writerId - Writer ID from start_async_writer
+ * writerId is the AsyncWriter object returned by start_async_writer.
+ * @param {AsyncWriter} writerId - Writer object from start_async_writer
  * @param {object} record - Log record
  */
 export function async_send(writerId, record) {
-  const writer = asyncWriterRegistry.get(writerId.id);
-  if (writer) {
-    writer.enqueue(record);
-  }
+  writerId.enqueue(record);
 }
 
 /**
  * Flush all async writers.
  */
 export function flush_async_writers() {
-  const writers = Array.from(asyncWriterRegistry.values()).filter(
-    (w) => w instanceof AsyncWriter
-  );
-  // Flush all writers synchronously
-  writers.forEach((writer) => {
+  for (const writer of asyncWriterRegistry.values()) {
     writer.processQueueSync();
-  });
+  }
 }
 
 /**
@@ -356,7 +374,7 @@ export function flush_async_writers() {
  */
 export function flush_async_writer(name) {
   const writer = asyncWriterRegistry.get(name);
-  if (writer && writer instanceof AsyncWriter) {
+  if (writer) {
     writer.processQueueSync();
   }
 }
@@ -364,25 +382,6 @@ export function flush_async_writer(name) {
 // ============================================================================
 // File Compression
 // ============================================================================
-
-// Node.js fs/zlib modules for file compression
-// These are loaded at module initialization time using top-level await.
-// This is supported by Gleam's ESM output and modern Node.js/bundlers.
-// The compression feature is optional - if modules fail to load, compress_file_gzip
-// will fall back to Deno/Bun paths or return an error.
-let _nodeFs = null;
-let _nodeZlib = null;
-
-if (typeof process !== "undefined" && process.versions?.node) {
-  try {
-    const module = await import("node:module");
-    const require = module.createRequire(import.meta.url);
-    _nodeFs = require("node:fs");
-    _nodeZlib = require("node:zlib");
-  } catch (e) {
-    // Module loading failed - compress_file_gzip will return an error for Node.js
-  }
-}
 
 /**
  * Compress a file using gzip.
@@ -393,23 +392,16 @@ if (typeof process !== "undefined" && process.versions?.node) {
  */
 export function compress_file_gzip(sourcePath, destPath) {
   try {
-    // Node.js (modules pre-loaded at top level)
+    // Node.js and Bun (modules pre-loaded at top level via _require)
     if (_nodeFs && _nodeZlib) {
-      // Read source file
       const data = _nodeFs.readFileSync(sourcePath);
-
-      // Compress with gzip (synchronous)
       const compressed = _nodeZlib.gzipSync(data);
-
-      // Write compressed data
       _nodeFs.writeFileSync(destPath, compressed);
-
       return new Ok(undefined);
     }
 
     // Deno
     if (typeof Deno !== "undefined") {
-      // Use gzip command for synchronous compression in Deno
       const command = new Deno.Command("gzip", {
         args: ["-c", "--", sourcePath],
         stdout: "piped",
@@ -427,19 +419,15 @@ export function compress_file_gzip(sourcePath, destPath) {
       return new Ok(undefined);
     }
 
-    // Bun - has native require() support
+    // Bun fallback — in practice unreachable since Bun sets
+    // process.versions.node, so _nodeFs/_nodeZlib are loaded at top level.
     if (typeof Bun !== "undefined") {
       try {
-        const fs = require("fs");
-        const zlib = require("zlib");
+        const fs = require("node:fs");
+        const zlib = require("node:zlib");
 
-        // Read source file
         const data = fs.readFileSync(sourcePath);
-
-        // Compress with gzip (synchronous)
         const compressed = zlib.gzipSync(data);
-
-        // Write compressed data
         fs.writeFileSync(destPath, compressed);
 
         return new Ok(undefined);
@@ -475,45 +463,46 @@ export function safe_call(fn) {
 }
 
 // ============================================================================
-// Scoped Context Implementation
+// AsyncLocalStorage — Shared Instance
+// Consolidated two separate AsyncLocalStorage instances (scope context and
+// scoped logger) into one shared instance. Store shape:
+//   { context: GleamList, depth: number, logger: any | undefined }
+// This reduces overhead and ensures run_with_scope and run_with_scoped_logger
+// properly preserve each other's state when nested.
 // ============================================================================
 
-// Scope context state
-let scopeContextState = {
-  initialized: false,
-  asyncLocalStorage: null,
-  asyncLocalStorageAvailable: false,
-  // Stack-based fallback context for non-Node.js environments
-  fallbackContextStack: [],
-};
+let _als = null;
+let _alsAvailable = false;
+let _alsInitialized = false;
+
+// Fallback stacks for non-ALS environments (Deno, Bun, browser)
+const _scopeContextFallbackStack = [];
+const _scopedLoggerFallbackStack = [];
 
 /**
- * Initialize the scope context system (lazy initialization).
- * This is called on first use to set up AsyncLocalStorage if available.
+ * Initialize the shared AsyncLocalStorage instance (lazy, once).
+ * Uses the module-level _require created at top level.
  */
-function initScopeContext() {
-  if (scopeContextState.initialized) {
+function initALS() {
+  if (_alsInitialized) {
     return;
   }
-  scopeContextState.initialized = true;
+  _alsInitialized = true;
 
-  // Try to use AsyncLocalStorage in Node.js
-  try {
-    if (
-      typeof process !== "undefined" &&
-      process.versions &&
-      process.versions.node
-    ) {
-      // Node.js: use require for synchronous loading
-      // eslint-disable-next-line no-undef
-      const async_hooks = require("node:async_hooks");
-      scopeContextState.asyncLocalStorage = new async_hooks.AsyncLocalStorage();
-      scopeContextState.asyncLocalStorageAvailable = true;
+  if (_require) {
+    try {
+      const async_hooks = _require("node:async_hooks");
+      _als = new async_hooks.AsyncLocalStorage();
+      _alsAvailable = true;
+    } catch (_e) {
+      _alsAvailable = false;
     }
-  } catch (e) {
-    // AsyncLocalStorage not available
-    scopeContextState.asyncLocalStorageAvailable = false;
   }
+}
+
+/** Default store shape when no ALS context is active. */
+function defaultStore() {
+  return { context: toList([]), depth: 0, logger: undefined };
 }
 
 /**
@@ -533,91 +522,14 @@ function gleamListToArray(gleamList) {
 }
 
 /**
- * Get the current scope context.
- * @returns {List} Gleam List of [key, value] tuples (Gleam Metadata format)
- */
-export function get_scope_context() {
-  initScopeContext();
-
-  if (
-    scopeContextState.asyncLocalStorageAvailable &&
-    scopeContextState.asyncLocalStorage
-  ) {
-    const store = scopeContextState.asyncLocalStorage.getStore();
-    return store !== undefined ? store.context : toList([]);
-  }
-  // Fallback: return top of stack or empty list
-  const stack = scopeContextState.fallbackContextStack;
-  return stack.length > 0 ? stack[stack.length - 1].context : toList([]);
-}
-
-/**
- * Get the current scope depth (nesting level).
- * @returns {number} Current depth (0 if no scope active)
- */
-export function get_scope_depth() {
-  initScopeContext();
-
-  if (
-    scopeContextState.asyncLocalStorageAvailable &&
-    scopeContextState.asyncLocalStorage
-  ) {
-    const store = scopeContextState.asyncLocalStorage.getStore();
-    return store !== undefined ? store.depth : 0;
-  }
-  // Fallback: return top of stack depth or 0
-  const stack = scopeContextState.fallbackContextStack;
-  return stack.length > 0 ? stack[stack.length - 1].depth : 0;
-}
-
-/**
- * Set the scope context (used internally for fallback only).
- * @param {List} context - Gleam List of [key, value] tuples
- */
-export function set_scope_context(context) {
-  initScopeContext();
-
-  if (
-    scopeContextState.asyncLocalStorageAvailable &&
-    scopeContextState.asyncLocalStorage
-  ) {
-    // For AsyncLocalStorage, we need to use run() for proper scoping
-    // This function is only used for fallback now
-    // enterWith doesn't properly scope, so we avoid it
-  }
-  // Fallback: replace the entire stack with just this context
-  // (This is used when restoring - we want to reset to previous state)
-  // Check if context is empty by checking if it has a head
-  const isEmpty = !context || context.head === undefined;
-  scopeContextState.fallbackContextStack = isEmpty ? [] : [{ context, depth: 0 }];
-  return undefined;
-}
-
-/**
- * Set the scope depth (used internally for fallback only).
- * @param {number} depth - Depth to set
- */
-export function set_scope_depth(depth) {
-  initScopeContext();
-
-  if (
-    scopeContextState.asyncLocalStorageAvailable &&
-    scopeContextState.asyncLocalStorage
-  ) {
-    // For AsyncLocalStorage, depth is managed in run_with_scope
-    // This is for fallback only
-  }
-  // Fallback: update depth in top of stack
-  const stack = scopeContextState.fallbackContextStack;
-  if (stack.length > 0) {
-    stack[stack.length - 1].depth = depth;
-  }
-  return undefined;
-}
-
-/**
  * Merge two Gleam lists by converting to JS arrays and back.
  * New context items are prepended (higher priority).
+ *
+ * This round-trip through JS arrays is necessary because the JS @external
+ * replaces the entire Gleam function body of with_scope(). On Erlang, the
+ * Gleam body uses list.append directly. On JS, we must merge here since the
+ * Gleam body is skipped.
+ *
  * @param {List} newContext - New context to add (Gleam list)
  * @param {List} currentContext - Current context (Gleam list)
  * @returns {List} Merged Gleam list
@@ -629,52 +541,118 @@ function mergeGleamLists(newContext, currentContext) {
 }
 
 /**
+ * Get the current scope context.
+ * @returns {List} Gleam List of [key, value] tuples (Gleam Metadata format)
+ */
+export function get_scope_context() {
+  initALS();
+
+  if (_alsAvailable && _als) {
+    const store = _als.getStore();
+    return store !== undefined ? store.context : toList([]);
+  }
+  // Fallback: return top of stack or empty list
+  const stack = _scopeContextFallbackStack;
+  return stack.length > 0 ? stack[stack.length - 1].context : toList([]);
+}
+
+/**
+ * Get the current scope depth (nesting level).
+ * @returns {number} Current depth (0 if no scope active)
+ */
+export function get_scope_depth() {
+  initALS();
+
+  if (_alsAvailable && _als) {
+    const store = _als.getStore();
+    return store !== undefined ? store.depth : 0;
+  }
+  // Fallback: return top of stack depth or 0
+  const stack = _scopeContextFallbackStack;
+  return stack.length > 0 ? stack[stack.length - 1].depth : 0;
+}
+
+/**
+ * Set the scope context.
+ * Uses enterWith() to properly update the ALS store when available.
+ * @param {List} context - Gleam List of [key, value] tuples
+ */
+export function set_scope_context(context) {
+  initALS();
+
+  if (_alsAvailable && _als) {
+    const currentStore = _als.getStore() || defaultStore();
+    _als.enterWith({ ...currentStore, context });
+    return undefined;
+  }
+  // Fallback: replace the entire stack with just this context
+  const isEmpty = !context || context.head === undefined;
+  _scopeContextFallbackStack.length = 0;
+  if (!isEmpty) {
+    _scopeContextFallbackStack.push({ context, depth: 0 });
+  }
+  return undefined;
+}
+
+/**
+ * Set the scope depth.
+ * Uses enterWith() to properly update the ALS store when available.
+ * @param {number} depth - Depth to set
+ */
+export function set_scope_depth(depth) {
+  initALS();
+
+  if (_alsAvailable && _als) {
+    const currentStore = _als.getStore() || defaultStore();
+    _als.enterWith({ ...currentStore, depth });
+    return undefined;
+  }
+  // Fallback: update depth in top of stack
+  const stack = _scopeContextFallbackStack;
+  if (stack.length > 0) {
+    stack[stack.length - 1].depth = depth;
+  }
+  return undefined;
+}
+
+/**
  * Run a function with scoped context.
- * This properly handles AsyncLocalStorage.run() for Node.js.
+ * On Node.js, uses AsyncLocalStorage.run() for proper async propagation.
+ * Preserves any existing scoped logger in the shared ALS store.
  * @param {List} context - Gleam List of context to add to the scope
  * @param {function} callback - Function to run with the context
  * @returns {*} The result of the callback
  */
 export function run_with_scope(context, callback) {
-  initScopeContext();
+  initALS();
 
-  if (
-    scopeContextState.asyncLocalStorageAvailable &&
-    scopeContextState.asyncLocalStorage
-  ) {
-    // Get current store (contains context and depth)
-    const currentStore = scopeContextState.asyncLocalStorage.getStore() || {
-      context: toList([]),
-      depth: 0
-    };
+  if (_alsAvailable && _als) {
+    const currentStore = _als.getStore() || defaultStore();
     const mergedContext = mergeGleamLists(context, currentStore.context);
     const newStore = {
+      ...currentStore, // Preserves logger from shared store
       context: mergedContext,
-      depth: currentStore.depth + 1
+      depth: currentStore.depth + 1,
     };
-
-    // Use run() for proper scoping - store is automatically restored after
-    return scopeContextState.asyncLocalStorage.run(newStore, callback);
+    return _als.run(newStore, callback);
   }
 
   // Fallback for non-Node.js environments: use stack-based approach
-  const stack = scopeContextState.fallbackContextStack;
-  const currentStore = stack.length > 0 ? stack[stack.length - 1] : {
-    context: toList([]),
-    depth: 0
-  };
+  const stack = _scopeContextFallbackStack;
+  const currentStore =
+    stack.length > 0
+      ? stack[stack.length - 1]
+      : { context: toList([]), depth: 0 };
   const mergedContext = mergeGleamLists(context, currentStore.context);
   const newStore = {
     context: mergedContext,
-    depth: currentStore.depth + 1
+    depth: currentStore.depth + 1,
   };
 
-  // Push new store onto stack
   stack.push(newStore);
   try {
     return callback();
   } finally {
-    // Pop store from stack
     stack.pop();
   }
 }
@@ -684,69 +662,25 @@ export function run_with_scope(context, callback) {
  * @returns {boolean} True on Node.js (AsyncLocalStorage), False otherwise
  */
 export function is_scope_context_available() {
-  initScopeContext();
-  return scopeContextState.asyncLocalStorageAvailable;
+  initALS();
+  return _alsAvailable;
 }
 
 // ============================================================================
 // Scoped Logger Override
+// Uses the same shared AsyncLocalStorage as scope context.
+// The `logger` field in the ALS store holds the scoped logger override.
 // ============================================================================
-
-// Scoped logger state (separate from scope context)
-let scopedLoggerState = {
-  initialized: false,
-  asyncLocalStorage: null,
-  asyncLocalStorageAvailable: false,
-  // Stack-based fallback for non-Node.js environments
-  fallbackStack: [],
-};
-
-/**
- * Initialize the scoped logger system (lazy initialization).
- */
-function initScopedLogger() {
-  if (scopedLoggerState.initialized) {
-    return;
-  }
-  scopedLoggerState.initialized = true;
-
-  // Try to use AsyncLocalStorage in Node.js
-  if (typeof process !== "undefined" && process.versions?.node) {
-    try {
-      const async_hooks = await_import_or_require("node:async_hooks");
-      if (async_hooks?.AsyncLocalStorage) {
-        scopedLoggerState.asyncLocalStorage = new async_hooks.AsyncLocalStorage();
-        scopedLoggerState.asyncLocalStorageAvailable = true;
-      }
-    } catch (e) {
-      scopedLoggerState.asyncLocalStorageAvailable = false;
-    }
-  }
-}
-
-/**
- * Try to synchronously import or require a module.
- */
-function await_import_or_require(mod) {
-  try {
-    return require(mod);
-  } catch (e) {
-    return null;
-  }
-}
 
 /**
  * Get the current scoped logger override.
  * @returns {Result} Ok(Logger) if set, Error(nil) otherwise
  */
 export function get_scoped_logger() {
-  initScopedLogger();
+  initALS();
 
-  if (
-    scopedLoggerState.asyncLocalStorageAvailable &&
-    scopedLoggerState.asyncLocalStorage
-  ) {
-    const store = scopedLoggerState.asyncLocalStorage.getStore();
+  if (_alsAvailable && _als) {
+    const store = _als.getStore();
     if (store && store.logger !== undefined) {
       return new Ok(store.logger);
     }
@@ -754,7 +688,7 @@ export function get_scoped_logger() {
   }
 
   // Fallback
-  const stack = scopedLoggerState.fallbackStack;
+  const stack = _scopedLoggerFallbackStack;
   if (stack.length > 0) {
     return new Ok(stack[stack.length - 1]);
   }
@@ -762,67 +696,64 @@ export function get_scoped_logger() {
 }
 
 /**
- * Set the scoped logger override (fallback only).
+ * Set the scoped logger override.
+ * Uses enterWith() to properly update the ALS store when available.
  */
 export function set_scoped_logger(logger) {
-  initScopedLogger();
+  initALS();
 
-  if (
-    scopedLoggerState.asyncLocalStorageAvailable &&
-    scopedLoggerState.asyncLocalStorage
-  ) {
-    // For AsyncLocalStorage, this is handled by run_with_scoped_logger
+  if (_alsAvailable && _als) {
+    const currentStore = _als.getStore() || defaultStore();
+    _als.enterWith({ ...currentStore, logger });
     return undefined;
   }
 
   // Fallback
-  scopedLoggerState.fallbackStack.push(logger);
+  _scopedLoggerFallbackStack.push(logger);
   return undefined;
 }
 
 /**
- * Clear the scoped logger override (fallback only).
+ * Clear the scoped logger override.
+ * Uses enterWith() to properly update the ALS store when available.
  */
 export function clear_scoped_logger() {
-  initScopedLogger();
+  initALS();
 
-  if (
-    scopedLoggerState.asyncLocalStorageAvailable &&
-    scopedLoggerState.asyncLocalStorage
-  ) {
-    // For AsyncLocalStorage, this is handled by run_with_scoped_logger
+  if (_alsAvailable && _als) {
+    const currentStore = _als.getStore() || defaultStore();
+    _als.enterWith({ ...currentStore, logger: undefined });
     return undefined;
   }
 
   // Fallback
-  scopedLoggerState.fallbackStack.pop();
+  _scopedLoggerFallbackStack.pop();
   return undefined;
 }
 
 /**
  * Run a function with a scoped logger override.
- * This properly handles AsyncLocalStorage.run() for Node.js.
+ * On Node.js, uses AsyncLocalStorage.run() for proper async propagation.
+ * Preserves any existing scope context in the shared ALS store.
  * @param {*} logger - The Logger to use as override
  * @param {function} callback - Function to run with the scoped logger
  * @returns {*} The result of the callback
  */
 export function run_with_scoped_logger(logger, callback) {
-  initScopedLogger();
+  initALS();
 
-  if (
-    scopedLoggerState.asyncLocalStorageAvailable &&
-    scopedLoggerState.asyncLocalStorage
-  ) {
-    const newStore = { logger: logger };
-    return scopedLoggerState.asyncLocalStorage.run(newStore, callback);
+  if (_alsAvailable && _als) {
+    const currentStore = _als.getStore() || defaultStore();
+    const newStore = { ...currentStore, logger };
+    return _als.run(newStore, callback);
   }
 
   // Fallback for non-Node.js environments: use stack-based approach
-  scopedLoggerState.fallbackStack.push(logger);
+  _scopedLoggerFallbackStack.push(logger);
   try {
     return callback();
   } finally {
-    scopedLoggerState.fallbackStack.pop();
+    _scopedLoggerFallbackStack.pop();
   }
 }
 
@@ -844,8 +775,7 @@ export function get_caller_id() {
   // Node.js worker threads
   if (typeof process !== "undefined" && process.versions?.node) {
     try {
-      // Try to get worker thread ID if in a worker
-      const worker_threads = require("worker_threads");
+      const worker_threads = _require("node:worker_threads");
       if (!worker_threads.isMainThread) {
         return `worker-${worker_threads.threadId}`;
       }
