@@ -217,7 +217,7 @@ fn handle_overflow(
     // DropNewest - don't add the new record (queue_len stays the same)
     1 -> #(pending, queue_len)
     // Block - not really blocking, just add (mailbox provides backpressure)
-    2 -> #[record, ..pending, queue_len + 1]
+    2 -> #([record, ..pending], queue_len + 1)
     // Default: drop newest
     _ -> #(pending, queue_len)
   }
