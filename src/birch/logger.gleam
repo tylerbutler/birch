@@ -71,7 +71,8 @@ pub fn new(name: String) -> Logger {
 @target(erlang)
 fn default_handlers() -> List(Handler) {
   // On BEAM, birch sends LogRecords directly to :logger — no birch handler needed.
-  // Users can still add birch handlers for additional output (e.g., JSON file).
+  // Ensure the birch formatter is installed on :logger's default handler.
+  erlang_logger.ensure_formatter_configured()
   []
 }
 

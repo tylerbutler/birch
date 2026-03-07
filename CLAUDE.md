@@ -252,23 +252,6 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR to main using `just`
 - Format checking (`just format-check`)
 - Documentation build (`just docs`)
 
-## Commit Configuration
-
-Single source of truth pattern for commit types and changelog generation:
-- `commit-types.json` - defines commit types, changelog groups, and excluded scopes
-- `commit-config-gen` - Go CLI tool that generates configs (install: `go install github.com/tylerbutler/commit-config-gen@latest`)
-
-### Workflow
-```bash
-just g                    # Regenerate configs after editing commit-types.json
-just changelog-preview    # Preview unreleased changelog
-just changelog            # Generate CHANGELOG.md
-```
-
-### Scope Exclusions
-Commits with scopes in `excluded_scopes` (e.g., `fix(ci)`, `chore(deps)`) are hidden from changelog.
-Edit `commit-types.json` to add/remove excluded scopes.
-
 ## Conventions
 
 ### Naming
