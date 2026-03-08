@@ -11,6 +11,7 @@ import birch as log
 import birch/config
 import birch/erlang_logger
 import birch/formatter
+import birch/handler
 import birch/handler/console
 import birch/level
 import birch/logger
@@ -675,3 +676,146 @@ fn get_handler_level() -> String
 
 /// Opaque type for the capture buffer
 type CaptureBuffer
+
+// ============================================================================
+// Handler Bridge Tests (#110)
+// ============================================================================
+
+pub fn handler_bridge_install_test() {
+  case is_erlang_target() {
+    True -> {
+      // Install the bridge with a null handler
+      let result = erlang_logger.install_handler_bridge([handler.null()])
+      should.be_ok(result)
+
+      // Clean up
+      let _ = erlang_logger.remove_handler_bridge()
+      Nil
+    }
+    False -> Nil
+  }
+}
+
+pub fn handler_bridge_remove_idempotent_test() {
+  case is_erlang_target() {
+    True -> {
+      // Remove when not installed should succeed
+      let result = erlang_logger.remove_handler_bridge()
+      should.be_ok(result)
+    }
+    False -> Nil
+  }
+}
+
+pub fn handler_bridge_routes_to_handlers_test() {
+  case is_erlang_target() {
+    True -> {
+      let captured = new_capture_buffer()
+
+      // Create a handler that captures output
+      let capture_handler =
+        handler.new(
+          name: "capture",
+          write: fn(msg) { append_to_buffer(captured, msg) },
+          format: formatter.human_readable,
+        )
+
+      // Install bridge with capture handler
+      let assert Ok(Nil) =
+        erlang_logger.install_handler_bridge([capture_handler])
+
+      // Log through birch — should go through OTP :logger → bridge → handler
+      let lgr =
+        logger.new("test.bridge")
+        |> logger.with_level(level.Info)
+      logger.info(lgr, "Bridge test message", [
+        meta.string("via", "bridge"),
+      ])
+      sleep(100)
+
+      let output = get_buffer_contents(captured)
+      output |> string.contains("Bridge test message") |> should.be_true
+      output |> string.contains("via=bridge") |> should.be_true
+
+      // Verify single output (no duplicates)
+      let count = count_occurrences(output, "Bridge test message")
+      { count == 1 } |> should.be_true
+
+      // Clean up
+      let _ = erlang_logger.remove_handler_bridge()
+      Nil
+    }
+    False -> Nil
+  }
+}
+
+// ============================================================================
+// Single Dispatch Path Tests (#110)
+// ============================================================================
+
+pub fn single_dispatch_path_with_handlers_test() {
+  case is_erlang_target() {
+    True -> {
+      let captured = new_capture_buffer()
+      let capture_handler =
+        handler.new(
+          name: "capture",
+          write: fn(msg) { append_to_buffer(captured, msg) },
+          format: formatter.human_readable,
+        )
+
+      // Configure with handlers — should install bridge on :logger
+      log.configure([
+        log.config_handlers([capture_handler]),
+        log.config_level(level.Info),
+      ])
+
+      // Log using the default logger
+      log.info("Single dispatch test")
+      sleep(100)
+
+      let output = get_buffer_contents(captured)
+      output |> string.contains("Single dispatch test") |> should.be_true
+
+      // Verify no duplicates
+      let count = count_occurrences(output, "Single dispatch test")
+      { count == 1 } |> should.be_true
+
+      log.reset_config()
+    }
+    False -> Nil
+  }
+}
+
+pub fn config_formatter_installs_on_otp_logger_test() {
+  case is_erlang_target() {
+    True -> {
+      let captured = new_capture_buffer()
+      let capture_formatter = fn(r: record.LogRecord) -> String {
+        let formatted = formatter.simple(r)
+        append_to_buffer(captured, formatted)
+        formatted
+      }
+
+      // Configure with formatter (not handlers)
+      log.configure([
+        log.config_formatter(capture_formatter),
+        log.config_level(level.Info),
+      ])
+
+      // Log through birch → OTP :logger → birch formatter
+      log.info("Formatter config test")
+      sleep(100)
+
+      let output = get_buffer_contents(captured)
+      output |> string.contains("Formatter config test") |> should.be_true
+
+      // Verify no duplicates
+      let count = count_occurrences(output, "Formatter config test")
+      { count == 1 } |> should.be_true
+
+      log.reset_config()
+    }
+    False -> Nil
+  }
+}

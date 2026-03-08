@@ -203,6 +203,23 @@ pub fn handler_stderr() -> Handler {
   handler_stderr_with_formatter(format_json)
 }
 
+/// Create a standard JSON formatter.
+///
+/// Returns a `Formatter` that outputs JSON with timestamp, level, logger,
+/// message, and metadata fields. Suitable for use with `config_formatter()`.
+///
+/// ## Example
+///
+/// ```gleam
+/// import birch as log
+/// import birch/handler/json
+///
+/// log.configure([log.config_formatter(json.formatter())])
+/// ```
+pub fn formatter() -> formatter.Formatter {
+  standard_builder() |> build()
+}
+
 // ============================================================================
 // Default Formatter
 // ============================================================================

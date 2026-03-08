@@ -3706,3 +3706,89 @@ pub fn main_api_default_logger_inherits_config_test() {
 
   log.reset_config()
 }
+
+// ============================================================================
+// Config Formatter Tests (#109)
+// ============================================================================
+
+pub fn config_formatter_stores_formatter_test() {
+  let fmt = formatter.simple
+  log.configure([log.config_formatter(fmt)])
+
+  let cfg = log.get_config()
+  config.get_formatter(cfg)
+  |> should.be_some
+
+  log.reset_config()
+}
+
+pub fn config_formatter_handlers_take_precedence_test() {
+  // When both formatter and handlers are set, handlers should take precedence
+  log.configure([
+    log.config_formatter(formatter.simple),
+    log.config_handlers([handler.null()]),
+  ])
+
+  // Handlers should still be set
+  let cfg = log.get_config()
+  config.get_handlers(cfg)
+  |> list.length
+  |> should.equal(1)
+
+  log.reset_config()
+}
+
+pub fn config_formatter_default_is_none_test() {
+  let cfg = log.default_config()
+  config.get_formatter(cfg) |> should.be_none
+}
+
+// ============================================================================
+// Convenience Formatter Tests (#109)
+// ============================================================================
+
+pub fn console_formatter_returns_formatter_test() {
+  let fmt = console.formatter()
+  let r =
+    record.new(
+      timestamp: "2024-01-01T00:00:00Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "hello",
+      metadata: [],
+    )
+  let formatted = fmt(r)
+  formatted |> string.contains("hello") |> should.be_true
+  formatted |> string.contains("test") |> should.be_true
+}
+
+pub fn console_fancy_formatter_returns_formatter_test() {
+  let fmt = console.fancy_formatter()
+  let r =
+    record.new(
+      timestamp: "2024-01-01T00:00:00Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "hello fancy",
+      metadata: [],
+    )
+  let formatted = fmt(r)
+  formatted |> string.contains("hello fancy") |> should.be_true
+}
+
+pub fn json_formatter_returns_formatter_test() {
+  let fmt = json.formatter()
+  let r =
+    record.new(
+      timestamp: "2024-01-01T00:00:00Z",
+      level: level.Info,
+      logger_name: "test",
+      message: "json test",
+      metadata: [],
+    )
+  let formatted = fmt(r)
+  // Should be valid JSON
+  formatted |> string.contains("json test") |> should.be_true
+  formatted |> string.contains("\"level\"") |> should.be_true
+  formatted |> string.contains("\"timestamp\"") |> should.be_true
+}
