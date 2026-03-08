@@ -64,6 +64,51 @@ pub fn handler_with_formatter(
   )
 }
 
+// ============================================================================
+// File Size Cache Helpers
+// ============================================================================
+
+/// Get the size of a file in bytes.
+fn file_size(path: String) -> Result(Int, Nil) {
+  simplifile.file_info(path)
+  |> result.map(fn(info) { info.size })
+  |> result.replace_error(Nil)
+}
+
+/// Get the cached file size for a path, or query the filesystem if not cached.
+/// Returns the file size in bytes.
+fn get_cached_or_file_size(path: String) -> Int {
+  case platform.get_file_size_cache(path) {
+    Ok(size) -> size
+    Error(Nil) -> {
+      // Not cached, get from filesystem and cache it
+      case file_size(path) {
+        Ok(size) -> {
+          let _ = platform.set_file_size_cache(path, size)
+          size
+        }
+        Error(_) -> 0
+      }
+    }
+  }
+}
+
+/// Update the cached file size by adding bytes_written.
+/// This avoids calling stat() on every write.
+fn update_cached_size(path: String, bytes_written: Int) -> Nil {
+  let current_size = get_cached_or_file_size(path)
+  let new_size = current_size + bytes_written
+  let _ = platform.set_file_size_cache(path, new_size)
+  Nil
+}
+
+/// Reset the cached file size to 0.
+/// Called after file rotation (new file = empty).
+fn reset_cached_size(path: String) -> Nil {
+  let _ = platform.reset_file_size_cache(path)
+  Nil
+}
+
 /// Write a message to the log file, handling rotation if needed.
 fn write_to_file(config: FileConfig, message: String) -> Nil {
   // Check if we need to rotate first
@@ -71,13 +116,21 @@ fn write_to_file(config: FileConfig, message: String) -> Nil {
     NoRotation -> Nil
     SizeRotation(max_bytes, max_files, compress) -> {
       case should_rotate_by_size(config.path, max_bytes) {
-        True -> rotate_file(config.path, max_files, compress)
+        True -> {
+          // Rotate and reset the cache
+          rotate_file(config.path, max_files, compress)
+          reset_cached_size(config.path)
+        }
         False -> Nil
       }
     }
     TimeRotation(interval, max_files) -> {
       case should_rotate_by_time(config.path, interval) {
-        True -> rotate_file_with_timestamp(config.path, max_files, interval)
+        True -> {
+          // Rotate and reset the cache
+          rotate_file_with_timestamp(config.path, max_files, interval)
+          reset_cached_size(config.path)
+        }
         False -> Nil
       }
     }
@@ -86,7 +139,11 @@ fn write_to_file(config: FileConfig, message: String) -> Nil {
       let rotate_for_size = should_rotate_by_size(config.path, max_bytes)
       let rotate_for_time = should_rotate_by_time(config.path, interval)
       case rotate_for_size || rotate_for_time {
-        True -> rotate_file_with_timestamp(config.path, max_files, interval)
+        True -> {
+          // Rotate and reset the cache
+          rotate_file_with_timestamp(config.path, max_files, interval)
+          reset_cached_size(config.path)
+        }
         False -> Nil
       }
     }
@@ -94,8 +151,12 @@ fn write_to_file(config: FileConfig, message: String) -> Nil {
 
   // Append message to file
   let content = message <> "\n"
+  let message_size = string.length(content)
   case simplifile.append(config.path, content) {
-    Ok(Nil) -> Nil
+    Ok(Nil) -> {
+      // Update cached size after successful write
+      update_cached_size(config.path, message_size)
+    }
     Error(e) -> {
       // Log to stderr on failure, but don't crash
       io.println_error(
@@ -109,11 +170,10 @@ fn write_to_file(config: FileConfig, message: String) -> Nil {
 }
 
 /// Check if a file should be rotated based on size.
+/// Uses cached size to avoid stat() calls on every write.
 fn should_rotate_by_size(path: String, max_bytes: Int) -> Bool {
-  case file_size(path) {
-    Ok(size) -> size >= max_bytes
-    Error(_) -> False
-  }
+  let size = get_cached_or_file_size(path)
+  size >= max_bytes
 }
 
 /// Check if a file should be rotated based on time.
@@ -140,13 +200,6 @@ fn should_rotate_by_time(path: String, interval: TimeInterval) -> Bool {
       }
     }
   }
-}
-
-/// Get the size of a file in bytes.
-fn file_size(path: String) -> Result(Int, Nil) {
-  simplifile.file_info(path)
-  |> result.map(fn(info) { info.size })
-  |> result.replace_error(Nil)
 }
 
 /// Rotate log files using numeric suffixes.

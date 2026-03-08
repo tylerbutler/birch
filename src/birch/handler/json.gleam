@@ -71,27 +71,27 @@ pub fn add_field(builder: JsonBuilder, extractor: FieldExtractor) -> JsonBuilder
 /// Add the timestamp field to the JSON output.
 /// Output: `"timestamp": "2024-12-26T10:30:45.123Z"`
 pub fn add_timestamp(b: JsonBuilder) -> JsonBuilder {
-  add_field(b, fn(r) { [#("timestamp", json.string(r.timestamp))] })
+  add_field(b, fn(r) { [#("timestamp", json.string(record.timestamp(r)))] })
 }
 
 /// Add the log level field to the JSON output.
 /// Output: `"level": "info"`
 pub fn add_level(b: JsonBuilder) -> JsonBuilder {
   add_field(b, fn(r) {
-    [#("level", json.string(level.to_string_lowercase(r.level)))]
+    [#("level", json.string(level.to_string_lowercase(record.level(r))))]
   })
 }
 
 /// Add the logger name field to the JSON output.
 /// Output: `"logger": "myapp.http"`
 pub fn add_logger(b: JsonBuilder) -> JsonBuilder {
-  add_field(b, fn(r) { [#("logger", json.string(r.logger_name))] })
+  add_field(b, fn(r) { [#("logger", json.string(record.logger_name(r)))] })
 }
 
 /// Add the message field to the JSON output.
 /// Output: `"message": "Request complete"`
 pub fn add_message(b: JsonBuilder) -> JsonBuilder {
-  add_field(b, fn(r) { [#("message", json.string(r.message))] })
+  add_field(b, fn(r) { [#("message", json.string(record.message(r)))] })
 }
 
 /// Convert a MetadataValue to a typed JSON value.
@@ -109,7 +109,9 @@ fn metadata_value_to_json(value: MetadataValue) -> Json {
 /// Output: `"method": "POST", "path": "/api/users"`
 pub fn add_metadata(b: JsonBuilder) -> JsonBuilder {
   add_field(b, fn(r) {
-    list.map(r.metadata, fn(pair) { #(pair.0, metadata_value_to_json(pair.1)) })
+    list.map(record.all_metadata(r), fn(pair) {
+      #(pair.0, metadata_value_to_json(pair.1))
+    })
   })
 }
 

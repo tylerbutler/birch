@@ -2,6 +2,7 @@
 ////
 //// These tests verify invariants that should hold for all inputs.
 
+import birch/erlang_logger
 import birch/formatter
 import birch/level.{
   Alert, Critical, Debug, Err, Fatal, Info, Notice, Trace, Warn,
@@ -170,6 +171,72 @@ pub fn level_compare_antisymmetric_test() {
 }
 
 // ============================================================================
+// OTP Level Round-Trip Property Tests
+// ============================================================================
+
+/// Property: Level ordering is preserved through OTP round-trip.
+/// For any two levels a, b where neither is Trace:
+///   compare(roundtrip(a), roundtrip(b)) == compare(a, b)
+///
+/// Trace is excluded because it collapses to Debug (a documented, lossy mapping).
+pub fn otp_roundtrip_preserves_ordering_test() {
+  // Generator for non-Trace levels (Trace is lossy, excluded)
+  let non_trace_gen =
+    qcheck.from_generators(qcheck.return(Debug), [
+      qcheck.return(Info),
+      qcheck.return(Notice),
+      qcheck.return(Warn),
+      qcheck.return(Err),
+      qcheck.return(Critical),
+      qcheck.return(Alert),
+      qcheck.return(Fatal),
+    ])
+
+  use #(a, b) <- qcheck.given(qcheck.tuple2(non_trace_gen, non_trace_gen))
+
+  let roundtrip_a =
+    a
+    |> erlang_logger.gleam_level_to_erlang
+    |> erlang_logger.erlang_level_to_gleam
+  let roundtrip_b =
+    b
+    |> erlang_logger.gleam_level_to_erlang
+    |> erlang_logger.erlang_level_to_gleam
+
+  level.compare(roundtrip_a, roundtrip_b)
+  |> should.equal(level.compare(a, b))
+}
+
+/// Property: All non-Trace levels survive the OTP round-trip unchanged.
+pub fn otp_roundtrip_identity_for_non_trace_test() {
+  let non_trace_gen =
+    qcheck.from_generators(qcheck.return(Debug), [
+      qcheck.return(Info),
+      qcheck.return(Notice),
+      qcheck.return(Warn),
+      qcheck.return(Err),
+      qcheck.return(Critical),
+      qcheck.return(Alert),
+      qcheck.return(Fatal),
+    ])
+
+  use lvl <- qcheck.given(non_trace_gen)
+
+  lvl
+  |> erlang_logger.gleam_level_to_erlang
+  |> erlang_logger.erlang_level_to_gleam
+  |> should.equal(lvl)
+}
+
+/// Property: Trace always collapses to Debug through OTP round-trip.
+pub fn otp_roundtrip_trace_collapses_to_debug_test() {
+  Trace
+  |> erlang_logger.gleam_level_to_erlang
+  |> erlang_logger.erlang_level_to_gleam
+  |> should.equal(Debug)
+}
+
+// ============================================================================
 // Record Property Tests
 // ============================================================================
 
@@ -204,8 +271,8 @@ fn log_record_generator() -> qcheck.Generator(record.LogRecord) {
   )
 }
 
-/// Property: get_metadata returns first matching key
-pub fn record_get_metadata_first_match_test() {
+/// Property: metadata returns first matching key
+pub fn record_metadata_first_match_test() {
   use #(key, value1, value2) <- qcheck.given(qcheck.tuple3(
     qcheck.non_empty_string_from(qcheck.alphanumeric_ascii_codepoint()),
     qcheck.string_from(qcheck.printable_ascii_codepoint()),
@@ -222,16 +289,16 @@ pub fn record_get_metadata_first_match_test() {
     )
 
   // Should return the first occurrence
-  record.get_metadata(r, key)
+  record.metadata(r, key)
   |> should.equal(Ok(StringVal(value1)))
 }
 
-/// Property: get_metadata returns Error for non-existent keys
-pub fn record_get_metadata_missing_test() {
+/// Property: metadata returns Error for non-existent keys
+pub fn record_metadata_missing_test() {
   use rec <- qcheck.given(log_record_generator())
 
   // Use a key that's very unlikely to be in the metadata
-  record.get_metadata(rec, "___nonexistent_key_12345___")
+  record.metadata(rec, "___nonexistent_key_12345___")
   |> should.equal(Error(Nil))
 }
 
@@ -252,7 +319,7 @@ pub fn record_with_metadata_prepends_test() {
     )
     |> record.with_metadata([#(key, StringVal(value))])
 
-  record.get_metadata(r, key)
+  record.metadata(r, key)
   |> should.equal(Ok(StringVal(value)))
 }
 
@@ -273,7 +340,7 @@ pub fn record_new_simple_empty_metadata_test() {
       metadata: [],
     )
 
-  r.metadata
+  record.all_metadata(r)
   |> should.equal([])
 }
 
@@ -286,14 +353,14 @@ pub fn formatter_simple_contains_level_and_message_test() {
   use rec <- qcheck.given(log_record_generator())
 
   let formatted = formatter.simple(rec)
-  let level_str = level.to_string(rec.level)
+  let level_str = level.to_string(record.level(rec))
 
   formatted
   |> string.contains(level_str)
   |> should.be_true
 
   formatted
-  |> string.contains(rec.message)
+  |> string.contains(record.message(rec))
   |> should.be_true
 }
 
@@ -304,7 +371,7 @@ pub fn formatter_human_readable_contains_timestamp_test() {
   let formatted = formatter.human_readable(rec)
 
   formatted
-  |> string.contains(rec.timestamp)
+  |> string.contains(record.timestamp(rec))
   |> should.be_true
 }
 
@@ -315,6 +382,6 @@ pub fn formatter_human_readable_contains_logger_test() {
   let formatted = formatter.human_readable(rec)
 
   formatted
-  |> string.contains(rec.logger_name)
+  |> string.contains(record.logger_name(rec))
   |> should.be_true
 }

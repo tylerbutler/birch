@@ -47,8 +47,10 @@ pub type State {
   State(
     /// The underlying handler to write to
     handler: Handler,
-    /// Pending records (for batching if needed)
+    /// Pending records (for batching if needed) - Erlang queue
     pending: List(LogRecord),
+    /// Queue length (O(1) instead of list.length)
+    queue_len: Int,
     /// Maximum queue size before applying overflow behavior
     max_queue_size: Int,
     /// Overflow behavior (0=DropOldest, 1=DropNewest, 2=Block)
@@ -73,6 +75,31 @@ pub type StartError {
   /// Actor failed to start
   ActorStartError(actor.StartError)
 }
+
+// ============================================================================
+// FFI declarations for Erlang :queue operations
+// ============================================================================
+
+@target(erlang)
+/// Create a new empty queue.
+@external(erlang, "birch_ffi", "queue_new")
+pub fn queue_new() -> List(a)
+
+@target(erlang)
+/// Add an item to the rear of the queue.
+@external(erlang, "birch_ffi", "queue_in")
+pub fn queue_in(item: a, queue: List(a)) -> List(a)
+
+@target(erlang)
+/// Remove and return the front item of the queue.
+/// Returns Ok(#(item, new_queue)) or Error(Nil) if empty.
+@external(erlang, "birch_ffi", "queue_out")
+pub fn queue_out(queue: List(a)) -> Result(#(a, List(a)), Nil)
+
+@target(erlang)
+/// Check if queue is empty.
+@external(erlang, "birch_ffi", "queue_is_empty")
+pub fn queue_is_empty(queue: List(a)) -> Bool
 
 @target(erlang)
 /// Start an async handler actor that wraps the given handler.
@@ -108,6 +135,7 @@ pub fn start(
     State(
       handler: handler,
       pending: [],
+      queue_len: 0,
       max_queue_size: max_queue_size,
       overflow: overflow,
     )
@@ -127,13 +155,19 @@ pub fn start(
 fn handle_message(state: State, message: Message) -> actor.Next(State, Message) {
   case message {
     Log(record) -> {
-      // Apply overflow handling if queue is full
-      let new_pending = case
-        list.length(state.pending) >= state.max_queue_size
-      {
-        True -> handle_overflow(record, state.pending, state.overflow)
-        False -> [record, ..state.pending]
+      // Apply overflow handling if queue is full (O(1) check using queue_len)
+      let new_pending_and_len = case state.queue_len >= state.max_queue_size {
+        True ->
+          handle_overflow(
+            record,
+            state.pending,
+            state.queue_len,
+            state.overflow,
+          )
+        False -> #([record, ..state.pending], state.queue_len + 1)
       }
+
+      let #(new_pending, new_queue_len) = new_pending_and_len
 
       // Process the record immediately (write to handler)
       // For simplicity, we write each record as it comes in
@@ -141,9 +175,11 @@ fn handle_message(state: State, message: Message) -> actor.Next(State, Message) 
       case new_pending {
         [latest, ..rest] -> {
           handler.handle(state.handler, latest)
-          actor.continue(State(..state, pending: rest))
+          actor.continue(
+            State(..state, pending: rest, queue_len: new_queue_len),
+          )
         }
-        [] -> actor.continue(state)
+        [] -> actor.continue(State(..state, queue_len: new_queue_len))
       }
     }
 
@@ -152,7 +188,7 @@ fn handle_message(state: State, message: Message) -> actor.Next(State, Message) 
       flush_pending(state.handler, state.pending)
       // Reply to indicate flush is complete
       process.send(reply_to, Nil)
-      actor.continue(State(..state, pending: []))
+      actor.continue(State(..state, pending: [], queue_len: 0))
     }
 
     Shutdown -> {
@@ -165,23 +201,25 @@ fn handle_message(state: State, message: Message) -> actor.Next(State, Message) 
 
 @target(erlang)
 /// Handle queue overflow based on configured behavior.
+/// Returns #(new_pending_list, new_queue_len)
 fn handle_overflow(
   record: LogRecord,
   pending: List(LogRecord),
+  queue_len: Int,
   overflow: Int,
-) -> List(LogRecord) {
+) -> #(List(LogRecord), Int) {
   case overflow {
     // DropOldest - remove from end (oldest), add new to front
     0 -> {
       let trimmed = list.take(pending, list.length(pending) - 1)
-      [record, ..trimmed]
+      #([record, ..trimmed], queue_len)
     }
-    // DropNewest - don't add the new record
-    1 -> pending
+    // DropNewest - don't add the new record (queue_len stays the same)
+    1 -> #(pending, queue_len)
     // Block - not really blocking, just add (mailbox provides backpressure)
-    2 -> [record, ..pending]
+    2 -> #([record, ..pending], queue_len + 1)
     // Default: drop newest
-    _ -> pending
+    _ -> #(pending, queue_len)
   }
 }
 

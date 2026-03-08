@@ -9,7 +9,8 @@
          get_scope_depth/0, set_scope_depth/1,
          run_with_scope_cleanup/5, run_with_scoped_logger_cleanup/2,
          get_actor_registry/0, set_actor_registry/1,
-         get_caller_id/0]).
+         get_caller_id/0,
+         get_file_size_cache/1, set_file_size_cache/2, reset_file_size_cache/1]).
 
 %% Note: Time functions are now provided by gleam_time via birch/internal/time.
 %% Note: write_stdout, write_stderr, and random_float have been removed.
@@ -61,69 +62,93 @@ get_color_depth() ->
     end.
 
 %% ============================================================================
-%% Global Configuration Storage
+%% Global State Storage (Config + Cached Logger)
 %% ============================================================================
 
-%% Global configuration storage using persistent_term.
+%% Global state storage using persistent_term.
+%% Uses a single key for both config and default logger to reduce GC passes.
 %% persistent_term is ideal for read-heavy, write-rarely data like logging config.
 %% It's also thread-safe for concurrent access.
 
--define(GLOBAL_CONFIG_KEY, birch_global_config).
+-define(STATE_KEY, birch_state).
 
 %% Get the global configuration. Returns {ok, Config} or {error, nil}.
 get_global_config() ->
-    try persistent_term:get(?GLOBAL_CONFIG_KEY) of
-        Config -> {ok, Config}
+    try persistent_term:get(?STATE_KEY) of
+        {nil, _Logger} -> {error, nil};
+        {Config, _Logger} -> {ok, Config}
     catch
         error:badarg -> {error, nil}
     end.
 
-%% Set the global configuration.
+%% Set the global configuration (preserves existing logger if set).
 set_global_config(Config) ->
-    persistent_term:put(?GLOBAL_CONFIG_KEY, Config),
+    %% Get existing logger or use default
+    Logger = case get_cached_default_logger() of
+        {ok, L} -> L;
+        {error, nil} -> nil
+    end,
+    persistent_term:put(?STATE_KEY, {Config, Logger}),
     nil.
 
-%% Clear the global configuration (reset to unset state).
+%% Clear the global state (config + logger).
 clear_global_config() ->
-    try persistent_term:erase(?GLOBAL_CONFIG_KEY) of
+    try persistent_term:erase(?STATE_KEY) of
         _ -> nil
     catch
         error:badarg -> nil
     end.
 
 %% ============================================================================
-%% Cached Default Logger
+%% Cached Default Logger (part of unified state)
 %% ============================================================================
-
--define(CACHED_LOGGER_KEY, birch_cached_default_logger).
 
 %% Get the cached default logger. Returns {ok, Logger} or {error, nil}.
 get_cached_default_logger() ->
-    try persistent_term:get(?CACHED_LOGGER_KEY) of
-        Logger -> {ok, Logger}
+    try persistent_term:get(?STATE_KEY) of
+        {_Config, nil} -> {error, nil};
+        {_Config, Logger} -> {ok, Logger}
     catch
         error:badarg -> {error, nil}
     end.
 
-%% Set the cached default logger.
+%% Set the cached default logger (preserves existing config if set).
 set_cached_default_logger(Logger) ->
-    persistent_term:put(?CACHED_LOGGER_KEY, Logger),
+    %% Get existing config or use default
+    Config = case get_global_config() of
+        {ok, C} -> C;
+        {error, nil} -> nil
+    end,
+    persistent_term:put(?STATE_KEY, {Config, Logger}),
     nil.
 
-%% Clear the cached default logger (invalidate on config change).
+%% Clear the cached default logger (reset config only).
 clear_cached_default_logger() ->
-    try persistent_term:erase(?CACHED_LOGGER_KEY) of
-        _ -> nil
-    catch
-        error:badarg -> nil
-    end.
+    %% Get existing config, clear logger
+    Config = case get_global_config() of
+        {ok, C} -> C;
+        {error, nil} -> nil
+    end,
+    persistent_term:put(?STATE_KEY, {Config, nil}),
+    nil.
 
 %% ============================================================================
 %% Async Writer Implementation
 %% ============================================================================
 
-%% Registry for async writers (uses persistent_term for fast reads)
+%% Registry for async writers (uses ETS table for lock-free updates)
 -define(ASYNC_REGISTRY_KEY, birch_async_registry).
+
+%% Ensure the async registry ETS table exists
+ensure_async_registry() ->
+    case ets:info(?ASYNC_REGISTRY_KEY, name) of
+        undefined ->
+            %% Create the table on first use (lazy initialization)
+            %% set: key-value pairs, named_table: accessible by name, public: accessible by any process
+            ets:new(?ASYNC_REGISTRY_KEY, [set, named_table, public]);
+        _ ->
+            ok
+    end.
 
 %% Start an async writer process
 %% Overflow: 0=DropOldest, 1=DropNewest, 2=Block
@@ -227,30 +252,26 @@ flush_writer(Pid) ->
         ok %% Timeout, don't block forever
     end.
 
-%% Registry functions
+%% Registry functions (using ETS table)
 register_writer(Name, Pid) ->
-    Writers = get_all_writers(),
-    NewWriters = lists:keystore(Name, 1, Writers, {Name, Pid}),
-    persistent_term:put(?ASYNC_REGISTRY_KEY, NewWriters).
+    ensure_async_registry(),
+    ets:insert(?ASYNC_REGISTRY_KEY, {Name, Pid}),
+    ok.
 
 unregister_writer() ->
-    Writers = get_all_writers(),
-    Self = self(),
-    NewWriters = lists:filter(fun({_, Pid}) -> Pid =/= Self end, Writers),
-    persistent_term:put(?ASYNC_REGISTRY_KEY, NewWriters).
+    ensure_async_registry(),
+    ets:delete(?ASYNC_REGISTRY_KEY, self()),
+    ok.
 
 get_all_writers() ->
-    try
-        persistent_term:get(?ASYNC_REGISTRY_KEY)
-    catch
-        error:badarg -> []
-    end.
+    ensure_async_registry(),
+    ets:tab2list(?ASYNC_REGISTRY_KEY).
 
 get_writer(Name) ->
-    Writers = get_all_writers(),
-    case lists:keyfind(Name, 1, Writers) of
-        {Name, Pid} -> {ok, Pid};
-        false -> error
+    ensure_async_registry(),
+    case ets:lookup(?ASYNC_REGISTRY_KEY, Name) of
+        [{Name, Pid}] -> {ok, Pid};
+        [] -> error
     end.
 
 %% ============================================================================
@@ -426,3 +447,45 @@ set_actor_registry(Registry) ->
 %% Returns the string representation of self() PID (e.g., "<0.123.0>").
 get_caller_id() ->
     list_to_binary(pid_to_list(self())).
+
+%% ============================================================================
+%% File Size Cache (per-process, using process dictionary)
+%% ============================================================================
+
+%% Key for file size cache in process dictionary
+-define(FILE_SIZE_CACHE_KEY, birch_file_size_cache).
+
+%% Get the cached file size for a path.
+%% Returns {ok, Size} if cached, {error, nil} if not cached.
+get_file_size_cache(Path) ->
+    case erlang:get(?FILE_SIZE_CACHE_KEY) of
+        undefined ->
+            {error, nil};
+        Cache ->
+            case dict:find(Path, Cache) of
+                {ok, Size} -> {ok, Size};
+                error -> {error, nil}
+            end
+    end.
+
+%% Set the cached file size for a path.
+set_file_size_cache(Path, Size) ->
+    Cache = case erlang:get(?FILE_SIZE_CACHE_KEY) of
+        undefined -> dict:new();
+        C -> C
+    end,
+    NewCache = dict:store(Path, Size, Cache),
+    erlang:put(?FILE_SIZE_CACHE_KEY, NewCache),
+    nil.
+
+%% Reset (delete) the cached file size for a path.
+%% Called after file rotation to start fresh.
+reset_file_size_cache(Path) ->
+    case erlang:get(?FILE_SIZE_CACHE_KEY) of
+        undefined ->
+            nil;
+        Cache ->
+            NewCache = dict:erase(Path, Cache),
+            erlang:put(?FILE_SIZE_CACHE_KEY, NewCache),
+            nil
+    end.

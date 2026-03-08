@@ -140,3 +140,30 @@ pub fn is_scope_context_available() -> Bool
 @external(erlang, "birch_ffi", "get_caller_id")
 @external(javascript, "../../birch_ffi.mjs", "get_caller_id")
 pub fn get_caller_id() -> String
+
+// ============================================================================
+// File Size Cache FFI
+// ============================================================================
+
+/// Get the cached file size for a path.
+/// Returns Ok(size) if cached, Error(Nil) if not cached.
+/// On Erlang: Uses process dictionary
+/// On JavaScript: Uses module-level Map
+@external(erlang, "birch_ffi", "get_file_size_cache")
+@external(javascript, "../../birch_ffi.mjs", "get_file_size_cache")
+pub fn get_file_size_cache(path: String) -> Result(Int, Nil)
+
+/// Set the cached file size for a path.
+/// On Erlang: Uses process dictionary
+/// On JavaScript: Uses module-level Map
+@external(erlang, "birch_ffi", "set_file_size_cache")
+@external(javascript, "../../birch_ffi.mjs", "set_file_size_cache")
+pub fn set_file_size_cache(path: String, size: Int) -> Nil
+
+/// Reset (delete) the cached file size for a path.
+/// Called after file rotation to start fresh.
+/// On Erlang: Uses process dictionary
+/// On JavaScript: Uses module-level Map
+@external(erlang, "birch_ffi", "reset_file_size_cache")
+@external(javascript, "../../birch_ffi.mjs", "reset_file_size_cache")
+pub fn reset_file_size_cache(path: String) -> Nil

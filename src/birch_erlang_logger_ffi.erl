@@ -20,11 +20,15 @@
 
 -module(birch_erlang_logger_ffi).
 
+-include_lib("birch/include/birch@record_LogRecord.hrl").
+
 %% API exports
 -export([emit_to_logger/2,
          logger_log/2, logger_log_structured/5,
          install_formatter/2, remove_formatter/1,
-         is_formatter_configured/0, ensure_initialized/0]).
+         is_formatter_configured/0, ensure_initialized/0,
+         is_healthy/0,
+         set_handler_level_all/0]).
 
 %% :logger formatter callback
 -export([format/2]).
@@ -71,7 +75,7 @@ erlang_level_to_gleam(_) -> info.
 -spec emit_to_logger(tuple(), tuple()) -> nil.
 emit_to_logger(GleamLevel, LogRecord) ->
     Level = gleam_level_to_atom(GleamLevel),
-    Message = erlang:element(5, LogRecord),
+    Message = LogRecord#log_record.message,
     logger:log(Level, "~ts", [Message], #{
         birch_log_record => LogRecord
     }),
@@ -131,7 +135,12 @@ install_formatter(HandlerId, FormatFn) ->
     Result = update_handler_formatter(HandlerId, {?MODULE, #{format_fn => FormatFn}}),
     case Result of
         {ok, nil} ->
-            persistent_term:put(birch_logger_initialized, true);
+            persistent_term:put(birch_logger_initialized, true),
+            %% Set handler-level filter to 'all' so birch controls filtering.
+            %% Without this, OTP's default handler level (notice) silently
+            %% drops debug/info messages before birch's formatter sees them.
+            Id = binary_to_atom(HandlerId, utf8),
+            logger:set_handler_config(Id, level, all);
         _ -> ok
     end,
     Result.
@@ -162,6 +171,27 @@ is_formatter_configured() ->
         _ -> false
     end.
 
+%% Check if birch's :logger integration is healthy.
+%% Unlike ensure_initialized/0 (which checks persistent_term cache),
+%% this queries the actual :logger handler state.
+%% Use for health checks and monitoring, not in hot paths.
+-spec is_healthy() -> boolean().
+is_healthy() ->
+    case logger:get_handler_config(default) of
+        {ok, #{formatter := {birch_erlang_logger_ffi, #{format_fn := _}}}} ->
+            true;
+        _ ->
+            false
+    end.
+
+%% Set the default handler's level filter to 'all'.
+%% Called automatically by install_formatter/2. Exposed for cases where
+%% the user wants to reset the handler level after external modification.
+-spec set_handler_level_all() -> nil.
+set_handler_level_all() ->
+    logger:set_handler_config(default, level, all),
+    nil.
+
 %% ============================================================================
 %% :logger Formatter Callback
 %% ============================================================================
@@ -172,17 +202,32 @@ is_formatter_configured() ->
 %% 1. Birch-originated: `birch_log_record` in metadata → use it directly
 %% 2. OTP/library: Build a LogRecord from :logger event fields
 -spec format(logger:log_event(), #{format_fn => function()}) -> unicode:chardata().
-format(#{level := Level, msg := Msg, meta := Meta}, #{format_fn := FormatFn}) ->
-    LogRecord = case maps:get(birch_log_record, Meta, undefined) of
-        undefined ->
-            %% OTP/library log — build LogRecord from :logger event
-            build_log_record_from_otp(Level, Msg, Meta);
-        Record ->
-            %% Birch-originated — use the LogRecord directly
-            Record
-    end,
-    Formatted = FormatFn(LogRecord),
-    [Formatted, $\n];
+format(#{level := Level, msg := Msg, meta := Meta} = _Event, #{format_fn := FormatFn} = _Config) ->
+    try
+        LogRecord = case maps:get(birch_log_record, Meta, undefined) of
+            undefined ->
+                %% OTP/library log — build LogRecord from :logger event
+                build_log_record_from_otp(Level, Msg, Meta);
+            Record ->
+                %% Birch-originated — use the LogRecord directly
+                Record
+        end,
+        Formatted = FormatFn(LogRecord),
+        [Formatted, $\n]
+    catch
+        Class:Reason:_Stacktrace ->
+            %% Formatter crashed — emit a fallback that preserves visibility.
+            %% Includes FORMATTER_ERROR marker so the crash is obvious in logs.
+            Timestamp = format_timestamp(maps:get(time, Meta, undefined)),
+            FallbackMsg = try format_msg(Msg, Meta)
+                          catch _:_ -> iolist_to_binary(io_lib:format("~p", [Msg]))
+                          end,
+            [Timestamp, <<" | ">>,
+             level_to_string(Level), <<" | FORMATTER_ERROR | ">>,
+             FallbackMsg, <<" | crash: ">>,
+             iolist_to_binary(io_lib:format("~p:~p", [Class, Reason])),
+             $\n]
+    end;
 
 %% Fallback: no format_fn in config, use a basic format
 format(#{level := Level, msg := Msg, meta := Meta}, _Config) ->
@@ -199,7 +244,14 @@ build_log_record_from_otp(Level, Msg, Meta) ->
     LoggerName = format_logger_name(Meta),
     Message = format_msg(Msg, Meta),
     Metadata = format_metadata(Meta),
-    {log_record, Timestamp, GleamLevel, LoggerName, Message, Metadata, none}.
+    #log_record{
+        timestamp = Timestamp,
+        level = GleamLevel,
+        logger_name = LoggerName,
+        message = Message,
+        metadata = Metadata,
+        caller_id = none
+    }.
 
 %% ============================================================================
 %% Helper functions
@@ -212,18 +264,19 @@ format_msg({report, Report}, Meta) ->
     %% Check for report_cb callback in metadata (OTP structured reports)
     case maps:get(report_cb, Meta, undefined) of
         Fun when is_function(Fun, 1) ->
-            %% Single-arg callback: returns chardata directly
+            %% 1-arg form: returns {io:format(), [term()]} per OTP spec
             try
-                unicode:characters_to_binary(Fun(Report))
+                {Format, Args} = Fun(Report),
+                unicode:characters_to_binary(io_lib:format(Format, Args))
             catch
                 _:_ ->
                     unicode:characters_to_binary(io_lib:format("~p", [Report]))
             end;
         Fun when is_function(Fun, 2) ->
-            %% Two-arg callback: returns {Format, Args}
+            %% 2-arg form: returns unicode:chardata() per OTP spec
             try
-                {Format, Args} = Fun(Report, #{single_line => true, depth => 30}),
-                unicode:characters_to_binary(io_lib:format(Format, Args))
+                unicode:characters_to_binary(
+                    Fun(Report, #{single_line => true, depth => 30, chars_limit => unlimited}))
             catch
                 _:_ ->
                     unicode:characters_to_binary(io_lib:format("~p", [Report]))

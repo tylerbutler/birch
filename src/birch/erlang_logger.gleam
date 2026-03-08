@@ -24,6 +24,42 @@
 //// formatter builds a LogRecord from `:logger` event fields and formats
 //// structured reports using their `report_cb` callbacks when available.
 ////
+//// ## Level Mapping
+////
+//// Birch has 9 log levels; OTP's `:logger` has 8. The mapping is 1:1 for all
+//// levels except Trace, which shares `debug` with Debug:
+////
+//// | Birch Level | OTP Level   | Round-Trip Result | Lossy? |
+//// |-------------|-------------|-------------------|--------|
+//// | Trace       | debug       | Debug             | Yes    |
+//// | Debug       | debug       | Debug             | No     |
+//// | Info        | info        | Info              | No     |
+//// | Notice      | notice      | Notice            | No     |
+//// | Warn        | warning     | Warn              | No     |
+//// | Err         | error       | Err               | No     |
+//// | Critical    | critical    | Critical          | No     |
+//// | Alert       | alert       | Alert             | No     |
+//// | Fatal       | emergency   | Fatal             | No     |
+////
+//// **Trace is lossy**: `Trace -> debug -> Debug`. Since OTP has no `trace`
+//// level, both Trace and Debug map to `debug`. On the return trip, `debug`
+//// always maps to Debug. Level ordering is preserved for all other levels.
+////
+//// ## Level Filtering
+////
+//// OTP's `:logger` has its own level filtering that runs before birch's
+//// formatter sees the message. By default, the handler level is `notice`,
+//// which silently drops `debug` and `info` messages.
+////
+//// When birch installs its formatter (via `setup()`, `install_formatter()`,
+//// or `ensure_formatter_configured()`), it automatically sets the handler
+//// level to `all` so birch controls all level filtering. This only affects
+//// the handler birch is installed on (default by default); other `:logger`
+//// handlers keep their own level settings.
+////
+//// If you need to reset this after external modification, call
+//// `allow_all_levels()`.
+////
 //// ## Automatic Setup
 ////
 //// When birch's default configuration is used (i.e., no explicit `config_handlers`
@@ -129,7 +165,8 @@ pub type ErlangLevel {
 ///
 /// The mapping follows RFC 5424 semantics with a 1:1 correspondence
 /// for all levels except Trace (which has no RFC 5424 equivalent and
-/// maps to debug):
+/// maps to debug). The Trace->debug lossy mapping is verified by
+/// property tests in `property_test.gleam`.
 ///
 /// | Gleam Level | Erlang Level |
 /// |-------------|--------------|
@@ -186,15 +223,29 @@ pub fn erlang_level_to_gleam(erlang_level: ErlangLevel) -> Level {
 ///
 /// Called automatically by `logger.emit_record()` on the Erlang target.
 /// On JavaScript, this is a no-op (birch handlers handle output directly).
-pub fn emit(record: record.LogRecord) -> Nil {
-  let erlang_level = gleam_level_to_erlang(record.level)
-  do_emit_to_logger(erlang_level, record)
+pub fn emit(rec: record.LogRecord) -> Nil {
+  let erlang_level = gleam_level_to_erlang(record.level(rec))
+  do_emit_to_logger(erlang_level, rec)
 }
 
 /// Check if the birch formatter is initialized on the default :logger handler.
 /// Uses a persistent_term cache for fast repeated checks.
 pub fn is_initialized() -> Bool {
   do_ensure_initialized()
+}
+
+/// Check if birch's :logger integration is healthy.
+///
+/// Unlike `is_initialized()` which checks a fast persistent_term cache,
+/// this function verifies the actual :logger handler state by querying
+/// the handler configuration directly. Use for health checks and
+/// monitoring, not in hot paths (involves a gen_server call).
+///
+/// Returns `True` only if:
+/// 1. The default :logger handler exists
+/// 2. The birch formatter is installed on it with a valid format function
+pub fn is_healthy() -> Bool {
+  do_is_healthy()
 }
 
 // ============================================================================
@@ -256,6 +307,22 @@ pub fn ensure_formatter_configured() -> Nil {
       Nil
     }
   }
+}
+
+/// Configure the OTP `:logger` default handler to allow all log levels through.
+///
+/// By default, OTP's `:logger` handler-level filter is `notice`, which silently
+/// drops `debug` and `info` messages before they reach the formatter. This
+/// function sets the handler level to `all`, letting birch control all level
+/// filtering.
+///
+/// **Note:** This is called automatically when `setup()` or
+/// `install_formatter()` succeeds. You only need to call this directly if
+/// something has reset the handler level after birch's initial setup.
+///
+/// On JavaScript, this is a no-op since `:logger` is not available.
+pub fn allow_all_levels() -> Nil {
+  do_set_handler_level_all()
 }
 
 // ============================================================================
@@ -350,13 +417,13 @@ pub fn remove_formatter_from(handler_id: String) -> Result(Nil, String) {
 @deprecated("No longer needed — birch sends to :logger directly on BEAM. Remove this handler.")
 pub fn forward_to_beam() -> Handler {
   handler.new_with_record_write(name: "erlang:logger", write: fn(r) {
-    let erlang_level = gleam_level_to_erlang(r.level)
+    let erlang_level = gleam_level_to_erlang(record.level(r))
     do_logger_log_structured(
       erlang_level,
-      r.message,
-      r.logger_name,
-      r.metadata,
-      r.caller_id,
+      record.message(r),
+      record.logger_name(r),
+      record.all_metadata(r),
+      record.caller_id(r),
     )
   })
 }
@@ -385,13 +452,13 @@ fn forward_write(message: String) -> Nil {
 @deprecated("No longer needed — birch sends to :logger directly on BEAM")
 pub fn forward_to_logger_raw() -> Handler {
   handler.new_with_record_write(name: "erlang:logger", write: fn(r) {
-    let erlang_level = gleam_level_to_erlang(r.level)
+    let erlang_level = gleam_level_to_erlang(record.level(r))
     do_logger_log_structured(
       erlang_level,
-      r.message,
-      r.logger_name,
-      r.metadata,
-      r.caller_id,
+      record.message(r),
+      record.logger_name(r),
+      record.all_metadata(r),
+      record.caller_id(r),
     )
   })
 }
@@ -457,6 +524,11 @@ fn do_emit_to_logger(level: ErlangLevel, record: record.LogRecord) -> Nil
 @external(javascript, "../birch_erlang_logger_ffi.mjs", "ensure_initialized")
 fn do_ensure_initialized() -> Bool
 
+/// Check if birch's :logger integration is healthy (real :logger state check).
+@external(erlang, "birch_erlang_logger_ffi", "is_healthy")
+@external(javascript, "../birch_erlang_logger_ffi.mjs", "is_healthy")
+fn do_is_healthy() -> Bool
+
 /// Log a pre-formatted message to Erlang's :logger (legacy).
 @external(erlang, "birch_erlang_logger_ffi", "logger_log")
 @external(javascript, "../birch_erlang_logger_ffi.mjs", "logger_log")
@@ -485,3 +557,8 @@ fn do_install_formatter(
 @external(erlang, "birch_erlang_logger_ffi", "remove_formatter")
 @external(javascript, "../birch_erlang_logger_ffi.mjs", "remove_formatter")
 fn do_remove_formatter(handler_id: String) -> Result(Nil, String)
+
+/// Set the default handler's level filter to 'all'.
+@external(erlang, "birch_erlang_logger_ffi", "set_handler_level_all")
+@external(javascript, "../birch_erlang_logger_ffi.mjs", "set_handler_level_all")
+fn do_set_handler_level_all() -> Nil

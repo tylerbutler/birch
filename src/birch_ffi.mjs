@@ -866,3 +866,43 @@ export function get_caller_id() {
   // Browser main thread or fallback
   return "main";
 }
+
+// ============================================================================
+// File Size Cache (module-level Map)
+// ============================================================================
+
+// Module-level Map to store file sizes per path
+const fileSizeCache = new Map();
+
+/**
+ * Get the cached file size for a path.
+ * Returns Ok(size) if cached, Error(undefined) if not cached.
+ * @param {string} path - The file path
+ * @returns {Ok | Error} Gleam Result type
+ */
+export function get_file_size_cache(path) {
+  if (fileSizeCache.has(path)) {
+    return new Ok(fileSizeCache.get(path));
+  }
+  return new Error(undefined);
+}
+
+/**
+ * Set the cached file size for a path.
+ * @param {string} path - The file path
+ * @param {number} size - The file size in bytes
+ */
+export function set_file_size_cache(path, size) {
+  fileSizeCache.set(path, size);
+  return undefined;
+}
+
+/**
+ * Reset (delete) the cached file size for a path.
+ * Called after file rotation to start fresh.
+ * @param {string} path - The file path
+ */
+export function reset_file_size_cache(path) {
+  fileSizeCache.delete(path);
+  return undefined;
+}

@@ -17,7 +17,7 @@ import gleam/option.{type Option, None, Some}
 ///
 /// Logs at or below the configured level will be sampled at the specified rate.
 /// Logs above the configured level are always logged (no sampling applied).
-pub type SampleConfig {
+pub opaque type SampleConfig {
   SampleConfig(
     /// Apply sampling to this level and below
     level: Level,
@@ -26,13 +26,28 @@ pub type SampleConfig {
   )
 }
 
+/// Create a new SampleConfig.
+pub fn new_sample_config(level lvl: Level, rate r: Float) -> SampleConfig {
+  SampleConfig(level: lvl, rate: r)
+}
+
+/// Get the level threshold from a SampleConfig.
+pub fn sample_config_level(sample_config: SampleConfig) -> Level {
+  sample_config.level
+}
+
+/// Get the sampling rate from a SampleConfig.
+pub fn sample_config_rate(sample_config: SampleConfig) -> Float {
+  sample_config.rate
+}
+
 // ============================================================================
 // Global Configuration
 // ============================================================================
 
 /// Global configuration that affects the default logger and
 /// application-wide settings.
-pub type GlobalConfig {
+pub opaque type GlobalConfig {
   GlobalConfig(
     /// Minimum log level for the default logger
     level: Level,
@@ -130,10 +145,41 @@ pub fn get_level(config: GlobalConfig) -> Level {
   config.level
 }
 
+/// Get the handlers from a GlobalConfig.
+pub fn get_handlers(config: GlobalConfig) -> List(Handler) {
+  config.handlers
+}
+
+/// Get the context metadata from a GlobalConfig.
+pub fn get_context(config: GlobalConfig) -> Metadata {
+  config.context
+}
+
+/// Get the sampling configuration from a GlobalConfig.
+pub fn get_sampling(config: GlobalConfig) -> Option(SampleConfig) {
+  config.sampling
+}
+
 /// Get the error callback from a GlobalConfig, if set.
-@deprecated("Access config.on_error directly instead")
 pub fn get_on_error(config: GlobalConfig) -> Option(ErrorCallback) {
   config.on_error
+}
+
+/// Create a new GlobalConfig with the given parameters.
+pub fn new_config(
+  level level: Level,
+  handlers handlers: List(Handler),
+  context context: Metadata,
+  on_error on_error: Option(ErrorCallback),
+  sampling sampling: Option(SampleConfig),
+) -> GlobalConfig {
+  GlobalConfig(
+    level: level,
+    handlers: handlers,
+    context: context,
+    on_error: on_error,
+    sampling: sampling,
+  )
 }
 
 // ============================================================================

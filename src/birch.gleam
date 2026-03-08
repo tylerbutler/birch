@@ -222,7 +222,7 @@ pub fn config_sampling(sample_config: SampleConfig) -> ConfigOption {
 /// integrating with the standard OTP logging ecosystem.
 /// On JavaScript, the default handler writes to the console with colors.
 pub fn default_config() -> GlobalConfig {
-  config.GlobalConfig(
+  config.new_config(
     level: level.Info,
     handlers: default_handlers(),
     context: [],
@@ -265,9 +265,9 @@ fn clear_cached_default_logger() -> Nil
 /// Build a Logger from a GlobalConfig.
 fn build_default_logger(cfg: GlobalConfig) -> Logger {
   logger.new("app")
-  |> logger.with_level(cfg.level)
-  |> logger.with_handlers(cfg.handlers)
-  |> logger.with_context(cfg.context)
+  |> logger.with_level(config.get_level(cfg))
+  |> logger.with_handlers(config.get_handlers(cfg))
+  |> logger.with_context(config.get_context(cfg))
 }
 
 /// The default logger used by module-level logging functions.
@@ -299,9 +299,9 @@ fn default_logger() -> Logger {
 pub fn new(name: String) -> Logger {
   let cfg = get_config()
   logger.new(name)
-  |> logger.with_level(cfg.level)
-  |> logger.with_handlers(cfg.handlers)
-  |> logger.with_context(cfg.context)
+  |> logger.with_level(config.get_level(cfg))
+  |> logger.with_handlers(config.get_handlers(cfg))
+  |> logger.with_context(config.get_context(cfg))
 }
 
 /// Create a silent logger (no handlers).
@@ -439,7 +439,7 @@ pub fn logger_fatal(lgr: Logger, message: String, metadata: Metadata) -> Nil {
 /// Check if a log should be sampled based on global config.
 fn should_sample(log_level: Level) -> Bool {
   let cfg = get_config()
-  sampling.should_sample_with_config(cfg.sampling, log_level)
+  sampling.should_sample_with_config(config.get_sampling(cfg), log_level)
 }
 
 /// Log a trace message using the default logger.

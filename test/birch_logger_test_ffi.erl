@@ -5,7 +5,9 @@
 
 -module(birch_logger_test_ffi).
 -export([new_capture_buffer/0, append_to_buffer/2, get_buffer_contents/1,
-         sleep/1, otp_logger_warning/1, otp_logger_report_with_cb/0]).
+         sleep/1, otp_logger_warning/1, otp_logger_report_with_cb/0,
+         otp_logger_report_with_cb_2arg/0, install_crashing_formatter/0,
+         get_handler_level/0]).
 
 %% Create a new ETS-based capture buffer.
 %% Returns an ETS table reference (unnamed, public for cross-process access).
@@ -35,14 +37,43 @@ otp_logger_warning(Message) ->
     logger:warning("~ts", [Message]),
     nil.
 
-%% Send a structured OTP report with a report_cb callback.
-%% This simulates OTP-style structured reports (e.g., gen_server crashes).
+%% Install a formatter that deliberately crashes on every call.
+%% Used to test format/2 try/catch recovery.
+install_crashing_formatter() ->
+    CrashingFn = fun(_LogRecord) -> error(deliberate_formatter_crash) end,
+    logger:update_handler_config(default, formatter,
+        {birch_erlang_logger_ffi, #{format_fn => CrashingFn}}),
+    nil.
+
+%% Get the handler level for the default :logger handler.
+%% Returns the level atom (e.g., all, notice, debug) as a binary string.
+get_handler_level() ->
+    case logger:get_handler_config(default) of
+        {ok, #{level := Level}} ->
+            atom_to_binary(Level, utf8);
+        _ ->
+            <<"unknown">>
+    end.
+
+%% Send a structured OTP report with a 1-arg report_cb callback.
+%% Per OTP spec, 1-arg form returns {io:format(), [term()]}.
 %% Uses warning level to be above the default :logger threshold.
 otp_logger_report_with_cb() ->
     Report = #{message => <<"hello">>, type => test},
     ReportCb = fun(R) ->
         Msg = maps:get(message, R, <<"unknown">>),
-        io_lib:format("Test report: ~ts", [Msg])
+        {"Test report: ~ts", [Msg]}
+    end,
+    logger:warning(Report, #{report_cb => ReportCb}),
+    nil.
+
+%% Send a structured OTP report with a 2-arg report_cb callback.
+%% Per OTP spec, 2-arg form returns unicode:chardata().
+otp_logger_report_with_cb_2arg() ->
+    Report = #{message => <<"world">>, type => test},
+    ReportCb = fun(R, _Config) ->
+        Msg = maps:get(message, R, <<"unknown">>),
+        io_lib:format("Two-arg report: ~ts", [Msg])
     end,
     logger:warning(Report, #{report_cb => ReportCb}),
     nil.

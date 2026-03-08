@@ -85,8 +85,8 @@ fn demo_multiple_handlers() {
 }
 
 /// Custom formatter that uses emoji for log levels.
-fn emoji_format(record: LogRecord) -> String {
-  let emoji = case record.level {
+fn emoji_format(rec: LogRecord) -> String {
+  let emoji = case record.level(rec) {
     level.Trace -> "🔍"
     level.Debug -> "🐛"
     level.Info -> "ℹ️"
@@ -98,7 +98,7 @@ fn emoji_format(record: LogRecord) -> String {
     level.Fatal -> "💀"
   }
 
-  emoji <> " " <> record.message
+  emoji <> " " <> record.message(rec)
 }
 
 /// Create a handler with a minimum level filter.
