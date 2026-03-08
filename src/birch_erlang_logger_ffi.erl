@@ -29,7 +29,9 @@
          is_formatter_configured/0, ensure_initialized/0,
          is_healthy/0,
          set_handler_level_all/0,
-         set_primary_level/1]).
+         set_primary_level/1,
+         build_log_record_from_otp/3,
+         install_handler_bridge/1, remove_handler_bridge/0]).
 
 %% :logger formatter callback
 -export([format/2]).
@@ -385,3 +387,19 @@ level_to_string(notice) -> <<"NOTICE  ">>;
 level_to_string(info) -> <<"INFO    ">>;
 level_to_string(debug) -> <<"DEBUG   ">>;
 level_to_string(_) -> <<"INFO    ">>.
+
+%% ============================================================================
+%% Handler Bridge (delegates to birch_handler_bridge module)
+%% ============================================================================
+
+%% Install the handler bridge on OTP :logger.
+%% Gleam FFI entry point for erlang_logger.install_handler_bridge/1.
+-spec install_handler_bridge(list()) -> {ok, nil} | {error, binary()}.
+install_handler_bridge(Handlers) ->
+    birch_handler_bridge:install_bridge(Handlers).
+
+%% Remove the handler bridge from OTP :logger.
+%% Gleam FFI entry point for erlang_logger.remove_handler_bridge/0.
+-spec remove_handler_bridge() -> {ok, nil} | {error, binary()}.
+remove_handler_bridge() ->
+    birch_handler_bridge:remove_bridge().

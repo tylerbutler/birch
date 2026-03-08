@@ -38,6 +38,7 @@
 //// ```
 
 import birch/config.{type ConfigOption, type GlobalConfig, type SampleConfig}
+import birch/formatter.{type Formatter}
 import birch/handler.{type ErrorCallback, type Handler}
 import birch/internal/platform
 import birch/internal/scoped_logger
@@ -47,12 +48,15 @@ import birch/erlang_logger
 
 @target(javascript)
 import birch/handler/console
+
 import birch/level.{type Level}
 import birch/logger.{type Logger}
 import birch/record.{type Metadata}
 import birch/sampling
 import birch/scope
-import gleam/option.{None}
+@target(javascript)
+import gleam/io
+import gleam/option.{None, Some}
 
 // Re-export types for convenience
 @deprecated("Use birch/level.Level directly instead")
@@ -221,6 +225,40 @@ pub fn config_sampling(sample_config: SampleConfig) -> ConfigOption {
   config.sampling(sample_config)
 }
 
+/// Create a configuration option to set the formatter.
+///
+/// This is the recommended way to configure output formatting on BEAM.
+/// The formatter is installed directly on OTP `:logger`'s default handler,
+/// giving you OTP-native logging with birch formatting — including support
+/// for OTP's overload protection, burst limiting, and observability tools.
+///
+/// On JavaScript, this creates a console handler with the given formatter
+/// (since OTP `:logger` is not available).
+///
+/// If both a formatter and handlers are configured, handlers take precedence
+/// and the formatter is ignored.
+///
+/// ## Example
+///
+/// ```gleam
+/// import birch as log
+/// import birch/handler/console
+/// import birch/handler/json
+///
+/// // Use fancy console formatting through OTP :logger
+/// log.configure([
+///   log.config_formatter(console.fancy_formatter()),
+/// ])
+///
+/// // Or JSON formatting through OTP :logger
+/// log.configure([
+///   log.config_formatter(json.formatter()),
+/// ])
+/// ```
+pub fn config_formatter(f: Formatter) -> ConfigOption {
+  config.formatter(f)
+}
+
 /// Default configuration: Info level, platform-appropriate handler, no context,
 /// no error callback, no sampling.
 ///
@@ -273,19 +311,35 @@ fn sync_otp_config(_cfg: GlobalConfig) -> Nil {
 @target(erlang)
 /// Synchronize the OTP :logger formatter with birch's config.
 ///
-/// - No handlers: install birch formatter on OTP's default handler (OTP-native path)
-/// - With handlers: remove birch formatter so OTP's default handler doesn't
-///   produce duplicate output (birch handlers own the output path)
+/// Priority (highest to lowest):
+/// 1. Handlers configured → install bridge handler, remove default formatter
+/// 2. Formatter configured → install formatter on OTP default handler
+/// 3. Neither → install default birch formatter on OTP default handler
 fn sync_otp_formatter(cfg: GlobalConfig) -> Nil {
   case config.get_handlers(cfg) {
-    [] -> {
-      // No explicit handlers — use default birch formatter on :logger
-      erlang_logger.ensure_formatter_configured()
-    }
-    _ -> {
-      // Explicit handlers configured — they own the output path.
-      // Remove birch formatter from OTP's default handler to prevent duplicates.
+    [] ->
+      case config.get_formatter(cfg) {
+        Some(fmt) -> {
+          // Formatter-first path: install on OTP's default handler
+          let _ = erlang_logger.install_formatter_with(fmt)
+          erlang_logger.allow_all_levels()
+          // Remove bridge handler if previously installed
+          let _ = erlang_logger.remove_handler_bridge()
+          Nil
+        }
+        None -> {
+          // No explicit handlers or formatter — use default birch formatter
+          erlang_logger.ensure_formatter_configured()
+          // Remove bridge handler if previously installed
+          let _ = erlang_logger.remove_handler_bridge()
+          Nil
+        }
+      }
+    handlers -> {
+      // Handlers configured — install bridge handler for OTP-native dispatch.
+      // Remove birch formatter from default handler to prevent double output.
       let _ = erlang_logger.remove_formatter()
+      let _ = erlang_logger.install_handler_bridge(handlers)
       Nil
     }
   }
@@ -326,8 +380,34 @@ fn clear_cached_default_logger() -> Nil
 fn build_default_logger(cfg: GlobalConfig) -> Logger {
   logger.new("app")
   |> logger.with_level(config.get_level(cfg))
-  |> logger.with_handlers(config.get_handlers(cfg))
+  |> logger.with_handlers(resolve_handlers(cfg))
   |> logger.with_context(config.get_context(cfg))
+}
+
+@target(erlang)
+/// Resolve the effective handler list from config.
+///
+/// On BEAM: always empty — dispatch goes through OTP :logger.
+/// On JS: uses configured handlers, or creates a console handler
+///        from the configured formatter if no handlers are set.
+fn resolve_handlers(_cfg: GlobalConfig) -> List(Handler) {
+  // On BEAM, handlers are not needed — all dispatch goes through OTP :logger.
+  // The bridge handler or formatter is configured on :logger by sync_otp_config.
+  []
+}
+
+@target(javascript)
+fn resolve_handlers(cfg: GlobalConfig) -> List(Handler) {
+  case config.get_handlers(cfg) {
+    [] ->
+      case config.get_formatter(cfg) {
+        Some(fmt) -> [
+          handler.new(name: "console", write: io.println, format: fmt),
+        ]
+        None -> [console.handler()]
+      }
+    handlers -> handlers
+  }
 }
 
 /// The default logger used by module-level logging functions.
@@ -363,7 +443,7 @@ pub fn new(name: String) -> Logger {
   let cfg = get_config()
   logger.new(name)
   |> logger.with_level(config.get_level(cfg))
-  |> logger.with_handlers(config.get_handlers(cfg))
+  |> logger.with_handlers(resolve_handlers(cfg))
   |> logger.with_context(config.get_context(cfg))
 }
 

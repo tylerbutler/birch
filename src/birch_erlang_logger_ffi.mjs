@@ -153,3 +153,19 @@ export function install_formatter(_handlerId, _formatFn) {
 export function remove_formatter(_handlerId) {
   return UNAVAILABLE_ERROR;
 }
+
+/**
+ * Install the handler bridge on OTP :logger.
+ * Not available on JavaScript - always returns an error.
+ */
+export function install_handler_bridge(_handlers) {
+  return UNAVAILABLE_ERROR;
+}
+
+/**
+ * Remove the handler bridge from OTP :logger.
+ * Not available on JavaScript - returns Ok since there's nothing to remove.
+ */
+export function remove_handler_bridge() {
+  return new Ok(undefined);
+}

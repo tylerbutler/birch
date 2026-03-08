@@ -11,6 +11,7 @@ internal_modules = [
   "birch/internal/*",
   "birch/sampling",
   "birch/handler/async",
+  "birch/handler/file",
 ]
 
 [dependencies]
