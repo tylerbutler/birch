@@ -282,8 +282,7 @@ fn merge_metadata(logger: Logger, call_metadata: Metadata) -> Metadata {
 /// Create a log record and dispatch it.
 ///
 /// On BEAM: sends the LogRecord directly to `:logger`, where the birch
-/// formatter handles output. Also dispatches to any birch handlers
-/// (for users who want additional output beyond `:logger`).
+/// formatter handles output. OTP `:logger` is the sole output path.
 ///
 /// On JavaScript: dispatches to birch handlers only.
 fn emit_record(
@@ -306,21 +305,32 @@ fn emit_record(
     None -> base_record
   }
 
-  // On BEAM, send directly to :logger
-  let _ = emit_to_beam(final_record)
-
-  // Dispatch to any birch handlers (additional output beyond :logger)
-  handler.handle_all(logger.handlers, final_record)
+  // Platform-specific dispatch
+  dispatch_record(logger.handlers, final_record)
 }
 
 @target(erlang)
-fn emit_to_beam(record: record.LogRecord) -> Nil {
-  erlang_logger.emit(record)
+/// On BEAM, dispatch via OTP :logger when no explicit handlers are configured
+/// (the default), or via birch handlers when they are. This ensures:
+/// - Default: OTP :logger handles output with birch formatter (OTP-native)
+/// - With handlers: birch handlers handle output (supports file, custom I/O)
+fn dispatch_record(
+  handlers: List(handler.Handler),
+  record: record.LogRecord,
+) -> Nil {
+  case handlers {
+    [] -> erlang_logger.emit(record)
+    _ -> handler.handle_all(handlers, record)
+  }
 }
 
 @target(javascript)
-fn emit_to_beam(_record: record.LogRecord) -> Nil {
-  Nil
+/// On JavaScript, dispatch to birch handlers directly.
+fn dispatch_record(
+  handlers: List(handler.Handler),
+  record: record.LogRecord,
+) -> Nil {
+  handler.handle_all(handlers, record)
 }
 
 /// Log a message at the specified level.

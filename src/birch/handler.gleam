@@ -43,6 +43,9 @@ pub opaque type Handler {
     min_level: Option(Level),
     /// The function that writes log records
     write: fn(LogRecord) -> Nil,
+    /// The format function, stored separately for OTP :logger integration.
+    /// On BEAM, this is extracted and installed as a :logger formatter.
+    format_fn: Option(formatter.Formatter),
     /// Optional callback invoked when the handler encounters an error
     error_callback: Option(ErrorCallback),
   )
@@ -58,6 +61,7 @@ pub fn new(
     name: name,
     min_level: None,
     write: fn(record) { write(format(record)) },
+    format_fn: Some(format),
     error_callback: None,
   )
 }
@@ -124,6 +128,7 @@ pub fn null() -> Handler {
     name: "null",
     min_level: None,
     write: fn(_) { Nil },
+    format_fn: None,
     error_callback: None,
   )
 }
@@ -134,7 +139,23 @@ pub fn new_with_record_write(
   name name: String,
   write write: fn(LogRecord) -> Nil,
 ) -> Handler {
-  Handler(name: name, min_level: None, write: write, error_callback: None)
+  Handler(
+    name: name,
+    min_level: None,
+    write: write,
+    format_fn: None,
+    error_callback: None,
+  )
+}
+
+/// Get the format function from a handler, if available.
+///
+/// On BEAM, this is used to extract the formatter for installation on
+/// OTP's :logger. Returns `None` for handlers that don't have a separable
+/// format function (e.g., async handlers, handlers created with
+/// `new_with_record_write`).
+pub fn get_format_fn(handler: Handler) -> Option(formatter.Formatter) {
+  handler.format_fn
 }
 
 /// Attach an error callback to a handler.
