@@ -67,6 +67,47 @@ internal_modules = ["birch/internal", "birch/internal/*"]
 
 This project uses [just](https://just.systems/) as a task runner. Run `just` to see all available commands.
 
+### Changelog
+
+This project uses [changie](https://changie.dev/) for changelog management. **Do not edit `CHANGELOG.md` directly** — it is generated from fragment files.
+
+#### Creating Changelog Entries
+
+Create YAML fragment files in `.changes/unreleased/` for each user-facing change:
+
+```bash
+# Interactive (prompts for kind and body):
+changie new
+
+# Or create fragment files directly in .changes/unreleased/
+```
+
+#### Fragment Format
+
+Fragment files are named `{Kind}-{YYYYMMDD}-{HHMMSS}.yaml`:
+
+```yaml
+kind: Added
+body: |-
+    Short title for the change
+    Optional longer description with details, migration notes, or examples.
+    Can span multiple lines. The first line becomes a `#####` heading;
+    the rest is rendered as body text under it.
+time: 2026-03-07T20:01:00.000000000-08:00
+```
+
+#### Available Kinds
+
+`Added`, `Changed`, `Deprecated`, `Fixed`, `Performance`, `Removed`, `Reverted`, `Dependencies`, `Security`
+
+#### Previewing and Batching
+
+```bash
+changie batch --dry-run auto    # Preview what the next version entry will look like
+changie batch auto              # Create a versioned changelog entry from fragments
+changie merge                   # Regenerate CHANGELOG.md from all batched versions
+```
+
 ### Common Tasks
 
 ```bash

@@ -1,0 +1,7 @@
+kind: Added
+body: |-
+    Constructor functions for opaque types
+    - `config.new_config(level, handlers, context, on_error, sampling)` — create a `GlobalConfig` instance.
+    - `config.new_sample_config(level, rate)` — create a `SampleConfig` instance.
+    - `sampling.config(level, rate)` — convenience constructor that delegates to `config.new_sample_config()`.
+time: 2026-03-07T20:01:00.000000000-08:00
