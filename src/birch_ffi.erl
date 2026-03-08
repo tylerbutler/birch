@@ -91,13 +91,16 @@ set_global_config(Config) ->
     persistent_term:put(?STATE_KEY, {Config, Logger}),
     nil.
 
-%% Clear the global state (config + logger).
+%% Clear the global configuration only (preserves cached logger).
+%% Previously this erased the entire persistent_term key, which also
+%% removed the cached logger. Now it only clears config, matching JS behavior.
 clear_global_config() ->
-    try persistent_term:erase(?STATE_KEY) of
-        _ -> nil
-    catch
-        error:badarg -> nil
-    end.
+    Logger = case get_cached_default_logger() of
+        {ok, L} -> L;
+        {error, nil} -> nil
+    end,
+    persistent_term:put(?STATE_KEY, {nil, Logger}),
+    nil.
 
 %% ============================================================================
 %% Cached Default Logger (part of unified state)
@@ -136,6 +139,11 @@ clear_cached_default_logger() ->
 %% Async Writer Implementation
 %% ============================================================================
 
+%% Note: On Erlang, async logging uses OTP actors (see birch/handler/async.gleam
+%% and birch/internal/async_actor.gleam). These FFI functions exist because
+%% platform.gleam declares them for both targets, but only the JavaScript target
+%% calls them at runtime.
+
 %% Registry for async writers (uses ETS table for lock-free updates)
 -define(ASYNC_REGISTRY_KEY, birch_async_registry).
 
@@ -143,52 +151,49 @@ clear_cached_default_logger() ->
 ensure_async_registry() ->
     case ets:info(?ASYNC_REGISTRY_KEY, name) of
         undefined ->
-            %% Create the table on first use (lazy initialization)
-            %% set: key-value pairs, named_table: accessible by name, public: accessible by any process
+
             ets:new(?ASYNC_REGISTRY_KEY, [set, named_table, public]);
         _ ->
             ok
     end.
 
-%% Start an async writer process
+%% Start an async writer process.
 %% Overflow: 0=DropOldest, 1=DropNewest, 2=Block
+%%
+%% Note: _FlushIntervalMs is intentionally unused on Erlang. The Erlang process
+%% model handles messages sequentially from the mailbox, so records are processed
+%% immediately upon receipt rather than batched on a timer. The JavaScript
+%% implementation uses this parameter for setTimeout-based batching.
 start_async_writer(Name, Callback, QueueSize, _FlushIntervalMs, Overflow) ->
     Self = self(),
     Pid = spawn_link(fun() ->
-        %% Register this writer
         register_writer(Name, self()),
-        %% Signal that we're ready
         Self ! {async_writer_started, self()},
-        %% Enter the writer loop
-        async_writer_loop(Callback, QueueSize, Overflow, queue:new(), 0)
+        async_writer_loop(Name, Callback, QueueSize, Overflow, queue:new(), 0)
     end),
-    %% Wait for the writer to be ready
     receive
         {async_writer_started, Pid} -> Pid
     after 5000 ->
         error(async_writer_start_timeout)
     end.
 
-%% Async writer process loop
-async_writer_loop(Callback, MaxQueueSize, Overflow, Queue, QueueLen) ->
+%% Async writer process loop.
+%% Name is threaded through the loop for correct unregistration on stop.
+async_writer_loop(Name, Callback, MaxQueueSize, Overflow, Queue, QueueLen) ->
     receive
         {log, Record} ->
-            %% Handle incoming log record
             {NewQueue, NewLen} = enqueue_record(Callback, Record, Queue, QueueLen, MaxQueueSize, Overflow),
-            %% Process queue if we have records
             {ProcessedQueue, ProcessedLen} = process_queue(Callback, NewQueue, NewLen),
-            async_writer_loop(Callback, MaxQueueSize, Overflow, ProcessedQueue, ProcessedLen);
+            async_writer_loop(Name, Callback, MaxQueueSize, Overflow, ProcessedQueue, ProcessedLen);
 
         {flush, From} ->
-            %% Flush all pending records
             {FlushedQueue, FlushedLen} = flush_queue(Callback, Queue, QueueLen),
             From ! {flushed, self()},
-            async_writer_loop(Callback, MaxQueueSize, Overflow, FlushedQueue, FlushedLen);
+            async_writer_loop(Name, Callback, MaxQueueSize, Overflow, FlushedQueue, FlushedLen);
 
         stop ->
-            %% Final flush and exit
             _ = flush_queue(Callback, Queue, QueueLen),
-            unregister_writer(),
+            unregister_writer(Name),
             ok
     end.
 
@@ -211,7 +216,6 @@ enqueue_record(_Callback, Record, Queue, QueueLen, _MaxQueueSize, _Overflow) ->
 process_queue(Callback, Queue, QueueLen) ->
     case queue:out(Queue) of
         {{value, Record}, Q2} ->
-            %% Call the Gleam callback
             _ = Callback(Record),
             process_queue(Callback, Q2, QueueLen - 1);
         {empty, _} ->
@@ -258,9 +262,10 @@ register_writer(Name, Pid) ->
     ets:insert(?ASYNC_REGISTRY_KEY, {Name, Pid}),
     ok.
 
-unregister_writer() ->
+%% Unregister a writer by name (the ETS key).
+unregister_writer(Name) ->
     ensure_async_registry(),
-    ets:delete(?ASYNC_REGISTRY_KEY, self()),
+    ets:delete(?ASYNC_REGISTRY_KEY, Name),
     ok.
 
 get_all_writers() ->
@@ -462,7 +467,7 @@ get_file_size_cache(Path) ->
         undefined ->
             {error, nil};
         Cache ->
-            case dict:find(Path, Cache) of
+            case maps:find(Path, Cache) of
                 {ok, Size} -> {ok, Size};
                 error -> {error, nil}
             end
@@ -471,10 +476,10 @@ get_file_size_cache(Path) ->
 %% Set the cached file size for a path.
 set_file_size_cache(Path, Size) ->
     Cache = case erlang:get(?FILE_SIZE_CACHE_KEY) of
-        undefined -> dict:new();
+        undefined -> #{};
         C -> C
     end,
-    NewCache = dict:store(Path, Size, Cache),
+    NewCache = maps:put(Path, Size, Cache),
     erlang:put(?FILE_SIZE_CACHE_KEY, NewCache),
     nil.
 
@@ -485,7 +490,7 @@ reset_file_size_cache(Path) ->
         undefined ->
             nil;
         Cache ->
-            NewCache = dict:erase(Path, Cache),
+            NewCache = maps:remove(Path, Cache),
             erlang:put(?FILE_SIZE_CACHE_KEY, NewCache),
             nil
     end.

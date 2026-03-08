@@ -77,6 +77,8 @@ export function logger_log_structured(
   return logger_log(level, message);
 }
 
+// Gleam's JS codegen represents simple custom type variants (no fields) as
+// lowercase atom-style names (e.g., "erlang_emergency").
 const LEVEL_NAMES = {
   erlang_emergency: "emergency",
   erlang_alert: "alert",
@@ -86,25 +88,13 @@ const LEVEL_NAMES = {
   erlang_notice: "notice",
   erlang_info: "info",
   erlang_debug: "debug",
-  // Also support PascalCase variant names (legacy codegen)
-  ErlangEmergency: "emergency",
-  ErlangAlert: "alert",
-  ErlangCritical: "critical",
-  ErlangError: "error",
-  ErlangWarning: "warning",
-  ErlangNotice: "notice",
-  ErlangInfo: "info",
-  ErlangDebug: "debug",
 };
 
 /**
  * Extract level name from Gleam ErlangLevel type.
  *
- * TODO: Revisit this and see if there is a better way to accomplish this.
- * Relies on Gleam's JS codegen representing custom type variants as objects
- * with a `$` property containing the variant name (e.g., "ErlangEmergency").
- * If this codegen convention changes, all levels will silently fall through
- * to the "info" default.
+ * Gleam's JS codegen represents custom type variants as objects with a `$`
+ * property containing the variant name (e.g., "erlang_emergency").
  *
  * @param {object} level - Gleam ErlangLevel variant
  * @returns {string} Level name
