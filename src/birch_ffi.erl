@@ -151,6 +151,7 @@ clear_cached_default_logger() ->
 ensure_async_registry() ->
     case ets:info(?ASYNC_REGISTRY_KEY, name) of
         undefined ->
+
             ets:new(?ASYNC_REGISTRY_KEY, [set, named_table, public]);
         _ ->
             ok

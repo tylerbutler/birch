@@ -1,0 +1,15 @@
+kind: Changed
+body: |-
+    `LogRecord`, `GlobalConfig`, `SampleConfig`, and `ConfigOption` are now opaque types
+    These types can no longer be constructed or destructured via pattern matching. Use the new constructor and accessor functions instead.
+
+    ```gleam
+    // Before — direct field access
+    let lvl = record.level
+    let meta = record.metadata
+
+    // After — use accessor functions
+    let lvl = record.level(rec)
+    let meta = record.all_metadata(rec)
+    ```
+time: 2026-03-07T20:03:00.000000000-08:00
