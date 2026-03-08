@@ -1,5 +1,0 @@
-kind: Performance
-body: |-
-    File handler size caching
-    File size caching in the file handler avoids repeated filesystem `stat()` calls during size-based rotation checks.
-time: 2026-03-07T20:05:00.000000000-08:00

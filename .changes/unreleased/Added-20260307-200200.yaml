@@ -1,9 +1,0 @@
-kind: Added
-body: |-
-    Accessor functions for opaque types
-    New accessor functions provide safe access to fields on types that are now opaque:
-
-    - **`record`**: `timestamp()`, `level()`, `logger_name()`, `message()`, `all_metadata()`, `metadata()`, `caller_id()`
-    - **`config`**: `get_level()`, `get_handlers()`, `get_context()`, `get_sampling()`, `get_on_error()`
-    - **`sampling`**: `sample_level()`, `rate()`
-time: 2026-03-07T20:02:00.000000000-08:00

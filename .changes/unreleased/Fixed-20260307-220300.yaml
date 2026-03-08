@@ -1,5 +1,0 @@
-kind: Fixed
-body: |-
-    Fix `set_scope_context` and `set_scope_depth` no-ops on JavaScript with AsyncLocalStorage
-    When AsyncLocalStorage was available on JavaScript, `set_scope_context` and `set_scope_depth` were no-ops because the functions weren't properly updating the store. Now they use `enterWith()` to correctly update the scoped context, enabling proper scoped logging behavior on Node.js.
-time: 2026-03-07T22:03:00.000000000-08:00

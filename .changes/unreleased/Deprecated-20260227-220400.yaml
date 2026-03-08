@@ -1,5 +1,0 @@
-kind: Deprecated
-body: |-
-    Deprecate `forward_to_beam()` handler
-    `forward_to_beam()` is no longer needed — birch sends LogRecords directly to `:logger` on BEAM without a handler wrapper. Remove it from your handler list; logs go through `:logger` automatically.
-time: 2026-02-27T22:04:00.000000000-08:00
