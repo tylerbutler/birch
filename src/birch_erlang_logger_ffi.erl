@@ -28,7 +28,8 @@
          install_formatter/2, remove_formatter/1,
          is_formatter_configured/0, ensure_initialized/0,
          is_healthy/0,
-         set_handler_level_all/0]).
+         set_handler_level_all/0,
+         set_primary_level/1]).
 
 %% :logger formatter callback
 -export([format/2]).
@@ -190,6 +191,16 @@ is_healthy() ->
 -spec set_handler_level_all() -> nil.
 set_handler_level_all() ->
     logger:set_handler_config(default, level, all),
+    nil.
+
+%% Set the OTP :logger primary level.
+%% This controls the global level filter that runs before any handler sees
+%% a message. Without this, OTP's default primary level (notice) silently
+%% drops debug/info messages before they reach the birch formatter.
+-spec set_primary_level(atom()) -> nil.
+set_primary_level(GleamLevel) ->
+    Level = gleam_level_to_atom(GleamLevel),
+    logger:set_primary_config(level, Level),
     nil.
 
 %% ============================================================================

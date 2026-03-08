@@ -106,6 +106,8 @@ pub fn configure(options: List(ConfigOption)) -> Nil {
   let new_config = config.apply_options(current, options)
   config.set_global_config(new_config)
   clear_cached_default_logger()
+  // On BEAM: sync OTP :logger configuration (formatter + level)
+  sync_otp_config(new_config)
 }
 
 /// Get the current global configuration.
@@ -124,6 +126,8 @@ pub fn get_config() -> GlobalConfig {
 pub fn reset_config() -> Nil {
   config.clear_global_config()
   clear_cached_default_logger()
+  // On BEAM: restore OTP :logger to default state
+  sync_otp_config(default_config())
 }
 
 // ============================================================================
@@ -155,6 +159,8 @@ pub fn set_level(lvl: Level) -> Nil {
   let new_config = config.with_level(current, lvl)
   config.set_global_config(new_config)
   clear_cached_default_logger()
+  // On BEAM: sync OTP primary level
+  sync_otp_level(lvl)
 }
 
 /// Get the current global log level.
@@ -234,14 +240,68 @@ pub fn default_config() -> GlobalConfig {
 @target(erlang)
 fn default_handlers() -> List(Handler) {
   // On BEAM, birch sends LogRecords directly to :logger — no birch handler needed.
-  // Ensure the birch formatter is installed on :logger's default handler.
-  erlang_logger.ensure_formatter_configured()
+  // Formatter setup is handled by sync_otp_config() in configure() or
+  // by default_logger() on first use.
   []
 }
 
 @target(javascript)
 fn default_handlers() -> List(Handler) {
   [console.handler()]
+}
+
+// ============================================================================
+// OTP :logger Synchronization (BEAM only)
+// ============================================================================
+
+@target(erlang)
+/// Synchronize OTP :logger configuration with birch's config.
+///
+/// On BEAM, this installs the appropriate formatter on the :logger default
+/// handler and syncs the primary level. Called by `configure()`,
+/// `reset_config()`, and `default_logger()` on first use.
+fn sync_otp_config(cfg: GlobalConfig) -> Nil {
+  sync_otp_formatter(cfg)
+  sync_otp_level(config.get_level(cfg))
+}
+
+@target(javascript)
+fn sync_otp_config(_cfg: GlobalConfig) -> Nil {
+  Nil
+}
+
+@target(erlang)
+/// Synchronize the OTP :logger formatter with birch's config.
+///
+/// - No handlers: install birch formatter on OTP's default handler (OTP-native path)
+/// - With handlers: remove birch formatter so OTP's default handler doesn't
+///   produce duplicate output (birch handlers own the output path)
+fn sync_otp_formatter(cfg: GlobalConfig) -> Nil {
+  case config.get_handlers(cfg) {
+    [] -> {
+      // No explicit handlers — use default birch formatter on :logger
+      erlang_logger.ensure_formatter_configured()
+    }
+    _ -> {
+      // Explicit handlers configured — they own the output path.
+      // Remove birch formatter from OTP's default handler to prevent duplicates.
+      let _ = erlang_logger.remove_formatter()
+      Nil
+    }
+  }
+}
+
+@target(erlang)
+/// Sync birch level → OTP :logger primary level.
+fn sync_otp_level(lvl: Level) -> Nil {
+  erlang_logger.set_primary_level(lvl)
+  // Also ensure handler level is 'all' so birch controls filtering
+  erlang_logger.allow_all_levels()
+}
+
+@target(javascript)
+fn sync_otp_level(_lvl: Level) -> Nil {
+  Nil
 }
 
 // ============================================================================
@@ -280,7 +340,10 @@ fn default_logger() -> Logger {
       case get_cached_default_logger() {
         Ok(lgr) -> lgr
         Error(Nil) -> {
-          let lgr = build_default_logger(get_config())
+          let cfg = get_config()
+          let lgr = build_default_logger(cfg)
+          // On BEAM: ensure OTP :logger is configured for this logger
+          let _ = sync_otp_config(cfg)
           set_cached_default_logger(lgr)
           lgr
         }

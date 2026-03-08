@@ -325,6 +325,20 @@ pub fn allow_all_levels() -> Nil {
   do_set_handler_level_all()
 }
 
+/// Set the OTP `:logger` primary level to match birch's configured level.
+///
+/// OTP's `:logger` has a primary level filter (default: `notice`) that runs
+/// before any handler sees the message. This function synchronizes the primary
+/// level with birch's level so that OTP doesn't silently drop messages that
+/// birch wants to process.
+///
+/// This is called automatically by birch's `configure()` and `set_level()`.
+/// On JavaScript, this is a no-op.
+pub fn set_primary_level(birch_level: Level) -> Nil {
+  let erlang_level = gleam_level_to_erlang(birch_level)
+  do_set_primary_level(erlang_level)
+}
+
 // ============================================================================
 // Install birch as :logger Formatter
 // ============================================================================
@@ -562,3 +576,8 @@ fn do_remove_formatter(handler_id: String) -> Result(Nil, String)
 @external(erlang, "birch_erlang_logger_ffi", "set_handler_level_all")
 @external(javascript, "../birch_erlang_logger_ffi.mjs", "set_handler_level_all")
 fn do_set_handler_level_all() -> Nil
+
+/// Set the OTP :logger primary level.
+@external(erlang, "birch_erlang_logger_ffi", "set_primary_level")
+@external(javascript, "../birch_erlang_logger_ffi.mjs", "set_primary_level")
+fn do_set_primary_level(level: ErlangLevel) -> Nil

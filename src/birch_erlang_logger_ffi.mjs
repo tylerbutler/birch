@@ -131,6 +131,14 @@ export function set_handler_level_all() {
 }
 
 /**
+ * Set the OTP :logger primary level.
+ * No-op on JavaScript since :logger is not available.
+ */
+export function set_primary_level(_level) {
+  return undefined; // nil
+}
+
+/**
  * Install birch as a :logger formatter.
  * Not available on JavaScript - always returns an error.
  */
