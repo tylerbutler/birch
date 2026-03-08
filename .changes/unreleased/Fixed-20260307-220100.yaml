@@ -1,0 +1,5 @@
+kind: Fixed
+body: |-
+    Fix `unregister_writer` memory leak
+    The `unregister_writer` function in the Erlang FFI was using the wrong ETS key lookup (`self()` instead of `Name`), causing async writers to never be properly unregistered from `persistent_term`. This created a slow memory leak in long-running systems. Now writers are correctly removed.
+time: 2026-03-07T22:01:00.000000000-08:00
