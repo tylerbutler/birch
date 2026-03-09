@@ -329,6 +329,22 @@ changelog:
     changie merge
 
 # ============================================================================
+# npm Packaging (via talc)
+# ============================================================================
+
+# Generate npm package from JavaScript build output
+npm-package: build-js
+    gleam run -m talc -- generate
+
+# Validate talc configuration without generating files
+npm-check: build-js
+    gleam run -m talc -- check
+
+# Generate npm package and create a tarball
+npm-pack: build-js
+    gleam run -m talc -- pack
+
+# ============================================================================
 # Documentation Site (Astro/Starlight)
 # ============================================================================
 

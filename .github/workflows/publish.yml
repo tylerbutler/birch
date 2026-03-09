@@ -22,3 +22,18 @@ jobs:
         run: echo "I am not using semantic versioning" | gleam publish --yes
         env:
           HEXPM_API_KEY: ${{ secrets.HEXPM_API_KEY }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # ratchet:actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Build npm package
+        run: gleam run -m talc -- generate
+
+      - name: Publish to npm
+        run: npm publish --access public
+        working-directory: npm_dist
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
