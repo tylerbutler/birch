@@ -2,16 +2,16 @@
 ////
 //// Demonstrates file output with various rotation strategies.
 
-import birch as log
+import birch
 import birch/handler.{type Handler}
 import birch/handler/file
 import birch/handler/json
-import birch/logger
+import birch/log
 import birch/meta
 import simplifile
 
 pub fn main() {
-  log.info("=== File Handler Demo ===")
+  birch.info("=== File Handler Demo ===")
 
   // Create a temp directory for demo files
   let demo_dir = "/tmp/birch-demo"
@@ -28,13 +28,13 @@ pub fn main() {
   let _ = simplifile.delete_all([demo_dir])
 
   // Reset to defaults
-  log.reset_config()
-  log.info("Demo complete")
+  birch.reset_config()
+  birch.info("Demo complete")
 }
 
 /// Demonstrate file handler without rotation.
 fn demo_no_rotation(dir: String) {
-  log.info("--- No Rotation ---")
+  birch.info("--- No Rotation ---")
 
   let handler =
     file.handler(file.FileConfig(
@@ -42,14 +42,14 @@ fn demo_no_rotation(dir: String) {
       rotation: file.NoRotation,
     ))
 
-  log.configure([log.config_handlers([handler])])
-  log.info("This goes to a file with no rotation")
-  log.info("File will grow indefinitely")
+  birch.configure([birch.config_handlers([handler])])
+  birch.info("This goes to a file with no rotation")
+  birch.info("File will grow indefinitely")
 }
 
 /// Demonstrate size-based rotation.
 fn demo_size_rotation(dir: String) {
-  log.info("--- Size Rotation ---")
+  birch.info("--- Size Rotation ---")
 
   let handler =
     file.handler(file.FileConfig(
@@ -62,14 +62,14 @@ fn demo_size_rotation(dir: String) {
       ),
     ))
 
-  log.configure([log.config_handlers([handler])])
-  log.info("This file rotates when it exceeds 1KB")
-  log.info("Old files: size-rotation.log.1, size-rotation.log.2, etc.")
+  birch.configure([birch.config_handlers([handler])])
+  birch.info("This file rotates when it exceeds 1KB")
+  birch.info("Old files: size-rotation.birch.1, size-rotation.birch.2, etc.")
 }
 
 /// Demonstrate time-based rotation.
 fn demo_time_rotation(dir: String) {
-  log.info("--- Time Rotation ---")
+  birch.info("--- Time Rotation ---")
 
   let handler =
     file.handler(file.FileConfig(
@@ -77,14 +77,14 @@ fn demo_time_rotation(dir: String) {
       rotation: file.TimeRotation(interval: file.Daily, max_files: 7),
     ))
 
-  log.configure([log.config_handlers([handler])])
-  log.info("This file rotates daily")
-  log.info("Old files have date suffixes: time-rotation.log.2024-01-14")
+  birch.configure([birch.config_handlers([handler])])
+  birch.info("This file rotates daily")
+  birch.info("Old files have date suffixes: time-rotation.birch.2024-01-14")
 }
 
 /// Demonstrate combined rotation.
 fn demo_combined_rotation(dir: String) {
-  log.info("--- Combined Rotation ---")
+  birch.info("--- Combined Rotation ---")
 
   let handler =
     file.handler(file.FileConfig(
@@ -97,14 +97,14 @@ fn demo_combined_rotation(dir: String) {
       ),
     ))
 
-  log.configure([log.config_handlers([handler])])
-  log.info("This file rotates on size OR time")
-  log.info("Whichever condition is met first triggers rotation")
+  birch.configure([birch.config_handlers([handler])])
+  birch.info("This file rotates on size OR time")
+  birch.info("Whichever condition is met first triggers rotation")
 }
 
 /// Demonstrate JSON format for file logs.
 fn demo_json_file(dir: String) {
-  log.info("--- JSON File Format ---")
+  birch.info("--- JSON File Format ---")
 
   let handler =
     file.handler_with_formatter(
@@ -119,10 +119,10 @@ fn demo_json_file(dir: String) {
       json.format_json,
     )
 
-  log.configure([log.config_handlers([handler])])
-  let lgr = log.new("app")
-  log.info("This file contains JSON-formatted logs")
-  logger.info(lgr, "Great for log aggregation", [meta.string("key", "value")])
+  birch.configure([birch.config_handlers([handler])])
+  let lgr = birch.new("app")
+  birch.info("This file contains JSON-formatted logs")
+  log.info(lgr, "Great for log aggregation", [meta.string("key", "value")])
 }
 
 /// Create a production-ready file handler.

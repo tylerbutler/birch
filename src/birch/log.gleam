@@ -146,14 +146,14 @@ pub fn context(logger: Logger) -> Metadata {
 /// ```gleam
 /// // For testing - fixed timestamp
 /// let test_logger =
-///   logger.new("test")
-///   |> logger.with_time_provider(fn() { "2024-01-01T00:00:00.000Z" })
+///   log.new("test")
+///   |> log.with_time_provider(fn() { "2024-01-01T00:00:00.000Z" })
 ///
 /// // For testing - incrementing counter
 /// let counter = atomic.new(0)
 /// let test_logger =
-///   logger.new("test")
-///   |> logger.with_time_provider(fn() {
+///   log.new("test")
+///   |> log.with_time_provider(fn() {
 ///     let n = atomic.add(counter, 1)
 ///     "T" <> int.to_string(n)
 ///   })
@@ -175,23 +175,23 @@ pub fn without_time_provider(logger: Logger) -> Logger {
 /// ## Example
 ///
 /// ```gleam
-/// import birch/logger
+/// import birch/log
 /// import gleam/int
 /// import gleam/time/timestamp
 /// import gleam/time/calendar
 ///
 /// // Unix seconds format
 /// let logger =
-///   logger.new("myapp")
-///   |> logger.with_custom_timestamp(fn(ts) {
+///   log.new("myapp")
+///   |> log.with_custom_timestamp(fn(ts) {
 ///     let #(seconds, _nanos) = timestamp.to_unix_seconds_and_nanoseconds(ts)
 ///     int.to_string(seconds)
 ///   })
 ///
 /// // Date only format
 /// let logger =
-///   logger.new("myapp")
-///   |> logger.with_custom_timestamp(fn(ts) {
+///   log.new("myapp")
+///   |> log.with_custom_timestamp(fn(ts) {
 ///     let #(date, _time) = timestamp.to_calendar(ts, calendar.utc_offset)
 ///     int.to_string(date.year) <> "-" <>
 ///     int.to_string(date.month |> month_to_int) <> "-" <>
@@ -225,8 +225,8 @@ pub fn without_custom_timestamp(logger: Logger) -> Logger {
 ///
 /// ```gleam
 /// let logger =
-///   logger.new("myapp")
-///   |> logger.with_caller_id_capture()
+///   log.new("myapp")
+///   |> log.with_caller_id_capture()
 /// ```
 pub fn with_caller_id_capture(logger: Logger) -> Logger {
   Logger(..logger, capture_caller_id: True)

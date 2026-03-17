@@ -2,11 +2,11 @@
 ////
 //// Demonstrates all the console handler presentation options.
 
-import birch as log
+import birch
 import birch/handler/console
 import birch/level
 import birch/level_formatter
-import birch/logger
+import birch/log
 import birch/record.{BoolVal, FloatVal, IntVal, StringVal}
 import gleam/io
 
@@ -16,17 +16,17 @@ pub fn main() {
   // =========================================================================
   print_header("SIMPLE STYLE (default)")
 
-  log.configure([
-    log.config_handlers([console.handler()]),
-    log.config_level(level.Trace),
+  birch.configure([
+    birch.config_handlers([console.handler()]),
+    birch.config_level(level.Trace),
   ])
 
-  log.trace("Trace level message")
-  log.debug("Debug level message")
-  log.info("Info level message")
-  log.warn("Warning level message")
-  log.error("Error level message")
-  log.fatal("Fatal level message")
+  birch.trace("Trace level message")
+  birch.debug("Debug level message")
+  birch.info("Info level message")
+  birch.warn("Warning level message")
+  birch.error("Error level message")
+  birch.fatal("Fatal level message")
 
   // =========================================================================
   // Simple Style without timestamps
@@ -35,34 +35,34 @@ pub fn main() {
 
   let simple_no_ts =
     console.ConsoleConfig(..console.default_config(), timestamps: False)
-  log.configure([
-    log.config_handlers([console.handler_with_config(simple_no_ts)]),
-    log.config_level(level.Trace),
+  birch.configure([
+    birch.config_handlers([console.handler_with_config(simple_no_ts)]),
+    birch.config_level(level.Trace),
   ])
 
-  log.trace("Trace level message")
-  log.debug("Debug level message")
-  log.info("Info level message")
-  log.warn("Warning level message")
-  log.error("Error level message")
-  log.fatal("Fatal level message")
+  birch.trace("Trace level message")
+  birch.debug("Debug level message")
+  birch.info("Info level message")
+  birch.warn("Warning level message")
+  birch.error("Error level message")
+  birch.fatal("Fatal level message")
 
   // =========================================================================
   // Fancy Style (compact with icons)
   // =========================================================================
   print_header("FANCY STYLE (label formatter with icons)")
 
-  log.configure([
-    log.config_handlers([console.fancy_handler()]),
-    log.config_level(level.Trace),
+  birch.configure([
+    birch.config_handlers([console.fancy_handler()]),
+    birch.config_level(level.Trace),
   ])
 
-  log.trace("Trace level message")
-  log.debug("Debug level message")
-  log.info("Info level message")
-  log.warn("Warning level message")
-  log.error("Error level message")
-  log.fatal("Fatal level message")
+  birch.trace("Trace level message")
+  birch.debug("Debug level message")
+  birch.info("Info level message")
+  birch.warn("Warning level message")
+  birch.error("Error level message")
+  birch.fatal("Fatal level message")
 
   // =========================================================================
   // Fancy Style with timestamps
@@ -71,17 +71,17 @@ pub fn main() {
 
   let fancy_with_ts =
     console.ConsoleConfig(..console.default_fancy_config(), timestamps: True)
-  log.configure([
-    log.config_handlers([console.handler_with_config(fancy_with_ts)]),
-    log.config_level(level.Trace),
+  birch.configure([
+    birch.config_handlers([console.handler_with_config(fancy_with_ts)]),
+    birch.config_level(level.Trace),
   ])
 
-  log.trace("Trace level message")
-  log.debug("Debug level message")
-  log.info("Info level message")
-  log.warn("Warning level message")
-  log.error("Error level message")
-  log.fatal("Fatal level message")
+  birch.trace("Trace level message")
+  birch.debug("Debug level message")
+  birch.info("Info level message")
+  birch.warn("Warning level message")
+  birch.error("Error level message")
+  birch.fatal("Fatal level message")
 
   // =========================================================================
   // Badge Style
@@ -93,17 +93,17 @@ pub fn main() {
       ..console.default_fancy_config(),
       level_formatter: level_formatter.badge_formatter(),
     )
-  log.configure([
-    log.config_handlers([console.handler_with_config(badge_config)]),
-    log.config_level(level.Trace),
+  birch.configure([
+    birch.config_handlers([console.handler_with_config(badge_config)]),
+    birch.config_level(level.Trace),
   ])
 
-  log.trace("Trace with badge")
-  log.debug("Debug with badge")
-  log.info("Info with badge")
-  log.warn("Warning with badge")
-  log.error("Error with badge")
-  log.fatal("Fatal with badge")
+  birch.trace("Trace with badge")
+  birch.debug("Debug with badge")
+  birch.info("Info with badge")
+  birch.warn("Warning with badge")
+  birch.error("Error with badge")
+  birch.fatal("Fatal with badge")
 
   // =========================================================================
   // Label Style without icons
@@ -117,37 +117,37 @@ pub fn main() {
         level_formatter.LabelConfig(icons: False),
       ),
     )
-  log.configure([
-    log.config_handlers([console.handler_with_config(no_icons_config)]),
-    log.config_level(level.Trace),
+  birch.configure([
+    birch.config_handlers([console.handler_with_config(no_icons_config)]),
+    birch.config_level(level.Trace),
   ])
 
-  log.trace("Trace level message")
-  log.debug("Debug level message")
-  log.info("Info level message")
-  log.warn("Warning level message")
-  log.error("Error level message")
-  log.fatal("Fatal level message")
+  birch.trace("Trace level message")
+  birch.debug("Debug level message")
+  birch.info("Info level message")
+  birch.warn("Warning level message")
+  birch.error("Error level message")
+  birch.fatal("Fatal level message")
 
   // =========================================================================
   // With Metadata
   // =========================================================================
   print_header("WITH METADATA")
 
-  log.configure([
-    log.config_handlers([console.fancy_handler()]),
-    log.config_level(level.Info),
+  birch.configure([
+    birch.config_handlers([console.fancy_handler()]),
+    birch.config_level(level.Info),
   ])
 
-  log.info_m("Request received", [
+  birch.info_m("Request received", [
     #("method", StringVal("GET")),
     #("path", StringVal("/api/users")),
   ])
-  log.warn_m("Slow query detected", [
+  birch.warn_m("Slow query detected", [
     #("duration_ms", IntVal(1523)),
     #("table", StringVal("users")),
   ])
-  log.error_m("Connection failed", [
+  birch.error_m("Connection failed", [
     #("host", StringVal("db.example.com")),
     #("port", IntVal(5432)),
   ])
@@ -158,21 +158,21 @@ pub fn main() {
   print_header("NAMED LOGGERS")
 
   let db_logger =
-    logger.new("myapp.database")
-    |> logger.with_handlers([console.fancy_handler()])
-    |> logger.with_level(level.Debug)
+    log.new("myapp.database")
+    |> log.with_handlers([console.fancy_handler()])
+    |> log.with_level(level.Debug)
 
   let http_logger =
-    logger.new("myapp.http")
-    |> logger.with_handlers([console.fancy_handler()])
-    |> logger.with_level(level.Info)
+    log.new("myapp.http")
+    |> log.with_handlers([console.fancy_handler()])
+    |> log.with_level(level.Info)
 
-  logger.info(db_logger, "Connected to database", [#("tls", BoolVal(True))])
-  logger.debug(db_logger, "Executing query", [
+  log.info(db_logger, "Connected to database", [#("tls", BoolVal(True))])
+  log.debug(db_logger, "Executing query", [
     #("sql", StringVal("SELECT * FROM users")),
   ])
-  logger.info(http_logger, "Server started", [#("port", IntVal(8080))])
-  logger.warn(http_logger, "Rate limit exceeded", [
+  log.info(http_logger, "Server started", [#("port", IntVal(8080))])
+  log.warn(http_logger, "Rate limit exceeded", [
     #("client", StringVal("192.168.1.100")),
   ])
 
@@ -208,48 +208,48 @@ pub fn main() {
   // Each group gets a unique color based on its name hash
   console.with_group("Building components", fn() {
     let indented =
-      logger.new("build")
-      |> logger.with_handlers([console.indented_handler(1)])
-      |> logger.with_level(level.Debug)
+      log.new("build")
+      |> log.with_handlers([console.indented_handler(1)])
+      |> log.with_level(level.Debug)
 
-    logger.info(indented, "Compiling sources...", [])
-    logger.info(indented, "Linking...", [])
-    logger.info(indented, "Done!", [])
+    log.info(indented, "Compiling sources...", [])
+    log.info(indented, "Linking...", [])
+    log.info(indented, "Done!", [])
     Nil
   })
 
   console.with_group("Running tests", fn() {
     let indented =
-      logger.new("test")
-      |> logger.with_handlers([console.indented_handler(1)])
-      |> logger.with_level(level.Debug)
+      log.new("test")
+      |> log.with_handlers([console.indented_handler(1)])
+      |> log.with_level(level.Debug)
 
-    logger.info(indented, "Unit tests...", [])
-    logger.info(indented, "Integration tests...", [])
-    logger.info(indented, "All tests passed!", [])
+    log.info(indented, "Unit tests...", [])
+    log.info(indented, "Integration tests...", [])
+    log.info(indented, "All tests passed!", [])
     Nil
   })
 
   console.with_group("Deploying application", fn() {
     let indented =
-      logger.new("deploy")
-      |> logger.with_handlers([console.indented_handler(1)])
-      |> logger.with_level(level.Debug)
+      log.new("deploy")
+      |> log.with_handlers([console.indented_handler(1)])
+      |> log.with_level(level.Debug)
 
-    logger.info(indented, "Uploading artifacts...", [])
-    logger.info(indented, "Updating configuration...", [])
-    logger.info(indented, "Deployment complete!", [])
+    log.info(indented, "Uploading artifacts...", [])
+    log.info(indented, "Updating configuration...", [])
+    log.info(indented, "Deployment complete!", [])
     Nil
   })
 
   console.with_group("Cleanup", fn() {
     let indented =
-      logger.new("cleanup")
-      |> logger.with_handlers([console.indented_handler(1)])
-      |> logger.with_level(level.Debug)
+      log.new("cleanup")
+      |> log.with_handlers([console.indented_handler(1)])
+      |> log.with_level(level.Debug)
 
-    logger.info(indented, "Removing temp files...", [])
-    logger.info(indented, "Done!", [])
+    log.info(indented, "Removing temp files...", [])
+    log.info(indented, "Done!", [])
     Nil
   })
 
@@ -283,17 +283,17 @@ pub fn main() {
       level_formatter: emoji_formatter,
     )
 
-  log.configure([
-    log.config_handlers([console.handler_with_config(custom_config)]),
-    log.config_level(level.Trace),
+  birch.configure([
+    birch.config_handlers([console.handler_with_config(custom_config)]),
+    birch.config_level(level.Trace),
   ])
 
-  log.trace("Trace with emoji")
-  log.debug("Debug with emoji")
-  log.info("Info with emoji")
-  log.warn("Warning with emoji")
-  log.error("Error with emoji")
-  log.fatal("Fatal with emoji")
+  birch.trace("Trace with emoji")
+  birch.debug("Debug with emoji")
+  birch.info("Info with emoji")
+  birch.warn("Warning with emoji")
+  birch.error("Error with emoji")
+  birch.fatal("Fatal with emoji")
 
   // =========================================================================
   // No Colors (for piping/redirection)
@@ -303,17 +303,17 @@ pub fn main() {
   let no_color_config =
     console.ConsoleConfig(..console.default_fancy_config(), color: False)
 
-  log.configure([
-    log.config_handlers([console.handler_with_config(no_color_config)]),
-    log.config_level(level.Trace),
+  birch.configure([
+    birch.config_handlers([console.handler_with_config(no_color_config)]),
+    birch.config_level(level.Trace),
   ])
 
-  log.trace("Trace level message")
-  log.debug("Debug level message")
-  log.info("Info level message")
-  log.warn("Warning level message")
-  log.error("Error level message")
-  log.fatal("Fatal level message")
+  birch.trace("Trace level message")
+  birch.debug("Debug level message")
+  birch.info("Info level message")
+  birch.warn("Warning level message")
+  birch.error("Error level message")
+  birch.fatal("Fatal level message")
 
   // =========================================================================
   // Auto-Indent from Scopes
@@ -326,37 +326,37 @@ pub fn main() {
       auto_indent_from_scopes: True,
     )
 
-  log.configure([
-    log.config_handlers([console.handler_with_config(auto_indent_config)]),
-    log.config_level(level.Info),
+  birch.configure([
+    birch.config_handlers([console.handler_with_config(auto_indent_config)]),
+    birch.config_level(level.Info),
   ])
 
-  log.info("Outside any scope - no indentation")
+  birch.info("Outside any scope - no indentation")
 
-  log.with_scope([#("request_id", StringVal("req-123"))], fn() {
-    log.info("Level 1 scope - indented once")
+  birch.with_scope([#("request_id", StringVal("req-123"))], fn() {
+    birch.info("Level 1 scope - indented once")
 
-    log.with_scope([#("step", StringVal("validation"))], fn() {
-      log.info("Level 2 scope - indented twice")
-      log.warn("Warnings are also indented at level 2")
+    birch.with_scope([#("step", StringVal("validation"))], fn() {
+      birch.info("Level 2 scope - indented twice")
+      birch.warn("Warnings are also indented at level 2")
 
-      log.with_scope([#("substep", StringVal("schema_check"))], fn() {
-        log.info("Level 3 scope - indented three times")
+      birch.with_scope([#("substep", StringVal("schema_check"))], fn() {
+        birch.info("Level 3 scope - indented three times")
         Nil
       })
 
-      log.info("Back to level 2")
+      birch.info("Back to level 2")
       Nil
     })
 
-    log.info("Back to level 1")
+    birch.info("Back to level 1")
     Nil
   })
 
-  log.info("Back outside scope - no indentation")
+  birch.info("Back outside scope - no indentation")
 
   // Reset
-  log.reset_config()
+  birch.reset_config()
   print_header("DEMO COMPLETE")
 }
 

@@ -7,13 +7,13 @@
 //// - **Formatter install/remove tests**: Only succeed on Erlang, expect errors on JS
 //// - **Round-trip tests**: Erlang-only, verify birch→:logger→birch formatting
 
-import birch as log
+import birch
 import birch/config
 import birch/erlang_logger
 import birch/formatter
 import birch/handler/console
 import birch/level
-import birch/logger
+import birch/log
 import birch/meta
 import birch/record
 import gleam/list
@@ -209,18 +209,18 @@ pub fn forward_to_beam_level_roundtrip_test() {
 
 pub fn logger_logs_without_crashing_test() {
   // Create a logger and log at various levels — should not crash
-  let lgr = logger.new("test.erlang")
+  let lgr = log.new("test.erlang")
 
-  logger.info(lgr, "Message through logger", [
+  log.info(lgr, "Message through logger", [
     meta.string("source", "birch"),
   ])
 }
 
 pub fn configure_default_test() {
   // Reset config first
-  log.reset_config()
+  birch.reset_config()
 
-  let cfg = log.get_config()
+  let cfg = birch.get_config()
 
   case is_erlang_target() {
     True -> {
@@ -238,7 +238,7 @@ pub fn configure_default_test() {
   }
 
   // Reset for other tests
-  log.reset_config()
+  birch.reset_config()
 }
 
 // ============================================================================
@@ -437,9 +437,9 @@ pub fn logger_round_trip_formatting_test() {
       // Log through birch → :logger → birch formatter
       // Use Warn level (above :logger's default `notice` threshold)
       let lgr =
-        logger.new("myapp.test")
-        |> logger.with_level(level.Warn)
-      logger.warn(lgr, "Hello", [meta.string("key", "val")])
+        log.new("myapp.test")
+        |> log.with_level(level.Warn)
+      log.warn(lgr, "Hello", [meta.string("key", "val")])
       sleep(100)
 
       let output1 = get_buffer_contents(captured1)
@@ -469,9 +469,9 @@ pub fn logger_round_trip_formatting_test() {
         erlang_logger.install_formatter_on("default", capture_formatter2)
 
       let lgr2 =
-        logger.new("myapp.database")
-        |> logger.with_level(level.Warn)
-      logger.warn(lgr2, "Connection pool exhausted", [
+        log.new("myapp.database")
+        |> log.with_level(level.Warn)
+      log.warn(lgr2, "Connection pool exhausted", [
         meta.string("pool", "primary"),
         meta.int("active", 50),
       ])
@@ -498,9 +498,9 @@ pub fn logger_round_trip_formatting_test() {
         erlang_logger.install_formatter_on("default", capture_formatter3)
 
       let lgr3 =
-        logger.new("test.level")
-        |> logger.with_level(level.Err)
-      logger.error(lgr3, "Error occurred", [])
+        log.new("test.level")
+        |> log.with_level(level.Err)
+      log.error(lgr3, "Error occurred", [])
       sleep(100)
 
       let output3 = get_buffer_contents(captured3)

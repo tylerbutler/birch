@@ -7,9 +7,9 @@
 ////
 //// ```gleam
 //// import birch/meta
-//// import birch/logger
+//// import birch/log
 ////
-//// logger.info(lgr, "Request processed", [
+//// log.info(lgr, "Request processed", [
 ////   meta.string("request_id", request_id),
 ////   meta.int("status", 200),
 ////   meta.float("duration_ms", 42.5),

@@ -1,4 +1,4 @@
-import birch as log
+import birch
 import birch/config
 import birch/formatter
 import birch/handler
@@ -9,7 +9,7 @@ import birch/handler/json
 import birch/internal/platform
 import birch/level
 import birch/level_formatter
-import birch/logger
+import birch/log
 import birch/meta
 import birch/record.{BoolVal, FloatVal, IntVal, StringVal}
 import birch/sampling
@@ -269,59 +269,59 @@ pub fn formatter_metadata_with_spaces_test() {
 // ============================================================================
 
 pub fn logger_creation_test() {
-  let lgr = logger.new("myapp.database")
+  let lgr = log.new("myapp.database")
 
-  logger.name(lgr)
+  log.name(lgr)
   |> should.equal("myapp.database")
 
-  logger.level(lgr)
+  log.level(lgr)
   |> should.equal(level.Info)
 }
 
 pub fn logger_with_level_test() {
   let lgr =
-    logger.new("test")
-    |> logger.with_level(level.Debug)
+    log.new("test")
+    |> log.with_level(level.Debug)
 
-  logger.level(lgr)
+  log.level(lgr)
   |> should.equal(level.Debug)
 }
 
 pub fn logger_with_context_test() {
   let lgr =
-    logger.new("test")
-    |> logger.with_context([
+    log.new("test")
+    |> log.with_context([
       meta.string("service", "api"),
       meta.string("version", "1.0"),
     ])
 
-  logger.context(lgr)
+  log.context(lgr)
   |> list.length
   |> should.equal(2)
 }
 
 pub fn logger_should_log_test() {
   let lgr =
-    logger.new("test")
-    |> logger.with_level(level.Warn)
+    log.new("test")
+    |> log.with_level(level.Warn)
 
-  logger.should_log(lgr, level.Err)
+  log.should_log(lgr, level.Err)
   |> should.be_true
 
-  logger.should_log(lgr, level.Warn)
+  log.should_log(lgr, level.Warn)
   |> should.be_true
 
-  logger.should_log(lgr, level.Info)
+  log.should_log(lgr, level.Info)
   |> should.be_false
 
-  logger.should_log(lgr, level.Debug)
+  log.should_log(lgr, level.Debug)
   |> should.be_false
 }
 
 pub fn logger_silent_test() {
-  let lgr = logger.silent("library.internal")
+  let lgr = log.silent("library.internal")
 
-  logger.handlers(lgr)
+  log.handlers(lgr)
   |> list.length
   |> should.equal(0)
 }
@@ -331,26 +331,26 @@ pub fn logger_custom_timestamp_test() {
   let custom_formatter = fn(_ts) { "CUSTOM_TIME" }
 
   let lgr =
-    logger.new("test")
-    |> logger.with_custom_timestamp(custom_formatter)
-    |> logger.with_handlers([handler.null()])
+    log.new("test")
+    |> log.with_custom_timestamp(custom_formatter)
+    |> log.with_handlers([handler.null()])
 
   // The logger should use the custom formatter
   // We can't directly test the output here, but we verify it compiles and runs
-  logger.info(lgr, "Test message", [])
+  log.info(lgr, "Test message", [])
 }
 
 pub fn logger_without_custom_timestamp_test() {
   let custom_formatter = fn(_ts) { "CUSTOM_TIME" }
 
   let lgr =
-    logger.new("test")
-    |> logger.with_custom_timestamp(custom_formatter)
-    |> logger.without_custom_timestamp()
-    |> logger.with_handlers([handler.null()])
+    log.new("test")
+    |> log.with_custom_timestamp(custom_formatter)
+    |> log.without_custom_timestamp()
+    |> log.with_handlers([handler.null()])
 
   // Should use default ISO 8601 format after clearing custom formatter
-  logger.info(lgr, "Test message", [])
+  log.info(lgr, "Test message", [])
 }
 
 // ============================================================================
@@ -862,40 +862,40 @@ pub fn json_builder_field_order_test() {
 // ============================================================================
 
 pub fn main_api_new_test() {
-  let lgr = log.new("myapp")
+  let lgr = birch.new("myapp")
 
-  logger.name(lgr)
+  log.name(lgr)
   |> should.equal("myapp")
 }
 
 pub fn main_api_with_context_test() {
   let lgr =
-    log.new("myapp")
-    |> log.with_context([meta.string("env", "test")])
+    birch.new("myapp")
+    |> birch.with_context([meta.string("env", "test")])
 
-  logger.context(lgr)
+  log.context(lgr)
   |> should.equal([meta.string("env", "test")])
 }
 
 pub fn main_api_with_level_test() {
   let lgr =
-    log.new("myapp")
-    |> log.with_level(level.Debug)
+    birch.new("myapp")
+    |> birch.with_level(level.Debug)
 
-  logger.level(lgr)
+  log.level(lgr)
   |> should.equal(level.Debug)
 }
 
 pub fn main_api_level_from_string_test() {
-  log.level_from_string("debug")
+  birch.level_from_string("debug")
   |> should.equal(Ok(level.Debug))
 
-  log.level_from_string("error")
+  birch.level_from_string("error")
   |> should.equal(Ok(level.Err))
 }
 
 pub fn main_api_level_to_string_test() {
-  log.level_to_string(level.Info)
+  birch.level_to_string(level.Info)
   |> should.equal("INFO")
 }
 
@@ -905,7 +905,7 @@ pub fn main_api_level_to_string_test() {
 
 pub fn config_default_test() {
   // Get default config before any configuration
-  let cfg = log.get_config()
+  let cfg = birch.get_config()
 
   // Default level should be Info
   config.get_level(cfg)
@@ -930,22 +930,22 @@ fn platform_default_handler_count() -> Int {
 
 pub fn config_set_level_test() {
   // Configure with Debug level
-  log.configure([log.config_level(level.Debug)])
+  birch.configure([birch.config_level(level.Debug)])
 
-  let cfg = log.get_config()
+  let cfg = birch.get_config()
   config.get_level(cfg)
   |> should.equal(level.Debug)
 
   // Reset to default for other tests
-  log.configure([log.config_level(level.Info)])
+  birch.configure([birch.config_level(level.Info)])
 }
 
 pub fn config_set_handlers_test() {
   // Configure with custom handlers
   let null_handler = handler.null()
-  log.configure([log.config_handlers([null_handler])])
+  birch.configure([birch.config_handlers([null_handler])])
 
-  let cfg = log.get_config()
+  let cfg = birch.get_config()
   config.get_handlers(cfg)
   |> list.length
   |> should.equal(1)
@@ -958,36 +958,36 @@ pub fn config_set_handlers_test() {
   |> should.equal("null")
 
   // Reset to default
-  log.reset_config()
+  birch.reset_config()
 }
 
 pub fn config_set_context_test() {
   // Configure with default context
-  log.configure([
-    log.config_context([
+  birch.configure([
+    birch.config_context([
       meta.string("app", "test"),
       meta.string("env", "testing"),
     ]),
   ])
 
-  let cfg = log.get_config()
+  let cfg = birch.get_config()
   config.get_context(cfg)
   |> should.equal([meta.string("app", "test"), meta.string("env", "testing")])
 
   // Reset to default
-  log.reset_config()
+  birch.reset_config()
 }
 
 pub fn config_multiple_options_test() {
   // Configure with multiple options at once
   let null_handler = handler.null()
-  log.configure([
-    log.config_level(level.Warn),
-    log.config_handlers([null_handler]),
-    log.config_context([meta.string("service", "api")]),
+  birch.configure([
+    birch.config_level(level.Warn),
+    birch.config_handlers([null_handler]),
+    birch.config_context([meta.string("service", "api")]),
   ])
 
-  let cfg = log.get_config()
+  let cfg = birch.get_config()
   config.get_level(cfg)
   |> should.equal(level.Warn)
   config.get_handlers(cfg)
@@ -997,40 +997,40 @@ pub fn config_multiple_options_test() {
   |> should.equal([meta.string("service", "api")])
 
   // Reset to default
-  log.reset_config()
+  birch.reset_config()
 }
 
 pub fn config_reset_test() {
   // Configure with custom settings
-  log.configure([log.config_level(level.Fatal)])
+  birch.configure([birch.config_level(level.Fatal)])
 
   // Verify it was set
-  let cfg1 = log.get_config()
+  let cfg1 = birch.get_config()
   config.get_level(cfg1)
   |> should.equal(level.Fatal)
 
   // Reset to default
-  log.reset_config()
+  birch.reset_config()
 
   // Verify it was reset
-  let cfg2 = log.get_config()
+  let cfg2 = birch.get_config()
   config.get_level(cfg2)
   |> should.equal(level.Info)
 }
 
 pub fn config_default_logger_uses_config_test() {
   // Configure the global config with Debug level
-  log.configure([log.config_level(level.Debug)])
+  birch.configure([birch.config_level(level.Debug)])
 
   // Create a new default logger - it should inherit the global level
-  let lgr = log.new("test.config")
+  let lgr = birch.new("test.config")
 
   // The logger should use the global configuration's level
-  logger.level(lgr)
+  log.level(lgr)
   |> should.equal(level.Debug)
 
   // Reset to default
-  log.reset_config()
+  birch.reset_config()
 }
 
 // ============================================================================
@@ -1288,83 +1288,83 @@ pub fn async_get_subject_returns_error_for_unknown_test() {
 
 pub fn set_level_changes_global_level_test() {
   // Reset to known state
-  log.reset_config()
+  birch.reset_config()
 
   // Default level should be Info
-  log.get_level()
+  birch.get_level()
   |> should.equal(level.Info)
 
   // Set to Debug level
-  log.set_level(level.Debug)
+  birch.set_level(level.Debug)
 
   // Level should now be Debug
-  log.get_level()
+  birch.get_level()
   |> should.equal(level.Debug)
 
   // Reset for other tests
-  log.reset_config()
+  birch.reset_config()
 }
 
 pub fn set_level_affects_new_loggers_test() {
   // Reset to known state
-  log.reset_config()
+  birch.reset_config()
 
   // Set global level to Warn
-  log.set_level(level.Warn)
+  birch.set_level(level.Warn)
 
   // New loggers should inherit the global level
-  let lgr = log.new("test.runtime_level")
-  logger.level(lgr)
+  let lgr = birch.new("test.runtime_level")
+  log.level(lgr)
   |> should.equal(level.Warn)
 
   // Reset for other tests
-  log.reset_config()
+  birch.reset_config()
 }
 
 pub fn set_level_takes_effect_immediately_test() {
   // Reset to known state
-  log.reset_config()
+  birch.reset_config()
 
   // Verify starting at Info
-  let cfg1 = log.get_config()
+  let cfg1 = birch.get_config()
   config.get_level(cfg1)
   |> should.equal(level.Info)
 
   // Change to Trace
-  log.set_level(level.Trace)
+  birch.set_level(level.Trace)
 
   // Should take effect immediately
-  let cfg2 = log.get_config()
+  let cfg2 = birch.get_config()
   config.get_level(cfg2)
   |> should.equal(level.Trace)
 
   // Change again to Fatal
-  log.set_level(level.Fatal)
+  birch.set_level(level.Fatal)
 
   // Should take effect immediately
-  let cfg3 = log.get_config()
+  let cfg3 = birch.get_config()
   config.get_level(cfg3)
   |> should.equal(level.Fatal)
 
   // Reset for other tests
-  log.reset_config()
+  birch.reset_config()
 }
 
 pub fn set_level_preserves_other_config_test() {
   // Reset to known state
-  log.reset_config()
+  birch.reset_config()
 
   // Configure with custom handlers and context
   let null_handler = handler.null()
-  log.configure([
-    log.config_handlers([null_handler]),
-    log.config_context([meta.string("app", "test")]),
+  birch.configure([
+    birch.config_handlers([null_handler]),
+    birch.config_context([meta.string("app", "test")]),
   ])
 
   // Set level (should preserve other settings)
-  log.set_level(level.Debug)
+  birch.set_level(level.Debug)
 
-  let cfg = log.get_config()
+  let cfg = birch.get_config()
   config.get_level(cfg)
   |> should.equal(level.Debug)
 
@@ -1383,7 +1383,7 @@ pub fn set_level_preserves_other_config_test() {
   |> should.equal([meta.string("app", "test")])
 
   // Reset for other tests
-  log.reset_config()
+  birch.reset_config()
 }
 
 // ============================================================================
@@ -1779,19 +1779,19 @@ pub fn handler_error_includes_record_test() {
 
 pub fn config_on_error_option_test() {
   // Reset to known state
-  log.reset_config()
+  birch.reset_config()
 
   // Create an error callback
   let global_error_callback = fn(_err: handler.HandlerError) { Nil }
 
   // Configure with global error callback
-  log.configure([log.config_on_error(global_error_callback)])
+  birch.configure([birch.config_on_error(global_error_callback)])
 
   // Verify config was set (we can't easily inspect the callback,
   // but we can verify configuration doesn't error)
 
   // Reset for other tests
-  log.reset_config()
+  birch.reset_config()
 }
 
 pub fn handler_get_error_callback_test() {
@@ -1820,7 +1820,7 @@ pub fn handler_get_error_callback_test() {
 
 pub fn scope_with_scope_returns_work_result_test() {
   // with_scope should return the result of the work function
-  let result = log.with_scope([meta.string("request_id", "123")], fn() { 42 })
+  let result = birch.with_scope([meta.string("request_id", "123")], fn() { 42 })
 
   result
   |> should.equal(42)
@@ -1829,7 +1829,7 @@ pub fn scope_with_scope_returns_work_result_test() {
 pub fn scope_with_scope_string_result_test() {
   // with_scope should work with any return type
   let result =
-    log.with_scope([meta.string("trace_id", "abc")], fn() { "hello" })
+    birch.with_scope([meta.string("trace_id", "abc")], fn() { "hello" })
 
   result
   |> should.equal("hello")
@@ -1838,8 +1838,8 @@ pub fn scope_with_scope_string_result_test() {
 pub fn scope_get_scope_context_inside_scope_test() {
   // Inside a scope, get_scope_context should return the scope's context
   // (including internal metadata like _scope_highlight_keys)
-  log.with_scope([meta.string("request_id", "req-123")], fn() {
-    let ctx = log.get_scope_context()
+  birch.with_scope([meta.string("request_id", "req-123")], fn() {
+    let ctx = birch.get_scope_context()
     // Filter out internal keys for comparison
     let visible_ctx =
       ctx
@@ -1851,7 +1851,7 @@ pub fn scope_get_scope_context_inside_scope_test() {
 
 pub fn scope_get_scope_context_outside_scope_test() {
   // Outside any scope, get_scope_context should return empty list (no visible metadata)
-  let ctx = log.get_scope_context()
+  let ctx = birch.get_scope_context()
 
   ctx
   |> list.filter(fn(pair) { !string.starts_with(pair.0, "_") })
@@ -1860,16 +1860,16 @@ pub fn scope_get_scope_context_outside_scope_test() {
 
 pub fn scope_nested_scopes_test() {
   // Nested scopes should combine context, with inner values taking precedence
-  log.with_scope([meta.string("outer", "value1")], fn() {
+  birch.with_scope([meta.string("outer", "value1")], fn() {
     // First scope has outer context
-    let outer_ctx = log.get_scope_context()
+    let outer_ctx = birch.get_scope_context()
     outer_ctx
     |> list.key_find("outer")
     |> should.equal(Ok(StringVal("value1")))
 
     // Nested scope adds more context
-    log.with_scope([meta.string("inner", "value2")], fn() {
-      let inner_ctx = log.get_scope_context()
+    birch.with_scope([meta.string("inner", "value2")], fn() {
+      let inner_ctx = birch.get_scope_context()
 
       // Both keys should be present
       inner_ctx
@@ -1882,7 +1882,7 @@ pub fn scope_nested_scopes_test() {
     })
 
     // After inner scope ends, only outer context remains
-    let after_inner_ctx = log.get_scope_context()
+    let after_inner_ctx = birch.get_scope_context()
     after_inner_ctx
     |> list.key_find("inner")
     |> should.be_error
@@ -1895,9 +1895,9 @@ pub fn scope_nested_scopes_test() {
 
 pub fn scope_nested_scopes_shadow_test() {
   // Inner scope with same key should shadow outer scope
-  log.with_scope([meta.string("key", "outer_value")], fn() {
-    log.with_scope([meta.string("key", "inner_value")], fn() {
-      let ctx = log.get_scope_context()
+  birch.with_scope([meta.string("key", "outer_value")], fn() {
+    birch.with_scope([meta.string("key", "inner_value")], fn() {
+      let ctx = birch.get_scope_context()
 
       // The inner value should come first (shadow the outer)
       ctx
@@ -1906,7 +1906,7 @@ pub fn scope_nested_scopes_shadow_test() {
     })
 
     // After inner scope, original value restored
-    let ctx = log.get_scope_context()
+    let ctx = birch.get_scope_context()
     ctx
     |> list.key_find("key")
     |> should.equal(Ok(StringVal("outer_value")))
@@ -1915,7 +1915,7 @@ pub fn scope_nested_scopes_shadow_test() {
 
 pub fn scope_is_available_test() {
   // is_scoped_context_available should return a boolean
-  let available = log.is_scoped_context_available()
+  let available = birch.is_scoped_context_available()
 
   // On both Erlang and JavaScript this should return a boolean
   // We just check it's callable and doesn't crash
@@ -1927,14 +1927,14 @@ pub fn scope_is_available_test() {
 
 pub fn scope_multiple_metadata_pairs_test() {
   // with_scope should support multiple key-value pairs
-  log.with_scope(
+  birch.with_scope(
     [
       meta.string("request_id", "123"),
       meta.string("user_id", "456"),
       meta.string("trace_id", "789"),
     ],
     fn() {
-      let ctx = log.get_scope_context()
+      let ctx = birch.get_scope_context()
 
       ctx
       |> list.key_find("request_id")
@@ -1953,28 +1953,28 @@ pub fn scope_multiple_metadata_pairs_test() {
 
 pub fn scope_context_cleared_after_scope_test() {
   // Ensure context is properly cleaned up after scope ends
-  log.with_scope([meta.string("temp_key", "temp_value")], fn() {
+  birch.with_scope([meta.string("temp_key", "temp_value")], fn() {
     // Inside scope, context exists
-    log.get_scope_context()
+    birch.get_scope_context()
     |> list.key_find("temp_key")
     |> should.equal(Ok(StringVal("temp_value")))
   })
 
   // After scope ends, context should be empty (no visible metadata)
-  log.get_scope_context()
+  birch.get_scope_context()
   |> list.filter(fn(pair) { !string.starts_with(pair.0, "_") })
   |> should.equal([])
 }
 
 pub fn scope_context_included_in_log_records_test() {
   // Reset global config for clean test
-  log.reset_config()
+  birch.reset_config()
 
   // Create a mutable reference to capture log records (using list accumulator pattern)
   // We'll use a logger with a null handler and verify scope context is read
-  log.with_scope([meta.string("request_id", "test-123")], fn() {
+  birch.with_scope([meta.string("request_id", "test-123")], fn() {
     // Get the scope context which should be included in logs
-    let ctx = log.get_scope_context()
+    let ctx = birch.get_scope_context()
     ctx
     |> list.key_find("request_id")
     |> should.equal(Ok(StringVal("test-123")))
@@ -1983,14 +1983,14 @@ pub fn scope_context_included_in_log_records_test() {
   })
 
   // Verify scope context is cleaned up (no visible metadata)
-  log.get_scope_context()
+  birch.get_scope_context()
   |> list.filter(fn(pair) { !string.starts_with(pair.0, "_") })
   |> should.equal([])
 }
 
 pub fn scope_empty_context_test() {
   // with_scope with empty context should not crash
-  let result = log.with_scope([], fn() { "success" })
+  let result = birch.with_scope([], fn() { "success" })
 
   result
   |> should.equal("success")
@@ -2002,8 +2002,8 @@ pub fn scope_empty_context_test() {
 
 pub fn with_logger_returns_work_result_test() {
   // with_logger should return the result of the work function
-  let lgr = log.new("test") |> log.with_handlers([handler.null()])
-  let result = log.with_logger(lgr, fn() { 42 })
+  let lgr = birch.new("test") |> birch.with_handlers([handler.null()])
+  let result = birch.with_logger(lgr, fn() { 42 })
 
   result
   |> should.equal(42)
@@ -2011,8 +2011,8 @@ pub fn with_logger_returns_work_result_test() {
 
 pub fn with_logger_returns_string_result_test() {
   // with_logger should work with any return type
-  let lgr = log.new("test") |> log.with_handlers([handler.null()])
-  let result = log.with_logger(lgr, fn() { "hello" })
+  let lgr = birch.new("test") |> birch.with_handlers([handler.null()])
+  let result = birch.with_logger(lgr, fn() { "hello" })
 
   result
   |> should.equal("hello")
@@ -2020,60 +2020,60 @@ pub fn with_logger_returns_string_result_test() {
 
 pub fn with_logger_overrides_default_logger_test() {
   // Inside with_logger, get_scoped_logger should return the scoped logger
-  let lgr = log.new("scoped-test") |> log.with_handlers([handler.null()])
-  log.with_logger(lgr, fn() {
-    let result = log.get_scoped_logger()
+  let lgr = birch.new("scoped-test") |> birch.with_handlers([handler.null()])
+  birch.with_logger(lgr, fn() {
+    let result = birch.get_scoped_logger()
     result
     |> should.be_ok()
     let assert Ok(scoped) = result
-    logger.name(scoped)
+    log.name(scoped)
     |> should.equal("scoped-test")
   })
 }
 
 pub fn with_logger_cleared_after_scope_test() {
   // Outside with_logger, no scoped logger should be set
-  let lgr = log.new("temp") |> log.with_handlers([handler.null()])
-  log.with_logger(lgr, fn() { Nil })
+  let lgr = birch.new("temp") |> birch.with_handlers([handler.null()])
+  birch.with_logger(lgr, fn() { Nil })
 
-  log.get_scoped_logger()
+  birch.get_scoped_logger()
   |> should.be_error()
 }
 
 pub fn with_logger_nested_scopes_test() {
   // Nested with_logger should work correctly
-  let outer = log.new("outer") |> log.with_handlers([handler.null()])
-  let inner = log.new("inner") |> log.with_handlers([handler.null()])
+  let outer = birch.new("outer") |> birch.with_handlers([handler.null()])
+  let inner = birch.new("inner") |> birch.with_handlers([handler.null()])
 
-  log.with_logger(outer, fn() {
+  birch.with_logger(outer, fn() {
     // Should see outer logger
-    let assert Ok(lgr) = log.get_scoped_logger()
-    logger.name(lgr) |> should.equal("outer")
+    let assert Ok(lgr) = birch.get_scoped_logger()
+    log.name(lgr) |> should.equal("outer")
 
-    log.with_logger(inner, fn() {
+    birch.with_logger(inner, fn() {
       // Should see inner logger
-      let assert Ok(lgr2) = log.get_scoped_logger()
-      logger.name(lgr2) |> should.equal("inner")
+      let assert Ok(lgr2) = birch.get_scoped_logger()
+      log.name(lgr2) |> should.equal("inner")
     })
 
     // Should be back to outer logger
-    let assert Ok(lgr3) = log.get_scoped_logger()
-    logger.name(lgr3) |> should.equal("outer")
+    let assert Ok(lgr3) = birch.get_scoped_logger()
+    log.name(lgr3) |> should.equal("outer")
   })
 
   // Should be cleared
-  log.get_scoped_logger() |> should.be_error()
+  birch.get_scoped_logger() |> should.be_error()
 }
 
 pub fn with_logger_silent_logger_test() {
   // A silent logger (no handlers) should work as a scoped override
-  let silent = log.silent("silent-test")
-  log.with_logger(silent, fn() {
+  let silent = birch.silent("silent-test")
+  birch.with_logger(silent, fn() {
     // Module-level logging should use the silent logger (no output)
-    log.info("this should be silent")
-    let assert Ok(lgr) = log.get_scoped_logger()
-    logger.name(lgr) |> should.equal("silent-test")
-    logger.handlers(lgr) |> should.equal([])
+    birch.info("this should be silent")
+    let assert Ok(lgr) = birch.get_scoped_logger()
+    log.name(lgr) |> should.equal("silent-test")
+    log.handlers(lgr) |> should.equal([])
   })
 }
 
@@ -2210,14 +2210,14 @@ pub fn rate_limit_try_consume_test() {
 
 pub fn config_with_sampling_test() {
   // Reset to known state
-  log.reset_config()
+  birch.reset_config()
 
   // Configure with sampling
-  log.configure([
-    log.config_sampling(sampling.config(level.Debug, 0.5)),
+  birch.configure([
+    birch.config_sampling(sampling.config(level.Debug, 0.5)),
   ])
 
-  let cfg = log.get_config()
+  let cfg = birch.get_config()
 
   // Verify sampling config is set
   config.get_sampling(cfg)
@@ -2225,14 +2225,14 @@ pub fn config_with_sampling_test() {
   |> should.be_true
 
   // Reset for other tests
-  log.reset_config()
+  birch.reset_config()
 }
 
 pub fn config_without_sampling_test() {
   // Reset to known state
-  log.reset_config()
+  birch.reset_config()
 
-  let cfg = log.get_config()
+  let cfg = birch.get_config()
 
   // Default should have no sampling
   config.get_sampling(cfg)
@@ -2240,7 +2240,7 @@ pub fn config_without_sampling_test() {
   |> should.be_true
 
   // Reset for other tests
-  log.reset_config()
+  birch.reset_config()
 }
 
 // ============================================================================
@@ -2362,13 +2362,13 @@ pub fn format_rotation_timestamp_daily_test() {
 pub fn logger_error_result_with_error_test() {
   // Use null handler to verify the function runs without crashing
   let lgr =
-    logger.new("test")
-    |> logger.with_handlers([handler.null()])
-    |> logger.with_level(level.Trace)
+    log.new("test")
+    |> log.with_handlers([handler.null()])
+    |> log.with_level(level.Trace)
 
   // Log an error result - should not crash
   let result: Result(Int, String) = Error("connection refused")
-  logger.error_result(lgr, "Database connection failed", result, [
+  log.error_result(lgr, "Database connection failed", result, [
     meta.string("host", "localhost"),
   ])
 
@@ -2379,13 +2379,13 @@ pub fn logger_error_result_with_error_test() {
 pub fn logger_error_result_with_ok_test() {
   // Use null handler
   let lgr =
-    logger.new("test")
-    |> logger.with_handlers([handler.null()])
-    |> logger.with_level(level.Trace)
+    log.new("test")
+    |> log.with_handlers([handler.null()])
+    |> log.with_level(level.Trace)
 
   // Log with an Ok result (no error metadata should be added)
   let result: Result(Int, String) = Ok(42)
-  logger.error_result(lgr, "Operation completed", result, [])
+  log.error_result(lgr, "Operation completed", result, [])
 
   // If we get here, the test passed
   True |> should.be_true
@@ -2394,13 +2394,13 @@ pub fn logger_error_result_with_ok_test() {
 pub fn logger_fatal_result_test() {
   // Use null handler
   let lgr =
-    logger.new("test")
-    |> logger.with_handlers([handler.null()])
-    |> logger.with_level(level.Trace)
+    log.new("test")
+    |> log.with_handlers([handler.null()])
+    |> log.with_level(level.Trace)
 
   // Log a fatal error result
   let result: Result(Nil, String) = Error("critical failure")
-  logger.fatal_result(lgr, "System cannot continue", result, [])
+  log.fatal_result(lgr, "System cannot continue", result, [])
 
   // If we get here, the test passed
   True |> should.be_true
@@ -2408,18 +2408,18 @@ pub fn logger_fatal_result_test() {
 
 pub fn module_level_error_result_test() {
   // Reset config and use null handler
-  log.reset_config()
-  log.configure([
-    log.config_handlers([handler.null()]),
-    log.config_level(level.Trace),
+  birch.reset_config()
+  birch.configure([
+    birch.config_handlers([handler.null()]),
+    birch.config_level(level.Trace),
   ])
 
   // Use module-level error_result
   let result: Result(String, String) = Error("file not found")
-  log.error_result("Failed to read config", result)
+  birch.error_result("Failed to read config", result)
 
   // Clean up
-  log.reset_config()
+  birch.reset_config()
 
   // If we get here, the test passed
   True |> should.be_true
@@ -2427,21 +2427,21 @@ pub fn module_level_error_result_test() {
 
 pub fn module_level_error_result_with_metadata_test() {
   // Reset config and use null handler
-  log.reset_config()
-  log.configure([
-    log.config_handlers([handler.null()]),
-    log.config_level(level.Trace),
+  birch.reset_config()
+  birch.configure([
+    birch.config_handlers([handler.null()]),
+    birch.config_level(level.Trace),
   ])
 
-  // Use logger.error_result with metadata directly
+  // Use log.error_result with metadata directly
   let result: Result(String, String) = Error("permission denied")
-  let lgr = log.new("test") |> log.with_handler(handler.null())
-  logger.error_result(lgr, "Access denied", result, [
+  let lgr = birch.new("test") |> birch.with_handler(handler.null())
+  log.error_result(lgr, "Access denied", result, [
     meta.string("path", "/etc/secrets"),
   ])
 
   // Clean up
-  log.reset_config()
+  birch.reset_config()
 
   // If we get here, the test passed
   True |> should.be_true
@@ -2454,12 +2454,12 @@ pub fn module_level_error_result_with_metadata_test() {
 pub fn logger_with_time_provider_test() {
   // Use null handler
   let lgr =
-    logger.new("test")
-    |> logger.with_handlers([handler.null()])
-    |> logger.with_time_provider(fn() { "2024-01-01T00:00:00.000Z" })
+    log.new("test")
+    |> log.with_handlers([handler.null()])
+    |> log.with_time_provider(fn() { "2024-01-01T00:00:00.000Z" })
 
   // Log a message
-  logger.info(lgr, "Test message", [])
+  log.info(lgr, "Test message", [])
 
   // If we get here, the test passed
   True |> should.be_true
@@ -2468,13 +2468,13 @@ pub fn logger_with_time_provider_test() {
 pub fn logger_without_time_provider_test() {
   // Create a logger with a time provider, then remove it
   let lgr =
-    logger.new("test")
-    |> logger.with_time_provider(fn() { "FIXED" })
-    |> logger.without_time_provider()
-    |> logger.with_handlers([handler.null()])
+    log.new("test")
+    |> log.with_time_provider(fn() { "FIXED" })
+    |> log.without_time_provider()
+    |> log.with_handlers([handler.null()])
 
   // Log a message
-  logger.info(lgr, "Test message", [])
+  log.info(lgr, "Test message", [])
 
   // If we get here, the test passed
   True |> should.be_true
@@ -2483,11 +2483,11 @@ pub fn logger_without_time_provider_test() {
 pub fn log_module_with_time_provider_test() {
   // Use module-level API for time provider
   let lgr =
-    log.new("test")
-    |> log.with_time_provider(fn() { "1999-12-31T23:59:59.999Z" })
-    |> log.with_handler(handler.null())
+    birch.new("test")
+    |> birch.with_time_provider(fn() { "1999-12-31T23:59:59.999Z" })
+    |> birch.with_handler(handler.null())
 
-  logger.info(lgr, "Y2K test", [])
+  log.info(lgr, "Y2K test", [])
 
   // If we get here, the test passed
   True |> should.be_true
@@ -2500,16 +2500,16 @@ pub fn log_module_with_time_provider_test() {
 pub fn logger_with_caller_id_capture_test() {
   // Create a logger with caller ID capture enabled
   let lgr =
-    logger.new("test")
-    |> logger.with_handlers([handler.null()])
-    |> logger.with_caller_id_capture()
+    log.new("test")
+    |> log.with_handlers([handler.null()])
+    |> log.with_caller_id_capture()
 
   // Verify capture is enabled
-  logger.is_caller_id_capture_enabled(lgr)
+  log.is_caller_id_capture_enabled(lgr)
   |> should.be_true
 
   // Log a message
-  logger.info(lgr, "Test message", [])
+  log.info(lgr, "Test message", [])
 
   // If we get here, the test passed
   True |> should.be_true
@@ -2518,11 +2518,11 @@ pub fn logger_with_caller_id_capture_test() {
 pub fn logger_without_caller_id_capture_test() {
   // Create a logger with caller ID capture, then disable it
   let lgr =
-    logger.new("test")
-    |> logger.with_caller_id_capture()
-    |> logger.without_caller_id_capture()
+    log.new("test")
+    |> log.with_caller_id_capture()
+    |> log.without_caller_id_capture()
 
-  logger.is_caller_id_capture_enabled(lgr)
+  log.is_caller_id_capture_enabled(lgr)
   |> should.be_false
 }
 
@@ -2550,11 +2550,11 @@ pub fn record_with_caller_id_test() {
 pub fn log_module_with_caller_id_capture_test() {
   // Use module-level API
   let lgr =
-    log.new("test")
-    |> log.with_caller_id_capture()
-    |> log.with_handler(handler.null())
+    birch.new("test")
+    |> birch.with_caller_id_capture()
+    |> birch.with_handler(handler.null())
 
-  logger.info(lgr, "Test from module API", [])
+  log.info(lgr, "Test from module API", [])
 
   // If we get here, the test passed
   True |> should.be_true
@@ -2567,15 +2567,15 @@ pub fn log_module_with_caller_id_capture_test() {
 pub fn logger_all_advanced_features_combined_test() {
   // Test all advanced features together
   let lgr =
-    log.new("combined-test")
-    |> log.with_time_provider(fn() { "2025-01-02T12:00:00.000Z" })
-    |> log.with_caller_id_capture()
-    |> log.with_handler(handler.null())
-    |> log.with_level(level.Trace)
+    birch.new("combined-test")
+    |> birch.with_time_provider(fn() { "2025-01-02T12:00:00.000Z" })
+    |> birch.with_caller_id_capture()
+    |> birch.with_handler(handler.null())
+    |> birch.with_level(level.Trace)
 
   // Log an error with result
   let result: Result(Int, String) = Error("test error")
-  logger.error_result(lgr, "Combined test failed", result, [
+  log.error_result(lgr, "Combined test failed", result, [
     meta.string("feature", "all"),
   ])
 
@@ -3144,31 +3144,31 @@ pub fn console_with_level_formatter_test() {
 // ============================================================================
 
 pub fn main_api_silent_test() {
-  let lgr = log.silent("test-silent")
+  let lgr = birch.silent("test-silent")
 
   // Silent logger should have the correct name
-  logger.name(lgr)
+  log.name(lgr)
   |> should.equal("test-silent")
 
   // Silent logger should have no handlers
-  logger.handlers(lgr)
+  log.handlers(lgr)
   |> list.length
   |> should.equal(0)
 }
 
 pub fn main_api_with_handler_test() {
   let lgr =
-    log.new("test")
-    |> log.with_handler(handler.null())
+    birch.new("test")
+    |> birch.with_handler(handler.null())
 
   // Should have at least one handler (null handler added)
-  logger.handlers(lgr)
+  log.handlers(lgr)
   |> list.is_empty
   |> should.be_false
 }
 
 pub fn main_api_timestamp_test() {
-  let ts = log.timestamp()
+  let ts = birch.timestamp()
 
   // Timestamp should be non-empty
   string.is_empty(ts)
@@ -3181,23 +3181,23 @@ pub fn main_api_timestamp_test() {
 
 pub fn main_api_without_time_provider_test() {
   let lgr =
-    log.new("test")
-    |> log.with_time_provider(fn() { "fixed" })
-    |> log.without_time_provider()
+    birch.new("test")
+    |> birch.with_time_provider(fn() { "fixed" })
+    |> birch.without_time_provider()
 
   // After removing time provider, logger should use platform timestamp
   // Just verify it doesn't crash
-  logger.name(lgr)
+  log.name(lgr)
   |> should.equal("test")
 }
 
 pub fn main_api_without_caller_id_capture_test() {
   let lgr =
-    log.new("test")
-    |> log.with_caller_id_capture()
-    |> log.without_caller_id_capture()
+    birch.new("test")
+    |> birch.with_caller_id_capture()
+    |> birch.without_caller_id_capture()
 
-  logger.is_caller_id_capture_enabled(lgr)
+  log.is_caller_id_capture_enabled(lgr)
   |> should.be_false
 }
 
@@ -3207,59 +3207,59 @@ pub fn main_api_without_caller_id_capture_test() {
 
 pub fn main_api_logger_log_test() {
   let lgr =
-    log.new("test")
-    |> log.with_level(level.Trace)
-    |> log.with_handler(handler.null())
+    birch.new("test")
+    |> birch.with_level(level.Trace)
+    |> birch.with_handler(handler.null())
 
   // Should not crash - logs at specified level
-  logger.log(lgr, level.Info, "Test message", [meta.string("key", "value")])
+  log.log(lgr, level.Info, "Test message", [meta.string("key", "value")])
 }
 
 pub fn main_api_logger_trace_test() {
   let lgr =
-    log.new("test")
-    |> log.with_level(level.Trace)
-    |> log.with_handler(handler.null())
+    birch.new("test")
+    |> birch.with_level(level.Trace)
+    |> birch.with_handler(handler.null())
 
   // Should not crash
-  logger.trace(lgr, "Trace message", [])
+  log.trace(lgr, "Trace message", [])
 }
 
 pub fn main_api_logger_debug_test() {
   let lgr =
-    log.new("test")
-    |> log.with_level(level.Debug)
-    |> log.with_handler(handler.null())
+    birch.new("test")
+    |> birch.with_level(level.Debug)
+    |> birch.with_handler(handler.null())
 
   // Should not crash
-  logger.debug(lgr, "Debug message", [meta.string("detail", "test")])
+  log.debug(lgr, "Debug message", [meta.string("detail", "test")])
 }
 
 pub fn main_api_logger_warn_test() {
   let lgr =
-    log.new("test")
-    |> log.with_handler(handler.null())
+    birch.new("test")
+    |> birch.with_handler(handler.null())
 
   // Should not crash
-  logger.warn(lgr, "Warning message", [])
+  log.warn(lgr, "Warning message", [])
 }
 
 pub fn main_api_logger_error_test() {
   let lgr =
-    log.new("test")
-    |> log.with_handler(handler.null())
+    birch.new("test")
+    |> birch.with_handler(handler.null())
 
   // Should not crash
-  logger.error(lgr, "Error message", [meta.string("code", "E001")])
+  log.error(lgr, "Error message", [meta.string("code", "E001")])
 }
 
 pub fn main_api_logger_fatal_test() {
   let lgr =
-    log.new("test")
-    |> log.with_handler(handler.null())
+    birch.new("test")
+    |> birch.with_handler(handler.null())
 
   // Should not crash
-  logger.fatal(lgr, "Fatal message", [])
+  log.fatal(lgr, "Fatal message", [])
 }
 
 // ============================================================================
@@ -3268,132 +3268,132 @@ pub fn main_api_logger_fatal_test() {
 
 pub fn main_api_trace_test() {
   // Configure with trace level and null handler to capture
-  log.reset_config()
-  log.configure([
-    log.config_level(level.Trace),
-    log.config_handlers([handler.null()]),
+  birch.reset_config()
+  birch.configure([
+    birch.config_level(level.Trace),
+    birch.config_handlers([handler.null()]),
   ])
 
   // Should not crash
-  log.trace("Trace level message")
+  birch.trace("Trace level message")
 
   // Cleanup
-  log.reset_config()
+  birch.reset_config()
 }
 
 pub fn main_api_trace_with_metadata_test() {
   let lgr =
-    log.new("test")
-    |> log.with_level(level.Trace)
-    |> log.with_handler(handler.null())
+    birch.new("test")
+    |> birch.with_level(level.Trace)
+    |> birch.with_handler(handler.null())
 
   // Should not crash
-  logger.trace(lgr, "Trace with metadata", [meta.string("trace_id", "abc123")])
+  log.trace(lgr, "Trace with metadata", [meta.string("trace_id", "abc123")])
 }
 
 pub fn main_api_debug_test() {
-  log.reset_config()
-  log.configure([
-    log.config_level(level.Debug),
-    log.config_handlers([handler.null()]),
+  birch.reset_config()
+  birch.configure([
+    birch.config_level(level.Debug),
+    birch.config_handlers([handler.null()]),
   ])
 
   // Should not crash
-  log.debug("Debug level message")
+  birch.debug("Debug level message")
 
-  log.reset_config()
+  birch.reset_config()
 }
 
 pub fn main_api_debug_with_metadata_test() {
   let lgr =
-    log.new("test")
-    |> log.with_level(level.Debug)
-    |> log.with_handler(handler.null())
+    birch.new("test")
+    |> birch.with_level(level.Debug)
+    |> birch.with_handler(handler.null())
 
   // Should not crash
-  logger.debug(lgr, "Debug with metadata", [
+  log.debug(lgr, "Debug with metadata", [
     meta.string("debug_key", "debug_value"),
   ])
 }
 
 pub fn main_api_info_test() {
-  log.reset_config()
-  log.configure([log.config_handlers([handler.null()])])
+  birch.reset_config()
+  birch.configure([birch.config_handlers([handler.null()])])
 
   // Should not crash (Info is default level)
-  log.info("Info level message")
+  birch.info("Info level message")
 
-  log.reset_config()
+  birch.reset_config()
 }
 
 pub fn main_api_info_with_metadata_test() {
   let lgr =
-    log.new("test")
-    |> log.with_handler(handler.null())
+    birch.new("test")
+    |> birch.with_handler(handler.null())
 
   // Should not crash
-  logger.info(lgr, "Info with metadata", [meta.string("user", "alice")])
+  log.info(lgr, "Info with metadata", [meta.string("user", "alice")])
 }
 
 pub fn main_api_warn_test() {
-  log.reset_config()
-  log.configure([log.config_handlers([handler.null()])])
+  birch.reset_config()
+  birch.configure([birch.config_handlers([handler.null()])])
 
   // Should not crash
-  log.warn("Warning level message")
+  birch.warn("Warning level message")
 
-  log.reset_config()
+  birch.reset_config()
 }
 
 pub fn main_api_warn_with_metadata_test() {
   let lgr =
-    log.new("test")
-    |> log.with_handler(handler.null())
+    birch.new("test")
+    |> birch.with_handler(handler.null())
 
   // Should not crash
-  logger.warn(lgr, "Warning with metadata", [
+  log.warn(lgr, "Warning with metadata", [
     meta.string("warning_code", "W001"),
   ])
 }
 
 pub fn main_api_error_test() {
-  log.reset_config()
-  log.configure([log.config_handlers([handler.null()])])
+  birch.reset_config()
+  birch.configure([birch.config_handlers([handler.null()])])
 
   // Should not crash
-  log.error("Error level message")
+  birch.error("Error level message")
 
-  log.reset_config()
+  birch.reset_config()
 }
 
 pub fn main_api_error_with_metadata_test() {
   let lgr =
-    log.new("test")
-    |> log.with_handler(handler.null())
+    birch.new("test")
+    |> birch.with_handler(handler.null())
 
   // Should not crash
-  logger.error(lgr, "Error with metadata", [
+  log.error(lgr, "Error with metadata", [
     meta.string("error_type", "validation"),
   ])
 }
 
 pub fn main_api_fatal_test() {
-  log.reset_config()
-  log.configure([log.config_handlers([handler.null()])])
+  birch.reset_config()
+  birch.configure([birch.config_handlers([handler.null()])])
 
   // Should not crash
-  log.fatal("Fatal level message")
+  birch.fatal("Fatal level message")
 
-  log.reset_config()
+  birch.reset_config()
 }
 
 pub fn main_api_fatal_with_metadata_test() {
   let lgr =
-    log.new("test")
-    |> log.with_handler(handler.null())
+    birch.new("test")
+    |> birch.with_handler(handler.null())
 
   // Should not crash
-  logger.fatal(lgr, "Fatal with metadata", [meta.string("critical", "true")])
+  log.fatal(lgr, "Fatal with metadata", [meta.string("critical", "true")])
 }
 
 // ============================================================================
@@ -3401,57 +3401,57 @@ pub fn main_api_fatal_with_metadata_test() {
 // ============================================================================
 
 pub fn main_api_debug_lazy_test() {
-  log.reset_config()
-  log.configure([
-    log.config_level(level.Debug),
-    log.config_handlers([handler.null()]),
+  birch.reset_config()
+  birch.configure([
+    birch.config_level(level.Debug),
+    birch.config_handlers([handler.null()]),
   ])
 
   // Should call the function and not crash
-  log.debug_lazy(fn() { "Lazy debug message" })
+  birch.debug_lazy(fn() { "Lazy debug message" })
 
-  log.reset_config()
+  birch.reset_config()
 }
 
 pub fn main_api_debug_lazy_not_called_when_filtered_test() {
-  log.reset_config()
+  birch.reset_config()
   // Set level higher than Debug - lazy function should NOT be called
-  log.configure([
-    log.config_level(level.Warn),
-    log.config_handlers([handler.null()]),
+  birch.configure([
+    birch.config_level(level.Warn),
+    birch.config_handlers([handler.null()]),
   ])
 
   // This would crash if called, but shouldn't be since Debug < Warn
-  log.debug_lazy(fn() {
+  birch.debug_lazy(fn() {
     // If this runs, it means lazy evaluation isn't working
     // We can't easily verify this doesn't run, but we verify it doesn't crash
     "This lazy function runs"
   })
 
-  log.reset_config()
+  birch.reset_config()
 }
 
 pub fn main_api_info_lazy_test() {
-  log.reset_config()
-  log.configure([log.config_handlers([handler.null()])])
+  birch.reset_config()
+  birch.configure([birch.config_handlers([handler.null()])])
 
   // Should call the function and not crash
-  log.info_lazy(fn() { "Lazy info message" })
+  birch.info_lazy(fn() { "Lazy info message" })
 
-  log.reset_config()
+  birch.reset_config()
 }
 
 pub fn main_api_info_lazy_not_called_when_filtered_test() {
-  log.reset_config()
-  log.configure([
-    log.config_level(level.Err),
-    log.config_handlers([handler.null()]),
+  birch.reset_config()
+  birch.configure([
+    birch.config_level(level.Err),
+    birch.config_handlers([handler.null()]),
   ])
 
   // Should not be called since Info < Err
-  log.info_lazy(fn() { "This lazy function runs" })
+  birch.info_lazy(fn() { "This lazy function runs" })
 
-  log.reset_config()
+  birch.reset_config()
 }
 
 // ============================================================================
@@ -3459,51 +3459,51 @@ pub fn main_api_info_lazy_not_called_when_filtered_test() {
 // ============================================================================
 
 pub fn main_api_fatal_result_with_error_test() {
-  log.reset_config()
-  log.configure([log.config_handlers([handler.null()])])
+  birch.reset_config()
+  birch.configure([birch.config_handlers([handler.null()])])
 
   let result: Result(Int, String) = Error("Critical failure")
 
   // Should not crash - logs fatal with error in metadata
-  log.fatal_result("System crash", result)
+  birch.fatal_result("System crash", result)
 
-  log.reset_config()
+  birch.reset_config()
 }
 
 pub fn main_api_fatal_result_with_ok_test() {
-  log.reset_config()
-  log.configure([log.config_handlers([handler.null()])])
+  birch.reset_config()
+  birch.configure([birch.config_handlers([handler.null()])])
 
   let result: Result(Int, String) = Ok(42)
 
   // Should not crash - logs fatal without error metadata
-  log.fatal_result("Unexpected termination", result)
+  birch.fatal_result("Unexpected termination", result)
 
-  log.reset_config()
+  birch.reset_config()
 }
 
 pub fn main_api_fatal_result_with_metadata_test() {
   let lgr =
-    log.new("test")
-    |> log.with_handler(handler.null())
+    birch.new("test")
+    |> birch.with_handler(handler.null())
 
   let result: Result(Int, String) = Error("Disk full")
 
   // Should not crash
-  logger.fatal_result(lgr, "Storage failure", result, [
+  log.fatal_result(lgr, "Storage failure", result, [
     meta.string("disk", "/dev/sda1"),
   ])
 }
 
 pub fn main_api_logger_fatal_result_test() {
   let lgr =
-    log.new("test")
-    |> log.with_handler(handler.null())
+    birch.new("test")
+    |> birch.with_handler(handler.null())
 
   let result: Result(Int, String) = Error("Connection lost")
 
   // Should not crash
-  logger.fatal_result(lgr, "Database connection failed", result, [
+  log.fatal_result(lgr, "Database connection failed", result, [
     meta.string("host", "db.example.com"),
   ])
 }
@@ -3513,61 +3513,61 @@ pub fn main_api_logger_fatal_result_test() {
 // ============================================================================
 
 pub fn main_api_config_level_test() {
-  log.reset_config()
+  birch.reset_config()
 
   // Use config_level function directly
-  log.configure([log.config_level(level.Warn)])
+  birch.configure([birch.config_level(level.Warn)])
 
-  log.get_level()
+  birch.get_level()
   |> should.equal(level.Warn)
 
-  log.reset_config()
+  birch.reset_config()
 }
 
 pub fn main_api_config_handlers_test() {
-  log.reset_config()
+  birch.reset_config()
 
   let h1 = handler.null()
   let h2 = handler.null()
 
-  log.configure([log.config_handlers([h1, h2])])
+  birch.configure([birch.config_handlers([h1, h2])])
 
-  let cfg = log.get_config()
+  let cfg = birch.get_config()
   list.length(config.get_handlers(cfg))
   |> should.equal(2)
 
-  log.reset_config()
+  birch.reset_config()
 }
 
 pub fn main_api_config_context_test() {
-  log.reset_config()
+  birch.reset_config()
 
-  log.configure([
-    log.config_context([
+  birch.configure([
+    birch.config_context([
       meta.string("env", "production"),
       meta.string("version", "1.0"),
     ]),
   ])
 
-  let cfg = log.get_config()
+  let cfg = birch.get_config()
   config.get_context(cfg)
   |> should.equal([
     meta.string("env", "production"),
     meta.string("version", "1.0"),
   ])
 
-  log.reset_config()
+  birch.reset_config()
 }
 
 pub fn main_api_config_on_error_test() {
-  log.reset_config()
+  birch.reset_config()
 
   // Create a simple error callback
   let callback = fn(_err) { Nil }
 
-  log.configure([log.config_on_error(callback)])
+  birch.configure([birch.config_on_error(callback)])
 
-  let cfg = log.get_config()
+  let cfg = birch.get_config()
   // Verify callback is set (Some rather than None)
   case config.get_on_error(cfg) {
     Some(_) -> True
@@ -3575,22 +3575,22 @@ pub fn main_api_config_on_error_test() {
   }
   |> should.be_true
 
-  log.reset_config()
+  birch.reset_config()
 }
 
 pub fn main_api_config_sampling_test() {
-  log.reset_config()
+  birch.reset_config()
 
   let sample_cfg = sampling.config(level.Debug, 0.5)
-  log.configure([log.config_sampling(sample_cfg)])
+  birch.configure([birch.config_sampling(sample_cfg)])
 
-  let cfg = log.get_config()
+  let cfg = birch.get_config()
   // Verify sampling is configured
   config.get_sampling(cfg)
   |> option.is_some
   |> should.be_true
 
-  log.reset_config()
+  birch.reset_config()
 }
 
 // ============================================================================
@@ -3598,18 +3598,18 @@ pub fn main_api_config_sampling_test() {
 // ============================================================================
 
 pub fn main_api_get_level_test() {
-  log.reset_config()
+  birch.reset_config()
 
   // Default level should be Info
-  log.get_level()
+  birch.get_level()
   |> should.equal(level.Info)
 
   // Change level and verify
-  log.set_level(level.Debug)
-  log.get_level()
+  birch.set_level(level.Debug)
+  birch.get_level()
   |> should.equal(level.Debug)
 
-  log.reset_config()
+  birch.reset_config()
 }
 
 // ============================================================================
@@ -3618,9 +3618,9 @@ pub fn main_api_get_level_test() {
 
 pub fn main_api_with_scope_test() {
   let result =
-    log.with_scope([meta.string("request_id", "req-123")], fn() {
+    birch.with_scope([meta.string("request_id", "req-123")], fn() {
       // Inside scope - filter out internal keys (prefixed with _)
-      log.get_scope_context()
+      birch.get_scope_context()
       |> list.filter(fn(pair) { !string.starts_with(pair.0, "_") })
     })
 
@@ -3630,14 +3630,14 @@ pub fn main_api_with_scope_test() {
 
 pub fn main_api_get_scope_context_outside_test() {
   // Outside any scope
-  log.get_scope_context()
+  birch.get_scope_context()
   |> should.equal([])
 }
 
 @target(erlang)
 pub fn main_api_is_scoped_context_available_erlang_test() {
   // On Erlang, this should always be true (process dictionary is always available)
-  log.is_scoped_context_available()
+  birch.is_scoped_context_available()
   |> should.be_true
 }
 
@@ -3645,15 +3645,15 @@ pub fn main_api_is_scoped_context_available_erlang_test() {
 pub fn main_api_is_scoped_context_available_js_test() {
   // On JavaScript, availability depends on the runtime
   // Node.js has AsyncLocalStorage, Deno/Bun may not
-  let available = log.is_scoped_context_available()
+  let available = birch.is_scoped_context_available()
 
   // If AsyncLocalStorage is available, verify scoped context actually works
   case available {
     True -> {
       // Scoped context should work when available
       let result =
-        log.with_scope([meta.string("test_key", "test_value")], fn() {
-          log.get_scope_context()
+        birch.with_scope([meta.string("test_key", "test_value")], fn() {
+          birch.get_scope_context()
           |> list.filter(fn(pair) { !string.starts_with(pair.0, "_") })
         })
       result
@@ -3686,23 +3686,23 @@ pub fn main_api_type_reexports_test() {
 // ============================================================================
 
 pub fn main_api_default_logger_inherits_config_test() {
-  log.reset_config()
+  birch.reset_config()
 
   // Configure global settings
-  log.configure([
-    log.config_level(level.Debug),
-    log.config_context([meta.string("app", "test-app")]),
-    log.config_handlers([handler.null()]),
+  birch.configure([
+    birch.config_level(level.Debug),
+    birch.config_context([meta.string("app", "test-app")]),
+    birch.config_handlers([handler.null()]),
   ])
 
   // Create a new logger - should inherit config
-  let lgr = log.new("mylogger")
+  let lgr = birch.new("mylogger")
 
-  logger.level(lgr)
+  log.level(lgr)
   |> should.equal(level.Debug)
 
-  logger.context(lgr)
+  log.context(lgr)
   |> should.equal([meta.string("app", "test-app")])
 
-  log.reset_config()
+  birch.reset_config()
 }
