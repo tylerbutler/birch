@@ -317,18 +317,15 @@ safe_call(Fun) ->
         Fun(),
         {ok, nil}
     catch
-        Class:Reason:_Stacktrace ->
-            ErrorMsg = format_error(Class, Reason),
+        Class:Reason:Stacktrace ->
+            ErrorMsg = format_error(Class, Reason, Stacktrace),
             {error, ErrorMsg}
     end.
 
-%% Format an error/exception into a readable string
-format_error(error, Reason) ->
-    iolist_to_binary(io_lib:format("~p", [Reason]));
-format_error(throw, Reason) ->
-    iolist_to_binary(io_lib:format("throw: ~p", [Reason]));
-format_error(exit, Reason) ->
-    iolist_to_binary(io_lib:format("exit: ~p", [Reason])).
+%% Format an error/exception into a readable string with top stack frames
+format_error(Class, Reason, Stacktrace) ->
+    TopFrames = lists:sublist(Stacktrace, 3),
+    iolist_to_binary(io_lib:format("~p:~p~n~p", [Class, Reason, TopFrames])).
 
 %% ============================================================================
 %% Scoped Context Implementation
