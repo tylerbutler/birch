@@ -415,8 +415,8 @@ pub fn write_box_with_title(message: String, title: String) -> Nil {
 /// Example:
 /// ```gleam
 /// console.with_group("Building project", fn() {
-///   logger.info(lgr, "Compiling sources...", [])
-///   logger.info(lgr, "Linking...", [])
+///   log.info(lgr, "Compiling sources...", [])
+///   log.info(lgr, "Linking...", [])
 /// })
 /// ```
 ///
@@ -447,7 +447,7 @@ pub fn with_group(title: String, work: fn() -> a) -> a {
 /// Example:
 /// ```gleam
 /// let indented_handler = console.indented_handler(1)
-/// let lgr = logger.new("build") |> logger.with_handlers([indented_handler])
+/// let lgr = log.new("build") |> log.with_handlers([indented_handler])
 /// ```
 pub fn indented_handler(indent_level: Int) -> Handler {
   indented_handler_with_config(indent_level, default_fancy_config())

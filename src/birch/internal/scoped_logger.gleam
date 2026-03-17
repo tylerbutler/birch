@@ -3,7 +3,7 @@
 //// This is separated from platform.gleam to avoid circular dependencies
 //// with the logger module.
 
-import birch/logger.{type Logger}
+import birch/log.{type Logger}
 
 /// Get the current scoped logger override.
 /// Returns Ok(Logger) if a scoped logger is set, Error(Nil) otherwise.

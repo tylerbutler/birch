@@ -1,0 +1,8 @@
+kind: Changed
+body: |-
+    Rename `birch/logger` module to `birch/log` for better piping ergonomics
+    The `birch/logger` module has been renamed to `birch/log`. This provides
+    more natural piping: `logger |> log.info("message")` instead of
+    `logger |> logger.info("message")`. Update your imports from
+    `import birch/logger` to `import birch/log`.
+time: 2026-03-17T04:11:00.000000000-07:00

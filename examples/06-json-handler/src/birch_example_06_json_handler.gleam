@@ -2,15 +2,15 @@
 ////
 //// Demonstrates JSON output for log aggregation systems.
 
-import birch as log
+import birch
 import birch/handler.{type Handler}
 import birch/handler/json
-import birch/logger
+import birch/log
 import birch/meta
 import gleam/json as gjson
 
 pub fn main() {
-  log.info("=== JSON Handler Demo ===")
+  birch.info("=== JSON Handler Demo ===")
 
   // Default JSON handler
   demo_default_json()
@@ -22,18 +22,18 @@ pub fn main() {
   demo_minimal_json()
 
   // Reset to defaults
-  log.reset_config()
-  log.info("Demo complete")
+  birch.reset_config()
+  birch.info("Demo complete")
 }
 
 /// Demonstrate the default JSON handler.
 fn demo_default_json() {
-  log.configure([log.config_handlers([json.handler()])])
+  birch.configure([birch.config_handlers([json.handler()])])
 
-  let lgr = log.new("app")
-  log.info("Default JSON format")
-  logger.info(lgr, "With metadata", [meta.string("user_id", "12345"), meta.string("action", "login")])
-  log.error("Error message")
+  let lgr = birch.new("app")
+  birch.info("Default JSON format")
+  log.info(lgr, "With metadata", [meta.string("user_id", "12345"), meta.string("action", "login")])
+  birch.error("Error message")
 }
 
 /// Demonstrate custom JSON with builder pattern.
@@ -51,11 +51,11 @@ fn demo_custom_json() {
     |> json.build()
     |> json.handler_with_formatter()
 
-  log.configure([log.config_handlers([custom_handler])])
+  birch.configure([birch.config_handlers([custom_handler])])
 
-  let lgr = log.new("app")
-  log.info("Custom JSON with service info")
-  logger.info(lgr, "Request processed", [meta.string("status", "200"), meta.string("duration_ms", "42")])
+  let lgr = birch.new("app")
+  birch.info("Custom JSON with service info")
+  log.info(lgr, "Request processed", [meta.string("status", "200"), meta.string("duration_ms", "42")])
 }
 
 /// Demonstrate minimal JSON format.
@@ -69,11 +69,11 @@ fn demo_minimal_json() {
     |> json.build()
     |> json.handler_with_formatter()
 
-  log.configure([log.config_handlers([minimal_handler])])
+  birch.configure([birch.config_handlers([minimal_handler])])
 
-  let lgr = log.new("app")
-  log.info("Minimal JSON (no logger name or metadata)")
-  logger.info(lgr, "Metadata is ignored", [meta.string("key", "value")])
+  let lgr = birch.new("app")
+  birch.info("Minimal JSON (no logger name or metadata)")
+  log.info(lgr, "Metadata is ignored", [meta.string("key", "value")])
 }
 
 /// Create a JSON handler for a microservice.

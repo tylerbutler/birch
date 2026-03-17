@@ -7,34 +7,34 @@
 //// - Message content is correct
 //// - Format is consistent
 
-import birch as log
+import birch
 import birch/handler/console
 import birch/level
-import birch/logger
+import birch/log
 import birch/meta
 
 pub fn main() {
   // Configure with debug level to capture all messages
-  log.configure([
-    log.config_level(level.Debug),
-    log.config_handlers([console.handler()]),
+  birch.configure([
+    birch.config_level(level.Debug),
+    birch.config_handlers([console.handler()]),
   ])
 
   // Log at each level with identifiable messages
-  log.debug("Debug message for testing")
-  log.info("Info message for testing")
-  log.warn("Warn message for testing")
-  log.error("Error message for testing")
+  birch.debug("Debug message for testing")
+  birch.info("Info message for testing")
+  birch.warn("Warn message for testing")
+  birch.error("Error message for testing")
 
   // Test with metadata
-  log.new("console-fixture")
-  |> log.with_handler(console.handler())
-  |> log.with_level(level.Debug)
-  |> logger.info("Message with metadata", [
+  birch.new("console-fixture")
+  |> birch.with_handler(console.handler())
+  |> birch.with_level(level.Debug)
+  |> log.info("Message with metadata", [
     meta.string("request_id", "test-123"),
     meta.string("user", "integration-test"),
   ])
 
   // Reset config for clean state
-  log.reset_config()
+  birch.reset_config()
 }
