@@ -457,7 +457,14 @@ export function safe_call(fn) {
     fn();
     return new Ok(undefined);
   } catch (e) {
-    const errorMsg = e instanceof Error ? e.message : String(e);
+    let errorMsg;
+    if (e instanceof Error) {
+      // Include stack trace (first few lines) for debugging
+      const stackLines = (e.stack || "").split("\n").slice(0, 4).join("\n");
+      errorMsg = stackLines || e.message;
+    } else {
+      errorMsg = String(e);
+    }
     return new Error(errorMsg);
   }
 }
