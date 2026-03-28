@@ -1,7 +1,0 @@
-kind: Fixed
-body: |-
-    Include stacktrace in handler error messages
-    `safe_call` now includes the top stack frames in error messages when a handler
-    fails. This makes debugging custom handler errors significantly easier, as the
-    error callback now shows where in the handler code the failure occurred.
-time: 2026-03-17T04:12:00.000000000-07:00
