@@ -1,7 +1,0 @@
-kind: Fixed
-body: |-
-    `with_group` now increments scope depth for `auto_indent_from_scopes`
-    `console.with_group()` now properly wraps its work function in a scope, so
-    `auto_indent_from_scopes: True` produces indented output inside groups as
-    documented. Previously, scope depth was never incremented by `with_group`.
-time: 2026-03-17T04:10:00.000000000-07:00

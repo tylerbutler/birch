@@ -1,8 +1,0 @@
-kind: Fixed
-body: |-
-    Eliminate dual-path output on BEAM — OTP-native architecture
-    Fixed issue where logs were dispatched through both OTP :logger and birch handlers
-    simultaneously. Now uses a single, unified dispatch path: logs go through OTP :logger
-    when no explicit handlers are configured (default, OTP-native behavior), or through
-    birch handlers when they are explicitly configured.
-time: 2026-03-08T09:00:00.000000000-08:00

@@ -1,5 +1,0 @@
-kind: Fixed
-body: |-
-    Eliminate double-formatting of log messages on BEAM (#87)
-    Previously, birch formatted a message string via the handler, passed it to `:logger`, and the birch formatter would try to format it again — producing garbled output with duplicate timestamps and metadata. LogRecords now pass through `:logger` intact and the formatter uses them directly.
-time: 2026-02-27T22:02:00.000000000-08:00
