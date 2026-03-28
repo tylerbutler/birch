@@ -178,13 +178,21 @@ is_formatter_configured() ->
 %% Unlike ensure_initialized/0 (which checks persistent_term cache),
 %% this queries the actual :logger handler state.
 %% Use for health checks and monitoring, not in hot paths.
+%%
+%% Returns true if either:
+%% 1. The birch formatter is installed on the default handler, OR
+%% 2. The birch handler bridge is installed
 -spec is_healthy() -> boolean().
 is_healthy() ->
     case logger:get_handler_config(default) of
         {ok, #{formatter := {birch_erlang_logger_ffi, #{format_fn := _}}}} ->
             true;
         _ ->
-            false
+            %% Check if the bridge handler is installed
+            case logger:get_handler_config(birch_handler_bridge) of
+                {ok, _} -> true;
+                _ -> false
+            end
     end.
 
 %% Set the default handler's level filter to 'all'.

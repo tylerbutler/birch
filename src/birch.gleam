@@ -56,6 +56,7 @@ import birch/sampling
 import birch/scope
 @target(javascript)
 import gleam/io
+import gleam/list
 import gleam/option.{None, Some}
 
 // Re-export types for convenience
@@ -164,7 +165,8 @@ pub fn set_level(lvl: Level) -> Nil {
   config.set_global_config(new_config)
   clear_cached_default_logger()
   // On BEAM: sync OTP primary level
-  sync_otp_level(lvl)
+  let has_bridge = !list.is_empty(config.get_handlers(current))
+  sync_otp_level(lvl, has_bridge)
 }
 
 /// Get the current global log level.
@@ -300,7 +302,8 @@ fn default_handlers() -> List(Handler) {
 /// `reset_config()`, and `default_logger()` on first use.
 fn sync_otp_config(cfg: GlobalConfig) -> Nil {
   sync_otp_formatter(cfg)
-  sync_otp_level(config.get_level(cfg))
+  let has_bridge = !list.is_empty(config.get_handlers(cfg))
+  sync_otp_level(config.get_level(cfg), has_bridge)
 }
 
 @target(javascript)
@@ -347,14 +350,22 @@ fn sync_otp_formatter(cfg: GlobalConfig) -> Nil {
 
 @target(erlang)
 /// Sync birch level → OTP :logger primary level.
-fn sync_otp_level(lvl: Level) -> Nil {
+/// When the bridge is active, the default handler is intentionally silenced
+/// (level=none) — we must not call allow_all_levels() which would re-enable it.
+fn sync_otp_level(lvl: Level, bridge_active: Bool) -> Nil {
   erlang_logger.set_primary_level(lvl)
-  // Also ensure handler level is 'all' so birch controls filtering
-  erlang_logger.allow_all_levels()
+  case bridge_active {
+    False ->
+      // Default handler owns output — ensure it passes all levels to birch formatter
+      erlang_logger.allow_all_levels()
+    True ->
+      // Bridge handler owns output — default handler must stay silenced
+      Nil
+  }
 }
 
 @target(javascript)
-fn sync_otp_level(_lvl: Level) -> Nil {
+fn sync_otp_level(_lvl: Level, _bridge_active: Bool) -> Nil {
   Nil
 }
 

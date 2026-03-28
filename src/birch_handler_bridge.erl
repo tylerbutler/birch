@@ -53,7 +53,10 @@ log(#{level := Level, msg := Msg, meta := Meta},
         end,
         'birch@handler':handle_all(Handlers, LogRecord)
     catch
-        _:_ -> ok
+        Class:Reason:Stacktrace ->
+            io:format(standard_error,
+                "birch: handler bridge crash: ~p:~p~n  ~p~n",
+                [Class, Reason, Stacktrace])
     end,
     ok;
 log(_Event, _Config) ->
