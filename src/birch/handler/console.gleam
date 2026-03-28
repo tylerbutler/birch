@@ -12,6 +12,7 @@ import birch/internal/ansi
 import birch/internal/platform
 import birch/level_formatter.{type LevelFormatter}
 import birch/record.{type LogRecord, type Metadata}
+import birch/scope
 import gleam/int
 import gleam/io
 import gleam/list
@@ -472,7 +473,7 @@ pub fn with_group(title: String, work: fn() -> a) -> a {
     False -> #("▸", title)
   }
   io.println(arrow <> " " <> styled_title)
-  work()
+  scope.with_scope([], fn() { work() })
 }
 
 /// Create a handler that indents output by the specified level.
