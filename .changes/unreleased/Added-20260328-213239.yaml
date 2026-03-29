@@ -1,0 +1,22 @@
+kind: Added
+body: |-
+    Formatter-first API for OTP logger integration
+    New `config_formatter()` configuration option installs a formatter directly on OTP `:logger`'s default handler (BEAM) or creates a console handler (JavaScript), without requiring a full handler setup.
+
+    New functions:
+    - `birch.config_formatter(f)` / `config.formatter(f)` — create a `ConfigOption` from a `Formatter`
+    - `console.formatter()` — simple-style console formatter
+    - `console.fancy_formatter()` — fancy-style console formatter with icons
+    - `json.formatter()` — JSON formatter
+    - `config.get_formatter(config)` — retrieve the formatter from a `GlobalConfig`
+
+    Example usage:
+    ```gleam
+    import birch as log
+    import birch/handler/console
+
+    log.configure([log.config_formatter(console.fancy_formatter())])
+    ```
+
+    If both a formatter and handlers are configured, handlers take precedence and the formatter is ignored.
+time: 2026-03-28T21:32:39.000000000-07:00
