@@ -1,0 +1,7 @@
+kind: Breaking
+body: |-
+    BEAM dispatch now routes all logs through OTP `:logger`
+    On BEAM, all log dispatch now goes through OTP `:logger` instead of birch calling handlers directly. Previously, `dispatch_record` would call `handler.handle_all(handlers, record)` when handlers were configured; now it always calls `erlang_logger.emit(record)` and a bridge handler routes OTP log events back through the birch handler pipeline.
+
+    **No migration required for typical usage.** If you configure birch via `birch.configure()`, the bridge is installed automatically and your handlers continue to work. You only need to take action if you were calling `logger.dispatch_record` or `handler.handle_all` directly on BEAM — use `erlang_logger.emit()` instead.
+time: 2026-03-28T21:32:38.000000000-07:00

@@ -112,6 +112,40 @@ pub fn handler_with_config(config: ConsoleConfig) -> Handler {
   handler.new(name: "console", write: write_fn, format: format_fn)
 }
 
+/// Create a simple-style console formatter.
+///
+/// Returns a `Formatter` suitable for use with `config_formatter()`.
+/// On BEAM, this is installed directly on OTP `:logger`'s default handler.
+///
+/// ## Example
+///
+/// ```gleam
+/// import birch as log
+/// import birch/handler/console
+///
+/// log.configure([log.config_formatter(console.formatter())])
+/// ```
+pub fn formatter() -> formatter.Formatter {
+  build_format_fn(default_config())
+}
+
+/// Create a fancy-style console formatter.
+///
+/// Returns a `Formatter` with icons and compact layout, suitable for
+/// use with `config_formatter()`.
+///
+/// ## Example
+///
+/// ```gleam
+/// import birch as log
+/// import birch/handler/console
+///
+/// log.configure([log.config_formatter(console.fancy_formatter())])
+/// ```
+pub fn fancy_formatter() -> formatter.Formatter {
+  build_format_fn(default_fancy_config())
+}
+
 /// Build a format function from a ConsoleConfig.
 ///
 /// This creates a formatter closure that can be used independently of a handler,

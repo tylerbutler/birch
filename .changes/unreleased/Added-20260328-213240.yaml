@@ -1,0 +1,5 @@
+kind: Added
+body: |-
+    Handler bridge for OTP-native dispatch
+    New `erlang_logger.install_handler_bridge(handlers)` and `erlang_logger.remove_handler_bridge()` functions route OTP `:logger` events through birch's handler pipeline. The bridge is managed automatically by `birch.configure()` — you only need to call these directly if you are managing OTP logger configuration outside of birch's config system.
+time: 2026-03-28T21:32:40.000000000-07:00

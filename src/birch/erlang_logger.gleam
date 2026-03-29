@@ -419,6 +419,31 @@ pub fn remove_formatter_from(handler_id: String) -> Result(Nil, String) {
 }
 
 // ============================================================================
+// Handler Bridge (OTP-native dispatch for birch handlers)
+// ============================================================================
+
+/// Install the handler bridge on OTP `:logger`.
+///
+/// This registers a custom OTP `:logger` handler that routes log events to
+/// birch handlers. All logs go through OTP `:logger` (single dispatch path),
+/// and the bridge handler delegates to birch's handler system.
+///
+/// The default OTP handler is silenced to prevent double output.
+/// Both birch-originated and OTP/library log events are routed to the handlers.
+pub fn install_handler_bridge(
+  handlers: List(handler.Handler),
+) -> Result(Nil, String) {
+  do_install_handler_bridge(handlers)
+}
+
+/// Remove the handler bridge from OTP `:logger`.
+///
+/// This removes the birch bridge handler and restores the default OTP handler.
+pub fn remove_handler_bridge() -> Result(Nil, String) {
+  do_remove_handler_bridge()
+}
+
+// ============================================================================
 // Deprecated: Forward handlers (no longer needed)
 // ============================================================================
 
@@ -581,3 +606,15 @@ fn do_set_handler_level_all() -> Nil
 @external(erlang, "birch_erlang_logger_ffi", "set_primary_level")
 @external(javascript, "../birch_erlang_logger_ffi.mjs", "set_primary_level")
 fn do_set_primary_level(level: ErlangLevel) -> Nil
+
+/// Install the handler bridge on OTP :logger.
+@external(erlang, "birch_erlang_logger_ffi", "install_handler_bridge")
+@external(javascript, "../birch_erlang_logger_ffi.mjs", "install_handler_bridge")
+fn do_install_handler_bridge(
+  handlers: List(handler.Handler),
+) -> Result(Nil, String)
+
+/// Remove the handler bridge from OTP :logger.
+@external(erlang, "birch_erlang_logger_ffi", "remove_handler_bridge")
+@external(javascript, "../birch_erlang_logger_ffi.mjs", "remove_handler_bridge")
+fn do_remove_handler_bridge() -> Result(Nil, String)

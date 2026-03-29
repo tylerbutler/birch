@@ -11,6 +11,7 @@ import birch as log
 import birch/config
 import birch/erlang_logger
 import birch/formatter
+import birch/handler
 import birch/handler/console
 import birch/level
 import birch/logger
@@ -418,6 +419,11 @@ pub fn emit_with_caller_id_test() {
 // log through birch, and verify the output. Combined into a single test
 // to avoid race conditions (gleeunit runs tests concurrently, and multiple
 // tests modifying the same :logger handler would interfere).
+//
+// The sleep(100) calls are safe because OTP :logger's default handler
+// dispatches synchronously (the formatter is called in the handler process).
+// The sleep ensures the log event has been fully processed before we read
+// the capture buffer.
 // ============================================================================
 
 pub fn logger_round_trip_formatting_test() {
@@ -675,3 +681,327 @@ fn get_handler_level() -> String
 
 /// Opaque type for the capture buffer
 type CaptureBuffer
+
+// ============================================================================
+// Handler Bridge Tests (#110)
+// ============================================================================
+
+pub fn handler_bridge_install_test() {
+  case is_erlang_target() {
+    True -> {
+      // Install the bridge with a null handler
+      let result = erlang_logger.install_handler_bridge([handler.null()])
+      should.be_ok(result)
+
+      // Clean up
+      let _ = erlang_logger.remove_handler_bridge()
+      Nil
+    }
+    False -> Nil
+  }
+}
+
+pub fn handler_bridge_remove_idempotent_test() {
+  case is_erlang_target() {
+    True -> {
+      // Remove when not installed should succeed
+      let result = erlang_logger.remove_handler_bridge()
+      should.be_ok(result)
+    }
+    False -> Nil
+  }
+}
+
+pub fn handler_bridge_routes_to_handlers_test() {
+  case is_erlang_target() {
+    True -> {
+      let captured = new_capture_buffer()
+
+      // Create a handler that captures output
+      let capture_handler =
+        handler.new(
+          name: "capture",
+          write: fn(msg) { append_to_buffer(captured, msg) },
+          format: formatter.human_readable,
+        )
+
+      // Install bridge with capture handler
+      let assert Ok(Nil) =
+        erlang_logger.install_handler_bridge([capture_handler])
+
+      // Log through birch — should go through OTP :logger → bridge → handler
+      let lgr =
+        logger.new("test.bridge")
+        |> logger.with_level(level.Info)
+      logger.info(lgr, "Bridge test message", [
+        meta.string("via", "bridge"),
+      ])
+      sleep(100)
+
+      let output = get_buffer_contents(captured)
+      output |> string.contains("Bridge test message") |> should.be_true
+      output |> string.contains("via=bridge") |> should.be_true
+
+      // Verify single output (no duplicates)
+      let count = count_occurrences(output, "Bridge test message")
+      { count == 1 } |> should.be_true
+
+      // Clean up
+      let _ = erlang_logger.remove_handler_bridge()
+      Nil
+    }
+    False -> Nil
+  }
+}
+
+// ============================================================================
+// Single Dispatch Path Tests (#110)
+// ============================================================================
+
+pub fn single_dispatch_path_with_handlers_test() {
+  case is_erlang_target() {
+    True -> {
+      let captured = new_capture_buffer()
+      let capture_handler =
+        handler.new(
+          name: "capture",
+          write: fn(msg) { append_to_buffer(captured, msg) },
+          format: formatter.human_readable,
+        )
+
+      // Configure with handlers — should install bridge on :logger
+      log.configure([
+        log.config_handlers([capture_handler]),
+        log.config_level(level.Info),
+      ])
+
+      // Log using the default logger
+      log.info("Single dispatch test")
+      sleep(100)
+
+      let output = get_buffer_contents(captured)
+      output |> string.contains("Single dispatch test") |> should.be_true
+
+      // Verify no duplicates
+      let count = count_occurrences(output, "Single dispatch test")
+      { count == 1 } |> should.be_true
+
+      log.reset_config()
+    }
+    False -> Nil
+  }
+}
+
+pub fn config_formatter_installs_on_otp_logger_test() {
+  case is_erlang_target() {
+    True -> {
+      let captured = new_capture_buffer()
+      let capture_formatter = fn(r: record.LogRecord) -> String {
+        let formatted = formatter.simple(r)
+        append_to_buffer(captured, formatted)
+        formatted
+      }
+
+      // Configure with formatter (not handlers)
+      log.configure([
+        log.config_formatter(capture_formatter),
+        log.config_level(level.Info),
+      ])
+
+      // Log through birch → OTP :logger → birch formatter
+      log.info("Formatter config test")
+      sleep(100)
+
+      let output = get_buffer_contents(captured)
+      output |> string.contains("Formatter config test") |> should.be_true
+
+      // Verify no duplicates
+      let count = count_occurrences(output, "Formatter config test")
+      { count == 1 } |> should.be_true
+
+      log.reset_config()
+    }
+    False -> Nil
+  }
+}
+
+// ============================================================================
+// Config Transition Tests (#109 / #110)
+//
+// These tests verify transitions between formatter-mode and handler-bridge-mode
+// on OTP :logger. They use lower-level APIs (erlang_logger.install_formatter_with,
+// erlang_logger.install_handler_bridge) and dedicated loggers to avoid race
+// conditions from concurrent tests modifying global default-logger state.
+//
+// The sleep(100) calls are safe because OTP :logger's default handler
+// dispatches synchronously (the formatter/handler is called in the caller's
+// process).
+// ============================================================================
+
+pub fn config_transition_formatter_to_bridge_to_formatter_test() {
+  case is_erlang_target() {
+    True -> {
+      // Phase 1: Formatter installed on OTP default handler
+      let captured1 = new_capture_buffer()
+      let fmt1 = fn(r: record.LogRecord) -> String {
+        let formatted = "FMT1:" <> record.message(r)
+        append_to_buffer(captured1, formatted)
+        formatted
+      }
+      let assert Ok(Nil) = erlang_logger.install_formatter_with(fmt1)
+      erlang_logger.allow_all_levels()
+
+      let lgr1 = logger.new("test.phase1") |> logger.with_level(level.Info)
+      logger.info(lgr1, "Phase 1 message", [])
+      sleep(100)
+
+      get_buffer_contents(captured1)
+      |> string.contains("Phase 1 message")
+      |> should.be_true
+
+      // Phase 2: Switch to handler bridge (removes formatter, silences default)
+      let captured2 = new_capture_buffer()
+      let capture_handler =
+        handler.new(
+          name: "capture",
+          write: fn(msg) { append_to_buffer(captured2, msg) },
+          format: formatter.human_readable,
+        )
+      let _ = erlang_logger.remove_formatter()
+      let assert Ok(Nil) =
+        erlang_logger.install_handler_bridge([capture_handler])
+
+      let lgr2 = logger.new("test.phase2") |> logger.with_level(level.Info)
+      logger.info(lgr2, "Phase 2 message", [meta.string("via", "bridge")])
+      sleep(100)
+
+      get_buffer_contents(captured2)
+      |> string.contains("Phase 2 message")
+      |> should.be_true
+      // Phase 1 formatter should NOT have received Phase 2 message
+      get_buffer_contents(captured1)
+      |> string.contains("Phase 2 message")
+      |> should.be_false
+
+      // Phase 3: Switch back to formatter (removes bridge, restores default)
+      let captured3 = new_capture_buffer()
+      let fmt3 = fn(r: record.LogRecord) -> String {
+        let formatted = "FMT3:" <> record.message(r)
+        append_to_buffer(captured3, formatted)
+        formatted
+      }
+      let _ = erlang_logger.remove_handler_bridge()
+      let assert Ok(Nil) = erlang_logger.install_formatter_with(fmt3)
+      erlang_logger.allow_all_levels()
+
+      let lgr3 = logger.new("test.phase3") |> logger.with_level(level.Info)
+      logger.info(lgr3, "Phase 3 message", [])
+      sleep(100)
+
+      get_buffer_contents(captured3)
+      |> string.contains("Phase 3 message")
+      |> should.be_true
+      // Phase 2 handler should NOT have received Phase 3 message
+      get_buffer_contents(captured2)
+      |> string.contains("Phase 3 message")
+      |> should.be_false
+
+      // Cleanup
+      let _ = erlang_logger.remove_formatter()
+      log.reset_config()
+    }
+    False -> Nil
+  }
+}
+
+pub fn reset_config_removes_bridge_test() {
+  case is_erlang_target() {
+    True -> {
+      // Install bridge by configuring handlers
+      log.configure([
+        log.config_handlers([handler.null()]),
+        log.config_level(level.Info),
+      ])
+
+      // Bridge should be active
+      erlang_logger.is_healthy()
+      |> should.be_true
+
+      // Reset config — should remove bridge and restore default formatter
+      log.reset_config()
+
+      // Default formatter should be back
+      erlang_logger.is_healthy()
+      |> should.be_true
+
+      // Verify logging works through the restored formatter
+      let captured = new_capture_buffer()
+      let capture_fmt = fn(r: record.LogRecord) -> String {
+        let formatted = formatter.human_readable(r)
+        append_to_buffer(captured, formatted)
+        formatted
+      }
+      let assert Ok(Nil) =
+        erlang_logger.install_formatter_on("default", capture_fmt)
+
+      let lgr = logger.new("test.reset") |> logger.with_level(level.Info)
+      logger.info(lgr, "After reset message", [])
+      sleep(100)
+
+      let output = get_buffer_contents(captured)
+      output |> string.contains("After reset message") |> should.be_true
+      // Verify no duplicates (bridge was properly removed)
+      let count = count_occurrences(output, "After reset message")
+      { count == 1 } |> should.be_true
+
+      log.reset_config()
+    }
+    False -> Nil
+  }
+}
+
+pub fn handlers_take_precedence_over_formatter_on_beam_test() {
+  case is_erlang_target() {
+    True -> {
+      // Configure with BOTH formatter and handlers — handlers should win
+      let captured_handler = new_capture_buffer()
+      let captured_formatter = new_capture_buffer()
+
+      let capture_handler =
+        handler.new(
+          name: "capture",
+          write: fn(msg) { append_to_buffer(captured_handler, msg) },
+          format: formatter.human_readable,
+        )
+      let capture_fmt = fn(r: record.LogRecord) -> String {
+        let formatted = formatter.simple(r)
+        append_to_buffer(captured_formatter, formatted)
+        formatted
+      }
+
+      log.configure([
+        log.config_formatter(capture_fmt),
+        log.config_handlers([capture_handler]),
+        log.config_level(level.Info),
+      ])
+
+      // Use a dedicated logger to avoid default logger caching issues
+      let lgr = logger.new("test.precedence") |> logger.with_level(level.Info)
+      logger.info(lgr, "Precedence test", [])
+      sleep(100)
+
+      // Handler should have received the message (via bridge)
+      get_buffer_contents(captured_handler)
+      |> string.contains("Precedence test")
+      |> should.be_true
+
+      // Formatter should NOT have received the message (handlers take precedence)
+      get_buffer_contents(captured_formatter)
+      |> string.contains("Precedence test")
+      |> should.be_false
+
+      log.reset_config()
+    }
+    False -> Nil
+  }
+}

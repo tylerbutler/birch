@@ -310,18 +310,15 @@ fn emit_record(
 }
 
 @target(erlang)
-/// On BEAM, dispatch via OTP :logger when no explicit handlers are configured
-/// (the default), or via birch handlers when they are. This ensures:
-/// - Default: OTP :logger handles output with birch formatter (OTP-native)
-/// - With handlers: birch handlers handle output (supports file, custom I/O)
+/// On BEAM, always dispatch via OTP :logger — single path.
+/// When no handlers are configured, OTP :logger's default handler with birch
+/// formatter handles output. When handlers are configured, a bridge handler
+/// on OTP :logger routes events to birch handlers.
 fn dispatch_record(
-  handlers: List(handler.Handler),
+  _handlers: List(handler.Handler),
   record: record.LogRecord,
 ) -> Nil {
-  case handlers {
-    [] -> erlang_logger.emit(record)
-    _ -> handler.handle_all(handlers, record)
-  }
+  erlang_logger.emit(record)
 }
 
 @target(javascript)

@@ -3,6 +3,7 @@
 //// This module provides types and functions for configuring the default
 //// logger and application-wide logging settings.
 
+import birch/formatter.{type Formatter}
 import birch/handler.{type ErrorCallback, type Handler}
 import birch/level.{type Level}
 import birch/record.{type Metadata}
@@ -59,6 +60,11 @@ pub opaque type GlobalConfig {
     on_error: Option(ErrorCallback),
     /// Optional sampling configuration.
     sampling: Option(SampleConfig),
+    /// Optional formatter for OTP :logger integration (BEAM) or console output (JS).
+    /// When set without handlers, this formatter is installed on OTP :logger's
+    /// default handler (BEAM) or used with a console handler (JS).
+    /// When handlers are also set, handlers take precedence and this is ignored.
+    formatter: Option(Formatter),
   )
 }
 
@@ -69,6 +75,7 @@ pub opaque type ConfigOption {
   ContextOption(Metadata)
   OnErrorOption(ErrorCallback)
   SamplingOption(SampleConfig)
+  FormatterOption(Formatter)
 }
 
 /// Create a configuration option to set the log level.
@@ -99,6 +106,18 @@ pub fn sampling(config: SampleConfig) -> ConfigOption {
   SamplingOption(config)
 }
 
+/// Create a configuration option to set the formatter.
+///
+/// On BEAM, this installs the formatter on OTP `:logger`'s default handler,
+/// giving you OTP-native output with birch formatting.
+/// On JavaScript, this creates a console handler with the formatter.
+///
+/// If both a formatter and handlers are configured, handlers take precedence
+/// and the formatter is ignored.
+pub fn formatter(f: Formatter) -> ConfigOption {
+  FormatterOption(f)
+}
+
 /// Returns the default global configuration with no handlers.
 /// Note: Use birch.default_config() to get defaults with console handler.
 @deprecated("Use birch.default_config() instead for sensible defaults, or construct GlobalConfig directly")
@@ -109,6 +128,7 @@ pub fn empty() -> GlobalConfig {
     context: [],
     on_error: None,
     sampling: None,
+    formatter: None,
   )
 }
 
@@ -128,6 +148,7 @@ fn apply_option(config: GlobalConfig, option: ConfigOption) -> GlobalConfig {
     ContextOption(ctx) -> GlobalConfig(..config, context: ctx)
     OnErrorOption(callback) -> GlobalConfig(..config, on_error: Some(callback))
     SamplingOption(s) -> GlobalConfig(..config, sampling: Some(s))
+    FormatterOption(f) -> GlobalConfig(..config, formatter: Some(f))
   }
 }
 
@@ -165,6 +186,11 @@ pub fn get_on_error(config: GlobalConfig) -> Option(ErrorCallback) {
   config.on_error
 }
 
+/// Get the formatter from a GlobalConfig, if set.
+pub fn get_formatter(config: GlobalConfig) -> Option(Formatter) {
+  config.formatter
+}
+
 /// Create a new GlobalConfig with the given parameters.
 pub fn new_config(
   level level: Level,
@@ -179,6 +205,7 @@ pub fn new_config(
     context: context,
     on_error: on_error,
     sampling: sampling,
+    formatter: None,
   )
 }
 
