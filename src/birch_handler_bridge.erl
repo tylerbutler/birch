@@ -9,6 +9,10 @@
 %% 1. If it has `birch_log_record` metadata → use the LogRecord directly
 %% 2. Otherwise → build a LogRecord from OTP event fields
 %% Then dispatch to the stored birch handlers via handler:handle_all/2.
+%%
+%% Note: The birch handlers (Gleam closures) are stored in the OTP :logger
+%% handler config. After a hot code upgrade that reloads handler modules,
+%% these closures may become stale. Call birch.configure() again to refresh.
 
 -module(birch_handler_bridge).
 

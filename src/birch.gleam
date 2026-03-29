@@ -48,14 +48,14 @@ import birch/erlang_logger
 
 @target(javascript)
 import birch/handler/console
+@target(javascript)
+import gleam/io
 
 import birch/level.{type Level}
 import birch/logger.{type Logger}
 import birch/record.{type Metadata}
 import birch/sampling
 import birch/scope
-@target(javascript)
-import gleam/io
 import gleam/list
 import gleam/option.{None, Some}
 
@@ -165,7 +165,7 @@ pub fn set_level(lvl: Level) -> Nil {
   config.set_global_config(new_config)
   clear_cached_default_logger()
   // On BEAM: sync OTP primary level
-  let has_bridge = !list.is_empty(config.get_handlers(current))
+  let has_bridge = !list.is_empty(config.get_handlers(new_config))
   sync_otp_level(lvl, has_bridge)
 }
 
